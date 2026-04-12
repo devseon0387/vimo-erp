@@ -19,7 +19,7 @@ export async function POST() {
 
   const webpush = getWebPush();
   const payload = JSON.stringify({
-    title: '비모 ERP 테스트 알림',
+    title: '테스트 알림',
     body: '푸시 알림이 정상적으로 동작합니다 🎉',
     url: '/management',
   });
