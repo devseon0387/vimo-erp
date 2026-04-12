@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vimo-erp-v2';
+const CACHE_NAME = 'vimo-erp-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -28,8 +28,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || '비모 ERP';
   const options = {
     body: data.body || '',
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: '/icons/notif-icon-192.png',
+    badge: '/icons/notif-badge-96.png',
     data: { url: data.url || '/' },
   };
   event.waitUntil(self.registration.showNotification(title, options));
