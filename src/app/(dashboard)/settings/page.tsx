@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Palette, ClipboardList, CheckCircle, AlertCircle } from 'lucide-react';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
+import PushNotificationSetup from '@/components/PushNotificationSetup';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
@@ -212,6 +213,9 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* 푸시 알림 */}
+        <PushNotificationSetup />
 
         {/* 알림 설정 */}
         <div className="bg-white rounded-lg shadow p-6">
