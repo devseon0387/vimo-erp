@@ -36,6 +36,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // 비봇 내부 툴 API: 라우트 내부에서 세션 또는 x-bibot-key 검증
+  if (pathname.startsWith('/api/bibot/tools')) {
+    return supabaseResponse;
+  }
+
   // API key 인증: /api/mcp 경로 (외부 전용)
   if (pathname.startsWith('/api/mcp')) {
     const apiKey = request.headers.get('x-api-key');
@@ -113,6 +118,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest\\.json|sw\\.js|icons/.*|opengraph-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest\\.json|sw\\.js|icons/.*|opengraph-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$).*)',
   ],
 };
