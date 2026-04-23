@@ -95,7 +95,7 @@ export default function LoginPage() {
           position: absolute;
           top: -40%; right: -20%;
           width: 600px; height: 600px;
-          background: radial-gradient(circle, rgba(234,88,12,0.04) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 70%);
           border-radius: 50%;
           pointer-events: none;
         }
@@ -104,7 +104,7 @@ export default function LoginPage() {
           position: absolute;
           bottom: -30%; left: -15%;
           width: 500px; height: 500px;
-          background: radial-gradient(circle, rgba(234,88,12,0.03) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(249,115,22,0.03) 0%, transparent 70%);
           border-radius: 50%;
           pointer-events: none;
         }
@@ -160,8 +160,8 @@ export default function LoginPage() {
         }
         .vm-field-input:focus {
           background: #ffffff;
-          border-color: #ea580c;
-          box-shadow: 0 0 0 4px rgba(234,88,12,0.06);
+          border-color: #f97316;
+          box-shadow: 0 0 0 4px rgba(249,115,22,0.06);
         }
         .vm-field-label {
           position: absolute;
@@ -175,7 +175,7 @@ export default function LoginPage() {
         .vm-field-label.active {
           top: 14px; transform: translateY(0);
           font-size: 10px; font-weight: 600;
-          color: #ea580c; letter-spacing: 0.06em;
+          color: #f97316; letter-spacing: 0.06em;
         }
         .vm-field-label.filled {
           top: 14px; transform: translateY(0);
@@ -193,7 +193,7 @@ export default function LoginPage() {
           font-weight: 600;
           font-family: inherit;
           color: #fff;
-          background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+          background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
           transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
           display: flex;
           align-items: center;
@@ -202,7 +202,7 @@ export default function LoginPage() {
         }
         .vm-submit:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(234,88,12,0.25);
+          box-shadow: 0 8px 24px rgba(249,115,22,0.25);
         }
         .vm-submit:active:not(:disabled) {
           transform: translateY(0);
@@ -232,7 +232,7 @@ export default function LoginPage() {
           align-items: center; justify-content: center;
           transition: all 0.2s ease;
         }
-        .vm-check.on { background: #ea580c; }
+        .vm-check.on { background: #f97316; }
         .vm-check.off { background: transparent; border: 1.5px solid #d6cec8; }
 
         /* error */

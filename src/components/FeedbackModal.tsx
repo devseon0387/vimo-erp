@@ -91,7 +91,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               onChange={(e) => setValue(e.target.value)}
               placeholder="개선사항을 입력해주세요..."
               rows={4}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none mb-4"
+              className="w-full px-4 py-3 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none mb-4"
               style={{ cursor: 'auto' }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -105,7 +105,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <div className="flex gap-2">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-divider rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                 >
                   취소
                 </button>

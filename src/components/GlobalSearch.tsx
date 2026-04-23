@@ -245,7 +245,7 @@ export default function GlobalSearch() {
           {/* 모달 컨텐츠 */}
           <div className="relative w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-top-4 duration-200">
             {/* 검색 입력 */}
-            <div className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-50">
+            <div className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 border-b border-divider bg-gradient-to-r from-orange-50 to-orange-50">
               <Search size={20} className="text-orange-500 flex-shrink-0 sm:w-6 sm:h-6" />
               <input
                 ref={inputRef}
@@ -330,7 +330,7 @@ export default function GlobalSearch() {
                         </p>
                       )}
                     </div>
-                    <span className="text-xs font-medium text-gray-500 bg-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-200 whitespace-nowrap">
+                    <span className="text-xs font-medium text-gray-500 bg-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-divider whitespace-nowrap">
                       {getTypeLabel(result.type)}
                     </span>
                   </button>
@@ -341,7 +341,7 @@ export default function GlobalSearch() {
 
           {/* 푸터 - 단축키 안내 */}
           {results.length > 0 && (
-            <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-divider bg-gradient-to-r from-gray-50 to-gray-100 flex items-center justify-between">
               <div className="hidden sm:flex items-center gap-6 text-xs text-gray-600">
                 <span className="flex items-center gap-2">
                   <kbd className="px-2 py-1 bg-white border border-gray-300 rounded font-mono">↑↓</kbd>

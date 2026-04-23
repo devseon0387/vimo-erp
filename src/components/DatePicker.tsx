@@ -146,7 +146,7 @@ export default function DatePicker({ value, onChange, placeholder, minDate }: Da
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute z-50 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 w-72"
+            className="absolute z-50 mt-2 bg-white rounded-2xl shadow-2xl border border-divider p-4 w-72"
           >
             {/* 월 네비게이션 */}
             <div className="flex items-center justify-between mb-4">
@@ -227,7 +227,7 @@ export default function DatePicker({ value, onChange, placeholder, minDate }: Da
             </div>
 
             {/* 오늘 바로가기 */}
-            <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="mt-3 pt-3 border-t border-divider">
               <button
                 type="button"
                 onClick={() => {

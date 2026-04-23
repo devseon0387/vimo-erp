@@ -135,7 +135,7 @@ export default function NotificationDropdown() {
           {/* 모달 컨텐츠 */}
           <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
             {/* 헤더 */}
-            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-50">
+            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-divider bg-gradient-to-r from-orange-50 to-orange-50">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                   <Bell size={20} className="text-orange-500" />
@@ -222,7 +222,7 @@ export default function NotificationDropdown() {
 
             {/* 푸터 */}
             {uncheckedCount === 0 && (
-              <div className="p-4 sm:p-5 bg-green-50 text-center border-t border-gray-200">
+              <div className="p-4 sm:p-5 bg-green-50 text-center border-t border-divider">
                 <p className="text-sm text-green-700 font-medium">모든 할 일을 완료했습니다!</p>
               </div>
             )}

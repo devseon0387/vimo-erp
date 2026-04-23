@@ -129,7 +129,7 @@ export default function ComposeMailPage() {
       <div className="bg-white rounded-lg shadow" style={{ border: '1px solid #ede9e6' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0ece9' }}>
           <div className="flex items-center gap-2">
-            <Mail size={20} style={{ color: '#ea580c' }} />
+            <Mail size={20} style={{ color: '#f97316' }} />
             <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1c1917' }}>이메일 작성</h2>
           </div>
         </div>
@@ -142,9 +142,9 @@ export default function ComposeMailPage() {
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 12px', border: '1px solid #d6d3d1', borderRadius: '8px', minHeight: '42px', alignItems: 'center' }}>
               {to.map(email => (
-                <span key={email} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', background: '#fef4ed', color: '#ea580c', borderRadius: '6px', fontSize: '13px' }}>
+                <span key={email} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', background: '#fef4ed', color: '#f97316', borderRadius: '6px', fontSize: '13px' }}>
                   {email}
-                  <button onClick={() => removeEmail(to, setTo, email)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', color: '#ea580c', display: 'flex' }}>
+                  <button onClick={() => removeEmail(to, setTo, email)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', color: '#f97316', display: 'flex' }}>
                     <X size={14} />
                   </button>
                 </span>
@@ -250,7 +250,7 @@ export default function ComposeMailPage() {
               borderRadius: '8px',
               border: 'none',
               cursor: sending || configured === false ? 'not-allowed' : 'pointer',
-              background: sending || configured === false ? '#d6d3d1' : '#ea580c',
+              background: sending || configured === false ? '#d6d3d1' : '#f97316',
               color: '#ffffff',
               fontSize: '14px',
               fontWeight: 600,
@@ -293,7 +293,7 @@ export default function ComposeMailPage() {
             {/* 모달 헤더 */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0ece9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Eye size={18} style={{ color: '#ea580c' }} />
+                <Eye size={18} style={{ color: '#f97316' }} />
                 <span style={{ fontSize: '15px', fontWeight: 600, color: '#1c1917' }}>메일 미리보기</span>
               </div>
               <button

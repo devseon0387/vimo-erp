@@ -78,7 +78,7 @@ export default function SentMailPage() {
       <div className="bg-white rounded-lg shadow" style={{ border: '1px solid #ede9e6' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid #f0ece9' }}>
           <div className="flex items-center gap-2">
-            <Send size={20} style={{ color: '#ea580c' }} />
+            <Send size={20} style={{ color: '#f97316' }} />
             <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1c1917' }}>보낸 메일</h2>
             {!loading && <span style={{ fontSize: '13px', color: '#a8a29e' }}>({emails.length})</span>}
           </div>
@@ -124,7 +124,7 @@ export default function SentMailPage() {
                   height: '36px',
                   borderRadius: '50%',
                   background: '#fef4ed',
-                  color: '#ea580c',
+                  color: '#f97316',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

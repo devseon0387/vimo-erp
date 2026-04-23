@@ -839,7 +839,7 @@ export default function EpisodeDetailPage() {
                     key={`title-display-${editedEpisode.title}`}
                     onClick={() => handleFieldClick('title')}
                     className="text-[17px] sm:text-[21px] font-extrabold cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 tracking-tight"
-                    initial={{ color: editedFields.has('title') ? '#ea580c' : '#1c1917' }}
+                    initial={{ color: editedFields.has('title') ? '#f97316' : '#1c1917' }}
                     animate={{ color: '#1c1917' }}
                     transition={{ duration: 0.6, delay: 1, ease: 'easeOut' }}
                   >
@@ -904,7 +904,7 @@ export default function EpisodeDetailPage() {
                 <span className="text-[#d6d3d1]">→</span>
                 <span
                   onClick={() => handleFieldClick('dueDate')}
-                  className="font-bold text-[#ea580c] cursor-pointer hover:text-orange-700 transition-colors"
+                  className="font-bold text-[#f97316] cursor-pointer hover:text-orange-700 transition-colors"
                 >
                   {editedEpisode.dueDate ? (() => { const [,m,d] = editedEpisode.dueDate.split('T')[0].split('-').map(Number); return `${m}.${d}`; })() : '미정'}
                 </span>

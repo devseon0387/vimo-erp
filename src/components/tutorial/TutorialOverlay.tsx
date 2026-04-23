@@ -203,8 +203,8 @@ export default function TutorialOverlay() {
               style={{
                 position: 'fixed',
                 borderRadius: 12,
-                border: '2px solid rgba(234, 88, 12, 0.6)',
-                boxShadow: '0 0 0 4px rgba(234, 88, 12, 0.15)',
+                border: '2px solid rgba(249, 115, 22, 0.6)',
+                boxShadow: '0 0 0 4px rgba(249, 115, 22, 0.15)',
                 pointerEvents: 'none',
               }}
             />
@@ -244,7 +244,7 @@ export default function TutorialOverlay() {
                       width: i === currentStepIndex ? 20 : 6,
                       height: 6,
                       borderRadius: 3,
-                      background: i === currentStepIndex ? '#ea580c' : '#e7e5e4',
+                      background: i === currentStepIndex ? '#f97316' : '#e7e5e4',
                       transition: 'all 0.2s',
                     }}
                   />
@@ -309,15 +309,15 @@ export default function TutorialOverlay() {
                     fontSize: 13,
                     fontWeight: 600,
                     color: '#fff',
-                    background: '#ea580c',
+                    background: '#f97316',
                     border: 'none',
                     borderRadius: 10,
                     cursor: 'pointer',
                     transition: 'background 0.15s',
-                    boxShadow: '0 2px 8px rgba(234, 88, 12, 0.3)',
+                    boxShadow: '0 2px 8px rgba(249, 115, 22, 0.3)',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#dc4f08'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#ea580c'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#f97316'; }}
                 >
                   {currentStepIndex === steps.length - 1 ? '완료' : '다음'}
                 </button>

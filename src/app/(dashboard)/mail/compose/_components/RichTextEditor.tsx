@@ -54,7 +54,7 @@ function ToolbarButton({
         border: 'none',
         cursor: disabled ? 'default' : 'pointer',
         background: active ? '#fef4ed' : 'transparent',
-        color: active ? '#ea580c' : disabled ? '#d6d3d1' : '#57534e',
+        color: active ? '#f97316' : disabled ? '#d6d3d1' : '#57534e',
         transition: 'all 0.15s',
       }}
       onMouseEnter={(e) => {
@@ -109,7 +109,7 @@ const editorStyles = `
     list-style-type: decimal;
   }
   .tiptap-editor .tiptap a {
-    color: #ea580c;
+    color: #f97316;
     text-decoration: underline;
     cursor: pointer;
   }

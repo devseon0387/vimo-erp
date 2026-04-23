@@ -51,7 +51,7 @@ export default function UpdateNoticeModal() {
             onClick={handleClose}
           />
           <motion.div
-            className="fixed z-[10000] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-gray-100 w-[440px] max-w-[92vw] max-h-[80vh] flex flex-col"
+            className="fixed z-[10000] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-divider w-[440px] max-w-[92vw] max-h-[80vh] flex flex-col"
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
@@ -102,7 +102,7 @@ export default function UpdateNoticeModal() {
 
               {/* 개선 및 수정 */}
               {fixes.length > 0 && (
-                <div className="pt-3 border-t border-gray-100">
+                <div className="pt-3 border-t border-divider">
                   <div className="flex items-center gap-1.5 mb-2.5">
                     <Wrench size={13} className="text-gray-400" />
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">개선 및 수정</span>
@@ -120,7 +120,7 @@ export default function UpdateNoticeModal() {
             </div>
 
             {/* 푸터 */}
-            <div className="px-6 py-4 border-t border-gray-100">
+            <div className="px-6 py-4 border-t border-divider">
               <button
                 onClick={handleClose}
                 className="w-full py-2.5 bg-orange-500 text-white rounded-xl font-medium text-sm hover:bg-orange-600 transition-colors"

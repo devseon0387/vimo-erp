@@ -383,7 +383,7 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
               : isMissing
                 ? 'border-dashed border-brand-200 bg-brand-50/30'
                 : 'border-[var(--color-ink-200)] bg-[var(--color-ink-50)]'
-          } ${isOpen ? 'border-brand-500 bg-white shadow-[0_0_0_3px_rgba(234,88,12,0.08)]' : 'hover:border-[#d6cec8]'}`}
+          } ${isOpen ? 'border-brand-500 bg-white shadow-[0_0_0_3px_rgba(249,115,22,0.08)]' : 'hover:border-[#d6cec8]'}`}
         >
           {selectedPartner ? (
             <>
@@ -811,7 +811,7 @@ function DetailPane({
                 value={(() => { const v = getVal(row, 'total'); return v && v !== '0' ? Number(v).toLocaleString('ko-KR') : ''; })()}
                 onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); updateEdit(epId, 'total', raw ? parseInt(raw) : 0); }}
                 placeholder="0원"
-                className={`w-full px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'total', false)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
+                className={`w-full px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'total', false)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
               />
             </div>
             <div>
@@ -835,7 +835,7 @@ function DetailPane({
                   value={(() => { const v = getVal(row, 'cost'); return v && v !== '0' ? Number(v).toLocaleString('ko-KR') : ''; })()}
                   onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); updateEdit(epId, 'cost', raw ? parseInt(raw) : 0); }}
                   placeholder="0원"
-                  className={`flex-1 px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'cost', row.missing.cost)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
+                  className={`flex-1 px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'cost', row.missing.cost)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
                 />
               </div>
             </div>
@@ -847,7 +847,7 @@ function DetailPane({
                 value={(() => { const v = getVal(row, 'mgmt'); return v && v !== '0' ? Number(v).toLocaleString('ko-KR') : ''; })()}
                 onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); updateEdit(epId, 'mgmt', raw ? parseInt(raw) : 0); }}
                 placeholder="0원"
-                className={`w-full px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'mgmt', row.missing.mgmt)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
+                className={`w-full px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'mgmt', row.missing.mgmt)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
               />
             </div>
           </div>

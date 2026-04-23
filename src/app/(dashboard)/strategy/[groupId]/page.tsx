@@ -35,7 +35,7 @@ const ICON_OPTIONS = [
 ];
 
 const COLOR_OPTIONS = [
-  { color: '#ea580c', bg: '#fff7f3', border: '#fde8d8' },
+  { color: '#f97316', bg: '#fff7f3', border: '#fde8d8' },
   { color: '#3b82f6', bg: '#f3f8ff', border: '#dbeafe' },
   { color: '#10b981', bg: '#f3fff6', border: '#d1fae5' },
   { color: '#8b5cf6', bg: '#fdf3ff', border: '#e9d5ff' },
@@ -49,7 +49,7 @@ const COLOR_OPTIONS = [
 
 function parseGroupIcon(emoji: string) {
   const [iconName, color] = emoji?.split(':') ?? [];
-  const resolvedColor = color || '#ea580c';
+  const resolvedColor = color || '#f97316';
   const found = ICON_OPTIONS.find(o => o.name === iconName);
   const Icon  = found?.Icon ?? Folder;
   const cfg   = COLOR_OPTIONS.find(o => o.color === resolvedColor) ?? COLOR_OPTIONS[0];
@@ -171,7 +171,7 @@ export default function GroupPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '240px' }}>
-      <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #ede9e6', borderTopColor: '#ea580c', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #ede9e6', borderTopColor: '#f97316', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -179,7 +179,7 @@ export default function GroupPage() {
   if (!group) return (
     <div style={{ textAlign: 'center', padding: '80px 24px' }}>
       <p style={{ color: '#a8a29e', fontSize: '14px', marginBottom: '12px' }}>그룹을 찾을 수 없어요</p>
-      <button onClick={() => router.push('/strategy')} style={{ fontSize: '13px', color: '#ea580c', background: 'none', border: 'none', cursor: 'pointer' }}>
+      <button onClick={() => router.push('/strategy')} style={{ fontSize: '13px', color: '#f97316', background: 'none', border: 'none', cursor: 'pointer' }}>
         전략으로 돌아가기
       </button>
     </div>
@@ -244,13 +244,13 @@ export default function GroupPage() {
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             padding: '9px 16px', borderRadius: '9px',
-            background: '#ea580c', color: '#fff',
+            background: '#f97316', color: '#fff',
             border: 'none', cursor: 'pointer',
             fontSize: '13px', fontWeight: 600,
             transition: 'background 0.12s', flexShrink: 0,
           }}
           onMouseEnter={e => { e.currentTarget.style.background = '#c2410c'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#ea580c'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#f97316'; }}
         >
           <Plus size={14} /> 새 페이지
         </button>
@@ -268,12 +268,12 @@ export default function GroupPage() {
             onClick={addDoc}
             style={{
               padding: '9px 18px', borderRadius: '9px',
-              background: '#ea580c', color: '#fff',
+              background: '#f97316', color: '#fff',
               border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
               transition: 'background 0.12s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#c2410c'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#ea580c'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#f97316'; }}
           >
             첫 번째 페이지 만들기
           </button>

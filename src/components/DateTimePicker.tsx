@@ -281,7 +281,7 @@ export default function DateTimePicker({
             onClick={() => setIsOpen(false)}
           />
           <motion.div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-divider overflow-hidden"
             style={{ zIndex: 10001, width: '580px' }}
             initial={{ opacity: 0, scale: 0.93, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -289,7 +289,7 @@ export default function DateTimePicker({
             transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             {/* 헤더 */}
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-divider">
               <div>
                 <span className="text-sm font-bold text-gray-900">알림 설정</span>
                 {selectedDate ? (
@@ -311,7 +311,7 @@ export default function DateTimePicker({
             <div className="flex">
 
               {/* 왼쪽: 달력 */}
-              <div className="flex-1 px-5 py-4 border-r border-gray-100">
+              <div className="flex-1 px-5 py-4 border-r border-divider">
                 {/* 월 네비게이션 */}
                 <div className="flex items-center justify-between mb-3">
                   <button type="button"
@@ -378,7 +378,7 @@ export default function DateTimePicker({
                 </div>
 
                 {/* 오늘 / 초기화 */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-divider">
                   <button type="button" onClick={handleClear}
                     className="text-xs text-gray-400 hover:text-red-500 transition-colors">
                     초기화
@@ -415,7 +415,7 @@ export default function DateTimePicker({
 
                 {/* 반복 알림 */}
                 {onRepeatChange && (
-                  <div className="border-t border-gray-100 pt-4">
+                  <div className="border-t border-divider pt-4">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">반복 알림</p>
 
                     <div className="grid grid-cols-2 gap-1.5 mb-3">
@@ -431,7 +431,7 @@ export default function DateTimePicker({
                           className={`py-1.5 rounded-xl text-[11px] font-semibold transition-all ${
                             repeat === type
                               ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
-                              : 'bg-gray-50 text-gray-500 hover:bg-orange-50 hover:text-orange-600 border border-gray-100'
+                              : 'bg-gray-50 text-gray-500 hover:bg-orange-50 hover:text-orange-600 border border-divider'
                           }`}
                         >
                           {REPEAT_LABELS[type]}
@@ -470,7 +470,7 @@ export default function DateTimePicker({
                                   className={`flex-1 h-8 rounded-lg text-[11px] font-bold transition-all ${
                                     isDaySelected
                                       ? isSun ? 'bg-red-500 text-white' : isSat ? 'bg-orange-500 text-white' : 'bg-amber-500 text-white'
-                                      : isSun ? 'bg-red-50 text-red-400 border border-red-100' : isSat ? 'bg-orange-50 text-orange-400 border border-orange-100' : 'bg-gray-50 text-gray-500 border border-gray-100'
+                                      : isSun ? 'bg-red-50 text-red-400 border border-red-100' : isSat ? 'bg-orange-50 text-orange-400 border border-orange-100' : 'bg-gray-50 text-gray-500 border border-divider'
                                   }`}
                                 >
                                   {label}
@@ -487,7 +487,7 @@ export default function DateTimePicker({
             </div>
 
             {/* 저장 버튼 */}
-            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+            <div className="px-6 py-4 border-t border-divider flex gap-3">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}

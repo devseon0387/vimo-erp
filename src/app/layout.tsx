@@ -47,7 +47,7 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <meta name="theme-color" content="#ea580c" />
+        <meta name="theme-color" content="#f97316" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

@@ -160,7 +160,7 @@ function MiniCalendar({ label, value, onChange, isMissing, disabled }: DateField
 
       {/* 오늘 버튼 */}
       {!disabled && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
+        <div className="mt-2 pt-2 border-t border-divider">
           <button
             type="button"
             onClick={() => onChange(todayStr)}
@@ -194,7 +194,7 @@ export default function DateTripleModal({ fields, isOpen, onClose }: DateTripleM
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
             transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-[#f8f7f6] rounded-2xl shadow-2xl border border-gray-200 p-5 max-w-[780px] w-[95vw]"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-[#f8f7f6] rounded-2xl shadow-2xl border border-divider p-5 max-w-[780px] w-[95vw]"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[15px] font-bold text-gray-900">날짜 설정</h3>

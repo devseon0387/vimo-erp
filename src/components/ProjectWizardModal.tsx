@@ -353,7 +353,7 @@ export default function ProjectWizardModal({
                             : 'bg-gray-200'
                         }`}
                         initial={false}
-                        animate={{ backgroundColor: currentStep > step.number ? '#22c55e' : currentStep === step.number ? '#ea580c' : '#e5e5e5' }}
+                        animate={{ backgroundColor: currentStep > step.number ? '#22c55e' : currentStep === step.number ? '#f97316' : '#e5e5e5' }}
                         transition={{ duration: 0.3 }}
                       />
                     ))}
@@ -393,8 +393,8 @@ export default function ProjectWizardModal({
                           onClick={() => setStartType('with-client')}
                           className={`w-full p-4 rounded-xl border-[1.5px] transition-all text-left ${
                             startType === 'with-client'
-                              ? 'border-orange-500 bg-orange-50/50 shadow-[0_0_0_3px_rgba(234,88,12,0.08)]'
-                              : 'border-gray-200 hover:border-gray-300'
+                              ? 'border-orange-500 bg-orange-50/50 shadow-[0_0_0_3px_rgba(249,115,22,0.08)]'
+                              : 'border-divider hover:border-gray-300'
                           }`}
                           whileTap={{ scale: 0.99 }}
                         >
@@ -429,8 +429,8 @@ export default function ProjectWizardModal({
                           onClick={() => setStartType('project-only')}
                           className={`w-full p-4 rounded-xl border-[1.5px] transition-all text-left ${
                             startType === 'project-only'
-                              ? 'border-orange-500 bg-orange-50/50 shadow-[0_0_0_3px_rgba(234,88,12,0.08)]'
-                              : 'border-gray-200 hover:border-gray-300'
+                              ? 'border-orange-500 bg-orange-50/50 shadow-[0_0_0_3px_rgba(249,115,22,0.08)]'
+                              : 'border-divider hover:border-gray-300'
                           }`}
                           whileTap={{ scale: 0.99 }}
                         >
@@ -524,7 +524,7 @@ export default function ProjectWizardModal({
                         {/* 기존 클라이언트 선택 */}
                         <div
                           className={`rounded-xl border-2 cursor-pointer transition-colors ${
-                            clientOption === 'existing' ? 'border-orange-500 bg-white' : 'border-gray-200 hover:border-orange-300'
+                            clientOption === 'existing' ? 'border-orange-500 bg-white' : 'border-divider hover:border-orange-300'
                           }`}
                           onClick={() => setClientOption('existing')}
                         >
@@ -600,7 +600,7 @@ export default function ProjectWizardModal({
                         {startType === 'with-client' && (
                           <div
                             className={`rounded-xl border-2 cursor-pointer transition-colors ${
-                              clientOption === 'new' ? 'border-orange-500 bg-white' : 'border-gray-200 hover:border-orange-300'
+                              clientOption === 'new' ? 'border-orange-500 bg-white' : 'border-divider hover:border-orange-300'
                             }`}
                             onClick={() => setClientOption('new')}
                           >
@@ -649,7 +649,7 @@ export default function ProjectWizardModal({
                         {/* 건너뛰기 */}
                         <motion.button
                           className={`w-full rounded-xl border-2 transition-colors text-left ${
-                            clientOption === 'skip' ? 'border-orange-500 bg-white' : 'border-gray-200 hover:border-orange-300'
+                            clientOption === 'skip' ? 'border-orange-500 bg-white' : 'border-divider hover:border-orange-300'
                           }`}
                           onClick={() => setClientOption('skip')}
                           whileTap={{ scale: 0.99 }}
@@ -777,7 +777,7 @@ export default function ProjectWizardModal({
                         <>
                           <div className="space-y-3">
                             <motion.div
-                              className={`rounded-xl border-2 transition-colors cursor-pointer ${addProjectNow === true ? 'border-orange-500 bg-white' : 'border-gray-200 hover:border-orange-300'}`}
+                              className={`rounded-xl border-2 transition-colors cursor-pointer ${addProjectNow === true ? 'border-orange-500 bg-white' : 'border-divider hover:border-orange-300'}`}
                               whileTap={{ scale: 0.99 }}
                               onClick={() => setAddProjectNow(true)}
                             >
@@ -890,7 +890,7 @@ export default function ProjectWizardModal({
                                 className={`rounded-xl border-2 transition-colors ${
                                   addProjectNow === false
                                     ? 'border-orange-500 bg-white'
-                                    : disabled ? 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-50' : 'border-gray-200 hover:border-orange-300 cursor-pointer'
+                                    : disabled ? 'border-divider bg-gray-50 cursor-not-allowed opacity-50' : 'border-divider hover:border-orange-300 cursor-pointer'
                                 }`}
                                 onClick={() => { if (disabled) return; setAddProjectNow(false); goToStep(5); }}
                                 whileTap={!disabled ? { scale: 0.99 } : {}}
@@ -937,7 +937,7 @@ export default function ProjectWizardModal({
                           className={`w-full p-6 rounded-xl border-2 transition-colors cursor-pointer ${
                             shouldCreateEpisodes === true
                               ? 'border-orange-500 bg-white cursor-default'
-                              : 'border-gray-200 hover:border-orange-300'
+                              : 'border-divider hover:border-orange-300'
                           }`}
                           whileTap={{ scale: 0.99 }}
                           onClick={() => {
@@ -1117,7 +1117,7 @@ export default function ProjectWizardModal({
                           className={`w-full p-6 rounded-xl border-2 transition-colors text-left ${
                             shouldCreateEpisodes === false
                               ? 'border-orange-500 bg-white'
-                              : 'border-gray-200 hover:border-orange-300'
+                              : 'border-divider hover:border-orange-300'
                           }`}
                           whileTap={{ scale: 0.99 }}
                         >
@@ -1238,7 +1238,7 @@ export default function ProjectWizardModal({
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsClientDropdownOpen(false)} />
           <motion.div
-            className="fixed z-[61] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+            className="fixed z-[61] bg-white border border-divider rounded-xl shadow-2xl overflow-hidden"
             style={{ top: clientDropdownPos.top, left: clientDropdownPos.left, width: clientDropdownPos.width }}
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1247,7 +1247,7 @@ export default function ProjectWizardModal({
           >
             {/* 검색 */}
             <div className="px-3 pt-3 pb-2">
-              <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+              <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border border-divider">
                 <Search size={14} className="text-gray-400 flex-shrink-0" />
                 <input
                   autoFocus
@@ -1309,7 +1309,7 @@ export default function ProjectWizardModal({
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsCategoryDropdownOpen(false)} />
           <motion.div
-            className="fixed z-[61] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+            className="fixed z-[61] bg-white border border-divider rounded-xl shadow-2xl overflow-hidden"
             style={{ top: categoryDropdownPos.top, left: categoryDropdownPos.left, width: categoryDropdownPos.width }}
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1349,7 +1349,7 @@ export default function ProjectWizardModal({
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsPartnerDropdownOpen(false)} />
           <motion.div
-            className="fixed z-[61] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+            className="fixed z-[61] bg-white border border-divider rounded-xl shadow-2xl overflow-hidden"
             style={{ top: partnerDropdownPos.top, left: partnerDropdownPos.left, width: partnerDropdownPos.width }}
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1358,7 +1358,7 @@ export default function ProjectWizardModal({
           >
             {/* 검색 */}
             <div className="px-3 pt-3 pb-2">
-              <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+              <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border border-divider">
                 <Search size={14} className="text-gray-400 flex-shrink-0" />
                 <input
                   autoFocus

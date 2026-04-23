@@ -350,8 +350,8 @@ export default function SettlementPage() {
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-3">
-                          <div className={`text-[16px] font-extrabold tabular-nums ${row.unpaidAmount > 0 ? 'text-[#ea580c]' : 'text-[#16a34a]'}`}>
-                            {row.unpaidAmount > 0 ? row.unpaidAmount.toLocaleString() : '0'}<span className={`text-[11px] font-medium ${row.unpaidAmount > 0 ? 'text-[#ea580c]' : 'text-[#16a34a]'}`}>원</span>
+                          <div className={`text-[16px] font-extrabold tabular-nums ${row.unpaidAmount > 0 ? 'text-[#f97316]' : 'text-[#16a34a]'}`}>
+                            {row.unpaidAmount > 0 ? row.unpaidAmount.toLocaleString() : '0'}<span className={`text-[11px] font-medium ${row.unpaidAmount > 0 ? 'text-[#f97316]' : 'text-[#16a34a]'}`}>원</span>
                           </div>
                           <div className={`text-[10px] ${row.unpaidAmount > 0 ? 'text-[#a8a29e]' : 'text-[#16a34a]'}`}>
                             {row.unpaidAmount > 0

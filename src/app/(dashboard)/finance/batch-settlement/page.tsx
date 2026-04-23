@@ -377,7 +377,7 @@ export default function BatchSettlementPage() {
               : isMissing
                 ? 'border-dashed border-orange-300 bg-orange-50/30'
                 : 'border-divider bg-[#fafaf9]'
-          } ${isOpen ? 'border-orange-500 bg-white shadow-[0_0_0_3px_rgba(234,88,12,0.08)]' : 'hover:border-[#d6cec8]'}`}
+          } ${isOpen ? 'border-orange-500 bg-white shadow-[0_0_0_3px_rgba(249,115,22,0.08)]' : 'hover:border-[#d6cec8]'}`}
         >
           {selectedPartner ? (
             <>
@@ -644,7 +644,7 @@ export default function BatchSettlementPage() {
                             updateEdit(epId, 'cost', raw ? parseInt(raw) : 0);
                           }}
                           placeholder="0원"
-                          className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'cost', row.missing.cost)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
+                          className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'cost', row.missing.cost)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
                         />
                       </div>
                     </div>
@@ -664,7 +664,7 @@ export default function BatchSettlementPage() {
                           updateEdit(epId, 'mgmt', raw ? parseInt(raw) : 0);
                         }}
                         placeholder="0원"
-                        className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'mgmt', row.missing.mgmt)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
+                        className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'mgmt', row.missing.mgmt)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
                       />
                     </div>
 

@@ -1502,13 +1502,13 @@ export default function ProjectDetailPage() {
                                 ? (() => { const d = new Date(episode.startDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()
                                 : '미정'}
                               {episode.dueDate && (
-                                <> <span className="text-[#d6d3d1]">→</span> <span className="text-[#ea580c] font-semibold">{(() => { const d = new Date(episode.dueDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()}</span></>
+                                <> <span className="text-[#d6d3d1]">→</span> <span className="text-[#f97316] font-semibold">{(() => { const d = new Date(episode.dueDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()}</span></>
                               )}
                             </span>
                             {episode.workContent.length > 0 && (
                               <div className="hidden sm:flex items-center gap-1">
                                 {episode.workContent.map((work, idx) => (
-                                  <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-[#fff7ed] border-[#fed7aa] text-[#ea580c]">
+                                  <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-[#fff7ed] border-[#fed7aa] text-[#f97316]">
                                     {work}
                                   </span>
                                 ))}
@@ -1807,7 +1807,7 @@ export default function ProjectDetailPage() {
                               ? (() => { const d = new Date(episode.startDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()
                               : '미정'}
                             {episode.dueDate && (
-                              <> <span className="text-[#d6d3d1]">→</span> <span className="text-[#ea580c] font-semibold">{(() => { const d = new Date(episode.dueDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()}</span></>
+                              <> <span className="text-[#d6d3d1]">→</span> <span className="text-[#f97316] font-semibold">{(() => { const d = new Date(episode.dueDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()}</span></>
                             )}
                           </span>
                           {episode.workContent.length > 0 && (
@@ -1816,7 +1816,7 @@ export default function ProjectDetailPage() {
                                 <span key={idx} className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
                                   episode.status === 'completed'
                                     ? 'bg-[#f5f5f4] border-divider text-[#78716c]'
-                                    : 'bg-[#fff7ed] border-[#fed7aa] text-[#ea580c]'
+                                    : 'bg-[#fff7ed] border-[#fed7aa] text-[#f97316]'
                                 }`}>
                                   {work}
                                 </span>

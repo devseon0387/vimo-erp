@@ -507,7 +507,7 @@ export default function PartnerSettlementDetailPage() {
                   <p style={{ fontSize: '11px', color: '#a8a29e', margin: '2px 0 0' }}>발행일 {new Date().toLocaleDateString('ko-KR')}</p>
                 </div>
               </div>
-              <div style={{ height: '2px', background: 'linear-gradient(to right, #ea580c, #f97316)', borderRadius: '1px', marginBottom: '24px' }} />
+              <div style={{ height: '2px', background: 'linear-gradient(to right, #f97316, #f97316)', borderRadius: '1px', marginBottom: '24px' }} />
 
               {/* 요약 */}
               <div style={{ display: 'flex', gap: '16px', marginBottom: '28px' }}>

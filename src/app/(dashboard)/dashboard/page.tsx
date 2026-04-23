@@ -330,7 +330,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#ea580c' }} />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#f97316' }} />
       </div>
     );
   }
@@ -372,13 +372,13 @@ export default function DashboardPage() {
             fontSize:     '13px',
             fontWeight:   600,
             color:        '#ffffff',
-            background:   '#ea580c',
+            background:   '#f97316',
             border:       'none',
             cursor:       'pointer',
             transition:   'background 0.12s',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = '#c2410c'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#ea580c'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#f97316'; }}
         >
           <Sparkles size={13} /> 새 프로젝트
         </button>
@@ -387,7 +387,7 @@ export default function DashboardPage() {
       {/* ── 스탯 스트립 ── */}
       <div style={{ ...CARD, marginBottom: '20px', overflow: 'hidden' }} className="flex flex-wrap sm:flex-nowrap">
         {[
-          { value: stats.inProgress,                 label: '진행 중',           color: '#ea580c' },
+          { value: stats.inProgress,                 label: '진행 중',           color: '#f97316' },
           { value: stats.total,                      label: '전체 프로젝트',     color: '#1c1917' },
           { value: reviewingEpisodes.length,          label: '검수 대기',         color: reviewingEpisodes.length  > 0 ? '#c2410c' : '#1c1917' },
           { value: upcomingDeadlines.length,          label: 'D-7 마감',          color: upcomingDeadlines.length  > 0 ? '#dc2626' : '#1c1917' },
@@ -426,7 +426,7 @@ export default function DashboardPage() {
             {activeTab === key && (
               <motion.div
                 layoutId="lg-tab"
-                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1.5px', background: '#ea580c', borderRadius: '99px' }}
+                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1.5px', background: '#f97316', borderRadius: '99px' }}
                 transition={{ type: 'spring', stiffness: 420, damping: 34 }}
               />
             )}
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                 {μ('Projects')}
                 <h2 style={{ fontSize: '17px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.015em' }}>진행 중인 프로젝트</h2>
               </div>
-              <Link href="/projects" style={{ fontSize: '12px', fontWeight: 600, color: '#ea580c' }}>전체 보기 →</Link>
+              <Link href="/projects" style={{ fontSize: '12px', fontWeight: 600, color: '#f97316' }}>전체 보기 →</Link>
             </div>
 
             {projects.filter(p => p.status === 'in_progress' || p.status === 'planning').length === 0 ? (
@@ -466,7 +466,7 @@ export default function DashboardPage() {
                 <FolderOpen style={{ margin: '0 auto 12px', color: '#fcd9bd', display: 'block' }} size={32} />
                 <p style={{ fontWeight: 600, color: '#78716c', fontSize: '14px', marginBottom: '4px' }}>진행 중인 프로젝트가 없어요</p>
                 <p style={{ color: '#c4b5a5', fontSize: '12px', marginBottom: '20px' }}>새 프로젝트를 시작해보세요</p>
-                <button onClick={() => setIsWizardOpen(true)} style={{ ...CARD, display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, color: '#ea580c', borderRadius: '999px' }}>
+                <button onClick={() => setIsWizardOpen(true)} style={{ ...CARD, display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, color: '#f97316', borderRadius: '999px' }}>
                   <Sparkles size={13} /> 프로젝트 시작
                 </button>
               </div>
@@ -502,7 +502,7 @@ export default function DashboardPage() {
                       <div style={{ padding: '0 8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ flex: 1, height: '3px', borderRadius: '99px', background: '#f0ece9', overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: pct >= 80 ? '#16a34a' : '#ea580c', borderRadius: '99px', transition: 'width 0.5s' }} />
+                            <div style={{ width: `${pct}%`, height: '100%', background: pct >= 80 ? '#16a34a' : '#f97316', borderRadius: '99px', transition: 'width 0.5s' }} />
                           </div>
                           <span style={{ fontSize: '11px', fontWeight: 600, color: '#a8a29e', flexShrink: 0 }}>{pct}%</span>
                         </div>
@@ -528,7 +528,7 @@ export default function DashboardPage() {
                   <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1c1917', letterSpacing: '-0.01em' }}>검수 대기</h3>
                 </div>
                 {reviewingEpisodes.length > 0 && (
-                  <span style={{ fontSize: '24px', fontWeight: 700, color: '#ea580c', letterSpacing: '-0.03em' }}>{reviewingEpisodes.length}</span>
+                  <span style={{ fontSize: '24px', fontWeight: 700, color: '#f97316', letterSpacing: '-0.03em' }}>{reviewingEpisodes.length}</span>
                 )}
               </div>
               {reviewingEpisodes.length === 0 ? (
@@ -542,7 +542,7 @@ export default function DashboardPage() {
                     onMouseEnter={e => e.currentTarget.style.background = '#f9f7f5'}
                     onMouseLeave={e => e.currentTarget.style.background = ''}
                   >
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ea580c', flexShrink: 0 }} />
+                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f97316', flexShrink: 0 }} />
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: '12px', fontWeight: 600, color: '#1c1917', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.title}</p>
                       {proj && <p style={{ fontSize: '11px', color: '#a8a29e', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proj.title}</p>}
@@ -602,7 +602,7 @@ export default function DashboardPage() {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'linear-gradient(135deg,#ea580c,#f97316)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '8px', background: 'linear-gradient(135deg,#f97316,#f97316)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#fff' }}>
                           {partner.name.charAt(0)}
                         </div>
                         <p style={{ fontSize: '13px', fontWeight: 600, color: '#1c1917' }}>{partner.name}</p>
@@ -611,10 +611,10 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ display: 'flex', borderRadius: '99px', overflow: 'hidden', height: '3px', background: '#f0ece9' }}>
                       <div style={{ width: `${t > 0 ? (c/t)*100 : 0}%`, background: '#16a34a', transition: 'width 0.5s' }} />
-                      <div style={{ width: `${t > 0 ? (ip/t)*100 : 0}%`, background: '#ea580c', transition: 'width 0.5s' }} />
+                      <div style={{ width: `${t > 0 ? (ip/t)*100 : 0}%`, background: '#f97316', transition: 'width 0.5s' }} />
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-                      {ip > 0 && <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: 600 }}>진행 {ip}</span>}
+                      {ip > 0 && <span style={{ fontSize: '10px', color: '#f97316', fontWeight: 600 }}>진행 {ip}</span>}
                       {w  > 0 && <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: 600 }}>대기 {w}</span>}
                       {c  > 0 && <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 600 }}>완료 {c}</span>}
                     </div>
@@ -645,7 +645,7 @@ export default function DashboardPage() {
           <div style={{ ...CARD, display: 'flex', overflow: 'hidden' }}>
             {[
               { en: 'Revenue',    kr: '이번 달 총 매출',  value: (thisMonthRevenue         / 10000).toFixed(0), sub: `신규 ${thisMonthProjects.length}건`, color: '#1c1917' },
-              { en: 'Partner',    kr: '파트너 지급',      value: (thisMonthPartnerPayment  / 10000).toFixed(0), sub: '\u00a0',                              color: '#ea580c' },
+              { en: 'Partner',    kr: '파트너 지급',      value: (thisMonthPartnerPayment  / 10000).toFixed(0), sub: '\u00a0',                              color: '#f97316' },
               { en: 'Management', kr: '매니징 비용',      value: (thisMonthManagementFee   / 10000).toFixed(0), sub: '\u00a0',                              color: '#f97316' },
               { en: 'Reserve',    kr: '유보금',           value: (thisMonthMargin          / 10000).toFixed(0), sub: `마진율 ${thisMonthAvgMarginRate}%`,   color: '#0891b2' },
             ].map(({ en, kr, value, sub, color }, i, arr) => (
@@ -691,7 +691,7 @@ export default function DashboardPage() {
                         <p style={{ fontSize: '11px', color: '#a8a29e', marginTop: '1px' }}>{project.client}</p>
                       </div>
                       <p style={{ fontSize: '14px', fontWeight: 700, color: '#1c1917', textAlign: 'right' }}>{(project.budget.totalAmount / 10000).toFixed(0)}<span style={{ fontSize: '10px', opacity: 0.4 }}>만</span></p>
-                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#ea580c',  textAlign: 'right' }}>{(project.budget.partnerPayment / 10000).toFixed(0)}<span style={{ fontSize: '10px', opacity: 0.4 }}>만</span></p>
+                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#f97316',  textAlign: 'right' }}>{(project.budget.partnerPayment / 10000).toFixed(0)}<span style={{ fontSize: '10px', opacity: 0.4 }}>만</span></p>
                       <p style={{ fontSize: '14px', fontWeight: 700, color: '#16a34a',  textAlign: 'right' }}>{(res / 10000).toFixed(0)}<span style={{ fontSize: '10px', opacity: 0.4 }}>만</span></p>
                     </div>
                   );
@@ -700,7 +700,7 @@ export default function DashboardPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 90px', alignItems: 'center', padding: '12px 24px', background: '#faf9f8', borderTop: rowDivider }}>
                   <p style={{ fontSize: '11px', fontWeight: 700, color: '#c4b5a5', letterSpacing: '0.1em', textTransform: 'uppercase' }}>합계</p>
                   <p style={{ fontSize: '15px', fontWeight: 700, color: '#1c1917', textAlign: 'right' }}>{(thisMonthRevenue / 10000).toFixed(0)}<span style={{ fontSize: '10px', opacity: 0.4 }}>만</span></p>
-                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#ea580c',  textAlign: 'right' }}>{(thisMonthPartnerPayment / 10000).toFixed(0)}<span style={{ fontSize: '10px', opacity: 0.4 }}>만</span></p>
+                  <p style={{ fontSize: '15px', fontWeight: 700, color: '#f97316',  textAlign: 'right' }}>{(thisMonthPartnerPayment / 10000).toFixed(0)}<span style={{ fontSize: '10px', opacity: 0.4 }}>만</span></p>
                   <p style={{ fontSize: '15px', fontWeight: 700, color: '#16a34a',  textAlign: 'right' }}>{(thisMonthMargin / 10000).toFixed(0)}<span style={{ fontSize: '10px', opacity: 0.4 }}>만</span></p>
                 </div>
               </div>
@@ -1472,7 +1472,7 @@ function StatusBadge({ status }: { status: string }) {
   const statusMap: Record<string, { label: string; style: React.CSSProperties }> = {
     active: { label: '진행 중', style: { background: 'rgba(22,163,74,0.1)', color: '#16a34a' } },
     standby: { label: '대기', style: { background: 'rgba(37,99,235,0.1)', color: '#2563eb' } },
-    dormant: { label: '휴면', style: { background: 'rgba(234,88,12,0.1)', color: '#ea580c' } },
+    dormant: { label: '휴면', style: { background: 'rgba(249,115,22,0.1)', color: '#f97316' } },
     inactive: { label: '비활성', style: { background: 'rgba(148,163,184,0.15)', color: '#64748b' } },
   };
 

@@ -484,7 +484,7 @@ export default function ExpensesPage() {
               <div className="p-5 space-y-3">
                 <div>
                   <label className="text-[11px] font-semibold text-[#a8a29e] block mb-1">제목 *</label>
-                  <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="지출 내용" className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[14px] font-medium focus:border-[#ea580c] focus:outline-none transition-colors" />
+                  <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="지출 내용" className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[14px] font-medium focus:border-[#f97316] focus:outline-none transition-colors" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -495,14 +495,14 @@ export default function ExpensesPage() {
                         onChange={e => setForm({ ...form, amount: formatAmount(e.target.value) })}
                         placeholder="0"
                         inputMode="numeric"
-                        className="w-full px-3 py-2 pr-7 border-[1.5px] border-divider rounded-[10px] text-[14px] font-medium focus:border-[#ea580c] focus:outline-none transition-colors tabular-nums"
+                        className="w-full px-3 py-2 pr-7 border-[1.5px] border-divider rounded-[10px] text-[14px] font-medium focus:border-[#f97316] focus:outline-none transition-colors tabular-nums"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#a8a29e]">원</span>
                     </div>
                   </div>
                   <div>
                     <label className="text-[11px] font-semibold text-[#a8a29e] block mb-1">날짜</label>
-                    <input type="date" value={form.expenseDate} onChange={e => setForm({ ...form, expenseDate: e.target.value })} className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[14px] font-medium focus:border-[#ea580c] focus:outline-none transition-colors" />
+                    <input type="date" value={form.expenseDate} onChange={e => setForm({ ...form, expenseDate: e.target.value })} className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[14px] font-medium focus:border-[#f97316] focus:outline-none transition-colors" />
                   </div>
                 </div>
                 <div>
@@ -523,11 +523,11 @@ export default function ExpensesPage() {
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold text-[#a8a29e] block mb-1">지출자</label>
-                  <input value={form.spenderName} onChange={e => setForm({ ...form, spenderName: e.target.value })} placeholder="이름" className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[13px] focus:border-[#ea580c] focus:outline-none transition-colors" />
+                  <input value={form.spenderName} onChange={e => setForm({ ...form, spenderName: e.target.value })} placeholder="이름" className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[13px] focus:border-[#f97316] focus:outline-none transition-colors" />
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold text-[#a8a29e] block mb-1">메모</label>
-                  <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="선택사항" className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[13px] focus:border-[#ea580c] focus:outline-none transition-colors" />
+                  <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="선택사항" className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[13px] focus:border-[#f97316] focus:outline-none transition-colors" />
                 </div>
               </div>
               <div className="px-5 pb-5">
@@ -567,7 +567,7 @@ export default function ExpensesPage() {
                     value={cancelReason}
                     onChange={e => setCancelReason(e.target.value)}
                     placeholder="ex) 더 이상 사용하지 않음"
-                    className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[13px] focus:border-[#ea580c] focus:outline-none transition-colors"
+                    className="w-full px-3 py-2 border-[1.5px] border-divider rounded-[10px] text-[13px] focus:border-[#f97316] focus:outline-none transition-colors"
                   />
                 </div>
               </div>

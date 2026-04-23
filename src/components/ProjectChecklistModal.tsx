@@ -124,7 +124,7 @@ export default function ProjectChecklistModal({
         {/* 본문 */}
         <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
           {/* 프로젝트 준비 */}
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-6 border-b border-divider">
             <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
               프로젝트 준비
@@ -198,7 +198,7 @@ export default function ProjectChecklistModal({
                     <div
                       key={episode.id}
                       className={`border rounded-lg transition-all ${
-                        isCompleted ? 'border-green-200 bg-green-50/30' : 'border-gray-200 bg-white'
+                        isCompleted ? 'border-green-200 bg-green-50/30' : 'border-divider bg-white'
                       }`}
                     >
                       {/* 회차 헤더 */}
@@ -293,7 +293,7 @@ export default function ProjectChecklistModal({
         </div>
 
         {/* 푸터 */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+        <div className="px-6 py-4 bg-gray-50 border-t border-divider flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md font-medium text-sm"
