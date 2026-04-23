@@ -113,7 +113,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* 필터 탭 */}
-      <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-200 inline-flex gap-2">
+      <div className="bg-white rounded-2xl p-2 shadow-sm border border-divider inline-flex gap-2">
         {filters.map(({ key, label }) => (
           <button key={key} onClick={() => { setFilter(key); setSelected(new Set()); }} className="relative px-5 py-2.5 rounded-xl font-semibold text-sm">
             {filter === key && (
@@ -161,7 +161,7 @@ export default function PaymentsPage() {
       )}
 
       {/* 테이블 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-divider overflow-hidden">
         <div className="overflow-x-auto">
           <div className="min-w-[750px]">
             <div className="px-6 py-3 bg-gray-50 grid grid-cols-[32px_1fr_100px_120px_100px_100px_80px] gap-4 text-xs font-semibold text-gray-400 uppercase tracking-wide items-center">

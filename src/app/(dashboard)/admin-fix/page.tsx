@@ -35,7 +35,7 @@ export default function AdminFixPage() {
         {loading ? '처리 중...' : '비용 재계산 실행'}
       </button>
       {result && (
-        <pre className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm overflow-auto max-h-[600px] whitespace-pre-wrap">
+        <pre className="mt-6 p-4 bg-gray-50 rounded-xl border border-divider text-sm overflow-auto max-h-[600px] whitespace-pre-wrap">
           {result}
         </pre>
       )}

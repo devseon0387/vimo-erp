@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Lightbulb } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { getFeedbacks, updateFeedbackStatus } from '@/lib/supabase/db';
 import type { Feedback, FeedbackStatus } from '@/types';
@@ -60,12 +62,10 @@ export default function FeedbackPage() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#1c1917', marginBottom: '24px' }}>
-        개선사항
-      </h1>
+      <h1 className="text-page mb-6">개선사항</h1>
 
-      {/* 필터 탭 */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+      {/* 필터 탭 — 매니지먼트 스타일 */}
+      <div className="inline-flex gap-1 p-1 bg-white border border-divider rounded-xl mb-6">
         {tabs.map((tab) => {
           const count =
             tab.key === 'all'
@@ -76,19 +76,23 @@ export default function FeedbackPage() {
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '10px',
-                border: 'none',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: isActive ? '#1c1917' : '#f5f3f1',
-                color: isActive ? '#fff' : '#78716c',
-                transition: 'background 0.15s, color 0.15s',
-              }}
+              className="relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[13px] sm:text-[14px] font-semibold inline-flex items-center gap-1.5"
             >
-              {tab.label} ({count})
+              {isActive && (
+                <motion.div
+                  layoutId="feedback-tab-pill"
+                  className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
+              <span className={`relative z-10 ${isActive ? 'text-white' : 'text-[#78716c]'}`}>
+                {tab.label}
+              </span>
+              <span className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                isActive ? 'bg-white/22 text-white' : 'bg-gray-100 text-[#78716c]'
+              }`}>
+                {count}
+              </span>
             </button>
           );
         })}
@@ -101,7 +105,7 @@ export default function FeedbackPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontSize: '36px', marginBottom: '12px' }}>💡</div>
+          <Lightbulb size={36} style={{ marginBottom: '12px', color: '#a8a29e', display: 'inline-block' }} />
           <p style={{ color: '#a8a29e', fontSize: '14px' }}>
             {filter === 'all'
               ? '아직 등록된 개선사항이 없습니다.'

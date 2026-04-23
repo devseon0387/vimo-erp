@@ -91,6 +91,21 @@ html, body { cursor: default; }
   .text-section { font-size: 13px; font-weight: 700; color: var(--color-ink-900); }
   .text-page    { font-size: 20px; font-weight: 700; color: var(--color-ink-900); }
   .text-kicker  { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-ink-400); }
+
+  /* ── Surface utilities ── */
+  .bg-card            { background: var(--card-bg); }
+  .bg-ink-50          { background: var(--color-ink-50); }
+  .bg-ink-100         { background: var(--color-ink-100); }
+  .border-divider     { border-color: var(--color-ink-200); }
+
+  /* ── 상태 배지 팔레트 (통일) ── */
+  .badge-active-bg   { background: var(--color-ok-50); color: var(--color-ok-600); }
+  .badge-standby-bg  { background: #eff6ff; color: #1d4ed8; }
+  .badge-dormant-bg  { background: var(--color-warn-50); color: #b45309; }
+  .badge-inactive-bg { background: var(--color-ink-100); color: var(--color-ink-600); }
+
+  /* ── Modal overlay 표준 ── */
+  .modal-overlay { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); }
 }
 
 /* ── Scrollbar ── */

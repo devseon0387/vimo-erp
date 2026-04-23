@@ -110,18 +110,18 @@ export default function ExecutivesPage() {
 
       {/* 통계 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+        <div className="bg-white rounded-2xl border border-divider p-5">
           <p className="text-2xl font-bold text-gray-900">{executives.length}</p>
           <p className="text-sm text-gray-500 mt-1">전체</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+        <div className="bg-white rounded-2xl border border-divider p-5">
           <p className="text-2xl font-bold text-green-600">{executives.filter((p) => p.status === 'active').length}</p>
           <p className="text-sm text-gray-500 mt-1">활성</p>
         </div>
       </div>
 
       {/* 목록 */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-divider overflow-hidden">
         <div className="p-6">
           {executives.length === 0 ? (
             <div className="text-center py-16">
@@ -157,7 +157,7 @@ export default function ExecutivesPage() {
                 >
                   <X size={24} className="text-gray-400" />
                 </button>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">새 임원을<br />추가할게요</h2>
+                <h2 className="text-page mb-2">새 임원을<br />추가할게요</h2>
                 <p className="text-sm text-gray-500">임원 정보를 입력해주세요</p>
               </div>
 
@@ -202,7 +202,7 @@ export default function ExecutivesPage() {
                 </div>
               </div>
 
-              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-gray-100 rounded-b-[28px]">
+              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-divider rounded-b-[28px]">
                 <div className="flex gap-3">
                   <button
                     onClick={() => setIsAddModalOpen(false)}
@@ -228,7 +228,7 @@ export default function ExecutivesPage() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
-            className="fixed inset-0 bg-gray-900/60"
+            className="fixed inset-0 bg-black/40"
             onClick={() => setDeleteTarget(null)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
@@ -236,7 +236,7 @@ export default function ExecutivesPage() {
               className="relative bg-white rounded-lg shadow-xl max-w-md w-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-6 py-4 border-b border-gray-200">
+              <div className="px-6 py-4 border-b border-divider">
                 <h2 className="text-xl font-bold text-gray-900">임원 삭제</h2>
               </div>
               <div className="p-6">
@@ -248,7 +248,7 @@ export default function ExecutivesPage() {
                   휴지통으로 이동되며, 30일 이내에 복구할 수 있습니다.
                 </p>
               </div>
-              <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <div className="px-6 py-4 border-t border-divider flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteTarget(null)}
                   className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
@@ -272,7 +272,7 @@ export default function ExecutivesPage() {
 
 function MemberCard({ partner, onDelete }: { partner: Partner; onDelete: (p: Partner) => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-sm transition-all group relative">
+    <div className="bg-white rounded-xl border border-divider p-4 hover:border-gray-300 hover:shadow-sm transition-all group relative">
       <button
         onClick={() => onDelete(partner)}
         className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-all"
@@ -302,7 +302,7 @@ function MemberCard({ partner, onDelete }: { partner: Partner; onDelete: (p: Par
         </p>
       )}
 
-      <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
+      <div className="mt-3 pt-3 border-t border-divider space-y-1">
         {partner.phone && (
           <div className="flex items-center gap-1.5 text-xs text-gray-500">
             <Phone size={11} className="flex-shrink-0" />

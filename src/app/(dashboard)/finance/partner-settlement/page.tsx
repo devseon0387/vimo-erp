@@ -208,12 +208,12 @@ export default function SettlementPage() {
       {/* 헤더 */}
       <div className="space-y-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">정산 관리</h1>
+          <h1 className="text-page">정산 관리</h1>
           <p className="text-gray-500 mt-1 text-sm">{selectedDate.year}년 {selectedDate.month}월</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           {/* 탭 */}
-          <div className="inline-flex gap-0.5 sm:gap-1 p-1 bg-white border border-[#ede9e6] rounded-xl">
+          <div className="inline-flex gap-0.5 sm:gap-1 p-1 bg-white border border-divider rounded-xl">
             {tabs.map(tab => (
               <button
                 key={tab.key}
@@ -232,7 +232,7 @@ export default function SettlementPage() {
             ))}
           </div>
           {/* 월 이동 */}
-          <div className="flex items-center gap-1 bg-white border border-[#ede9e6] rounded-[10px] px-1 py-1">
+          <div className="flex items-center gap-1 bg-white border border-divider rounded-[10px] px-1 py-1">
             <button onClick={prevMonth} disabled={isMinMonth} className={`p-1.5 rounded-lg transition-colors ${isMinMonth ? 'invisible' : 'hover:bg-gray-100'}`}>
               <ChevronLeft size={14} className="text-[#a8a29e]" />
             </button>
@@ -258,7 +258,7 @@ export default function SettlementPage() {
       </div>
 
       {/* 통합 카드: 통계 + 테이블 */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100" style={{ overflow: 'clip' }}>
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-divider" style={{ overflow: 'clip' }}>
         {/* 통계 바 */}
         <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-[#f0ece9]">
           <div className="flex items-baseline justify-between mb-1.5">

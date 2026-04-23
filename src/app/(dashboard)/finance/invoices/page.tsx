@@ -96,22 +96,22 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">세금계산서 관리</h1>
-        <p className="text-gray-500 mt-2">세금계산서 발행 현황을 확인하고 관리하세요</p>
+        <h1 className="text-page">세금계산서 관리</h1>
+        <p className="text-caption mt-0.5">세금계산서 발행 현황을 확인하고 관리하세요</p>
       </div>
 
-      {/* 필터 탭 */}
-      <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-200 inline-flex gap-2">
+      {/* 필터 탭 — 매니지먼트 스타일 */}
+      <div className="inline-flex gap-1 p-1 bg-white border border-divider rounded-xl">
         {filters.map(({ key, label }) => (
-          <button key={key} onClick={() => { setFilter(key); setSelected(new Set()); }} className="relative px-5 py-2.5 rounded-xl font-semibold text-sm">
+          <button key={key} onClick={() => { setFilter(key); setSelected(new Set()); }} className="relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[13px] sm:text-[14px] font-semibold">
             {filter === key && (
               <motion.div
                 layoutId="invoice-filter-pill"
-                className="absolute inset-0 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/30"
+                className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               />
             )}
-            <span className={`relative transition-colors duration-200 ${filter === key ? 'text-white' : 'text-gray-600 hover:text-gray-900'}`}>
+            <span className={`relative transition-colors duration-200 ${filter === key ? 'text-white' : 'text-[#78716c]'}`}>
               {label}
             </span>
           </button>
@@ -144,7 +144,7 @@ export default function InvoicesPage() {
       )}
 
       {/* 테이블 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-divider overflow-hidden">
         <div className="overflow-x-auto">
           <div className="min-w-[700px]">
             <div className="px-6 py-3 bg-gray-50 grid grid-cols-[32px_1fr_100px_120px_100px_80px_80px] gap-4 text-xs font-semibold text-gray-400 uppercase tracking-wide items-center">

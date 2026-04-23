@@ -44,7 +44,7 @@ export default function OperationsPage() {
             <Link
               key={block.href}
               href={block.href}
-              className="group bg-white rounded-2xl border border-gray-200 p-6 hover:border-gray-300 hover:shadow-md transition-all duration-200"
+              className="group bg-white rounded-2xl border border-divider p-6 hover:border-gray-300 hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start justify-between">
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:bg-gray-200 transition-colors">

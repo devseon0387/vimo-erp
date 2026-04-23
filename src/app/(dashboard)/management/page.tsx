@@ -30,7 +30,7 @@ export default function ManagementPage() {
       {/* 헤더 */}
       <div className="space-y-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">매니지먼트</h1>
+          <h1 className="text-page">매니지먼트</h1>
           <p className="text-gray-500 mt-1 text-sm">
             {now.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
           </p>
@@ -38,7 +38,7 @@ export default function ManagementPage() {
 
         {/* 탭 + 버튼 */}
         <div className="flex items-center justify-between">
-        <div className="inline-flex gap-1 p-1 bg-white border border-[#ede9e6] rounded-xl">
+        <div className="inline-flex gap-1 p-1 bg-white border border-divider rounded-xl">
           {tabs.map(tab => (
             <button
               key={tab.key}

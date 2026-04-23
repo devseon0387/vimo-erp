@@ -342,8 +342,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   alignItems:     'center',
                   justifyContent: 'center',
                   cursor:         'pointer',
-                  background:     isSel ? 'rgba(234,88,12,0.18)' : 'transparent',
-                  color:          isSel ? '#ea580c' : hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
+                  background:     isSel ? 'rgba(249,115,22,0.2)' : 'transparent',
+                  color:          isSel ? '#f97316' : hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
                   transition:     'background 0.15s, color 0.15s',
                 }}
                 onMouseEnter={e => { if (!isSel) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; } }}
@@ -352,7 +352,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Icon size={19} />
                 {/* 활성 경로 있으면 오렌지 점 */}
                 {hasActive && !isSel && (
-                  <span style={{ position: 'absolute', top: '5px', right: '5px', width: '5px', height: '5px', borderRadius: '50%', background: '#ea580c' }} />
+                  <span style={{ position: 'absolute', top: '5px', right: '5px', width: '5px', height: '5px', borderRadius: '50%', background: '#f97316' }} />
                 )}
               </button>
             );
@@ -403,8 +403,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   alignItems:     'center',
                   justifyContent: 'center',
                   textDecoration: 'none',
-                  background:     sysActive ? 'rgba(234,88,12,0.18)' : 'transparent',
-                  color:          sysActive ? '#ea580c' : 'rgba(255,255,255,0.35)',
+                  background:     sysActive ? 'rgba(249,115,22,0.2)' : 'transparent',
+                  color:          sysActive ? '#f97316' : 'rgba(255,255,255,0.35)',
                   transition:     'background 0.15s, color 0.15s',
                 }}
                 onMouseEnter={e => { if (!sysActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; } }}
@@ -447,7 +447,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               width:          '30px',
               height:         '30px',
               borderRadius:   '9px',
-              background:     '#ea580c',
+              background:     '#f97316',
               display:        'flex',
               alignItems:     'center',
               justifyContent: 'center',
@@ -500,7 +500,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             >
               <div>
-                <p style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#ea580c', lineHeight: 1 }}>
+                <p style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#f97316', lineHeight: 1 }}>
                   {currentSection.label}
                 </p>
               </div>
@@ -551,7 +551,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           cursor:         'pointer',
                           marginBottom:   '1px',
                           transition:     'background 0.12s, color 0.12s',
-                          background:     isActive ? '#ea580c' : 'transparent',
+                          background:     isActive ? '#f97316' : 'transparent',
                           color:          isActive ? '#ffffff' : '#44403c',
                         }}
                         onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#f5f3f1'; } }}
@@ -576,7 +576,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           textDecoration: 'none',
                           marginBottom:   '1px',
                           transition:     'background 0.12s, color 0.12s',
-                          background:     isActive ? '#ea580c' : 'transparent',
+                          background:     isActive ? '#f97316' : 'transparent',
                           color:          isActive ? '#ffffff' : '#44403c',
                         }}
                         onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#f5f3f1'; } }}
@@ -613,7 +613,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     padding:        '7px 10px',
                                     borderRadius:   '8px',
                                     background:     subActive ? '#fef4ed' : 'transparent',
-                                    color:          subActive ? '#ea580c' : '#78716c',
+                                    color:          subActive ? '#f97316' : '#78716c',
                                     textDecoration: 'none',
                                     fontSize:       '14px',
                                     fontWeight:     subActive ? 600 : 400,
@@ -727,7 +727,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         color: '#a8a29e', fontWeight: 500, fontSize: '14px',
                         transition: 'color 0.15s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#ea580c'; }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#f97316'; }}
                       onMouseLeave={e => { e.currentTarget.style.color = '#a8a29e'; }}
                     >
                       {sec.label}
@@ -735,7 +735,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <span style={{ color: '#d6cec8' }}>/</span>
                     {isProjectSubpage ? (
                       <Link href="/projects" style={{ color: '#a8a29e', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = '#ea580c'; }}
+                        onMouseEnter={e => { e.currentTarget.style.color = '#f97316'; }}
                         onMouseLeave={e => { e.currentTarget.style.color = '#a8a29e'; }}
                       >
                         {found.label}
@@ -754,7 +754,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <span style={{ color: '#d6cec8' }}>/</span>
                         {breadcrumbProject && (
                           <Link href={`/projects/${pathname.match(/^\/projects\/([^/]+)/)?.[1]}`} style={{ color: '#a8a29e', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}
-                            onMouseEnter={e => { e.currentTarget.style.color = '#ea580c'; }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#f97316'; }}
                             onMouseLeave={e => { e.currentTarget.style.color = '#a8a29e'; }}
                           >
                             {breadcrumbProject}
@@ -823,8 +823,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       style={{
                         width: '40px', height: '40px', borderRadius: '10px', border: 'none',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        background: isSel ? 'rgba(234,88,12,0.18)' : 'transparent',
-                        color: isSel ? '#ea580c' : hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
+                        background: isSel ? 'rgba(249,115,22,0.2)' : 'transparent',
+                        color: isSel ? '#f97316' : hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
                         marginBottom: '4px',
                       }}
                     >
@@ -845,7 +845,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         style={{
                           width: '40px', height: '40px', borderRadius: '10px', textDecoration: 'none',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: active ? '#ea580c' : 'rgba(255,255,255,0.35)',
+                          color: active ? '#f97316' : 'rgba(255,255,255,0.35)',
                         }}
                       >
                         <Icon size={18} />
@@ -890,7 +890,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             style={{
                               display: 'flex', alignItems: 'center', gap: '10px',
                               padding: '10px 10px', borderRadius: '10px', textDecoration: 'none',
-                              background: active ? '#ea580c' : 'transparent',
+                              background: active ? '#f97316' : 'transparent',
                               color: active ? '#fff' : '#44403c',
                               fontSize: '14px', fontWeight: active ? 600 : 400,
                               marginBottom: '2px',
@@ -946,7 +946,7 @@ function PanelBadge({ label, active }: { label: string; active: boolean }) {
       whiteSpace:  'nowrap',
       flexShrink:  0,
       background:  active ? 'rgba(255,255,255,0.25)' : '#fef4ed',
-      color:       active ? '#ffffff' : '#ea580c',
+      color:       active ? '#ffffff' : '#f97316',
     }}>
       {label}
     </span>

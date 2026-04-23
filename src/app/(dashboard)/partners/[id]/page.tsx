@@ -76,7 +76,7 @@ function DetailSkeleton() {
   return (
     <div className="space-y-4 sm:space-y-6 animate-pulse">
       {/* 헤더 스켈레톤 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-divider p-4 sm:p-6">
         <div className="h-4 w-32 sm:w-40 bg-gray-200 rounded mb-4" />
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-200 rounded-full flex-shrink-0" />
@@ -88,8 +88,8 @@ function DetailSkeleton() {
         </div>
       </div>
       {/* 탭 + 콘텐츠 스켈레톤 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="border-b border-gray-200 px-4 sm:px-6 py-3 flex gap-3 sm:gap-4 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-divider">
+        <div className="border-b border-divider px-4 sm:px-6 py-3 flex gap-3 sm:gap-4 overflow-hidden">
           {[60, 70, 60, 55, 40].map((w, i) => (
             <div key={i} className="h-5 bg-gray-200 rounded flex-shrink-0" style={{ width: w }} />
           ))}
@@ -371,8 +371,8 @@ export default function PartnerDetailPage() {
   return (
     <div className="space-y-6">
       {/* 헤더 - #1 모바일 대응 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+      <div className="bg-white rounded-2xl shadow-sm border border-divider">
+        <div className="px-4 sm:px-6 py-4 border-b border-divider">
           <button
             onClick={handleBack}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
@@ -427,8 +427,8 @@ export default function PartnerDetailPage() {
       </div>
 
       {/* 탭 메뉴 - #4 URL 쿼리 파라미터 연동 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="border-b border-gray-200">
+      <div className="bg-white rounded-2xl shadow-sm border border-divider">
+        <div className="border-b border-divider">
           <div className="flex overflow-x-auto scrollbar-hide space-x-1 px-4 sm:px-6">
             {([
               { key: 'info' as const, label: '기본정보', count: 0 },
@@ -721,7 +721,7 @@ export default function PartnerDetailPage() {
                       <Link
                         key={project.id}
                         href={`/projects/${project.id}`}
-                        className="block p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-orange-400 hover:shadow-lg transition-[border-color,box-shadow]"
+                        className="block p-4 bg-white rounded-lg border-2 border-divider hover:border-orange-400 hover:shadow-lg transition-[border-color,box-shadow]"
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1 min-w-0">
@@ -749,7 +749,7 @@ export default function PartnerDetailPage() {
                           </span>
                         </div>
                         {projectEpisodes.length > 0 && (
-                          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+                          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-divider">
                             <div className="bg-gray-50 rounded p-2">
                               <p className="text-xs text-gray-500">총 회차</p>
                               <p className="text-lg font-semibold text-gray-900">{projectEpisodes.length}</p>
@@ -763,7 +763,7 @@ export default function PartnerDetailPage() {
                           </div>
                         )}
                         {project.budget && project.budget.totalAmount > 0 && (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
+                          <div className="mt-3 pt-3 border-t border-divider">
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-gray-500">예산</span>
                               <span className="font-semibold text-gray-900">
@@ -820,7 +820,7 @@ export default function PartnerDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {partnerIssues.map(issue => (
-                    <div key={issue.id} className="group flex items-start gap-3 bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors">
+                    <div key={issue.id} className="group flex items-start gap-3 bg-white border border-divider rounded-xl p-4 hover:border-gray-300 transition-colors">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">{issue.content}</p>
                         <p className="text-xs text-gray-400 mt-2">
@@ -857,7 +857,7 @@ export default function PartnerDetailPage() {
               </div>
 
               {isAddingHistory && (
-                <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-3">
+                <div className="bg-white border border-divider rounded-xl p-4 mb-4 space-y-3">
                   <p className="text-sm font-semibold text-gray-900 mb-2">새 활동 기록</p>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-gray-600">
@@ -870,7 +870,7 @@ export default function PartnerDetailPage() {
                       <button
                         type="button"
                         onClick={() => setIsHistoryGenerationDropdownOpen(!isHistoryGenerationDropdownOpen)}
-                        className="w-full h-11 px-4 bg-white border-2 border-gray-200 rounded-xl text-left flex items-center justify-between hover:border-orange-300 focus:outline-none focus:border-orange-400 transition-colors"
+                        className="w-full h-11 px-4 bg-white border-2 border-divider rounded-xl text-left flex items-center justify-between hover:border-orange-300 focus:outline-none focus:border-orange-400 transition-colors"
                       >
                         <span className="text-sm font-semibold text-gray-900">{newHistoryEntry.generation}기</span>
                         <ChevronDown
@@ -879,7 +879,7 @@ export default function PartnerDetailPage() {
                         />
                       </button>
                       {isHistoryGenerationDropdownOpen && (
-                        <div className="absolute z-30 w-full mt-1.5 bg-white border-2 border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                        <div className="absolute z-30 w-full mt-1.5 bg-white border-2 border-divider rounded-xl shadow-xl overflow-hidden">
                           <div className="max-h-44 overflow-y-auto">
                             {Array.from({ length: 10 }, (_, i) => i + 1).map((gen) => (
                               <button
@@ -933,7 +933,7 @@ export default function PartnerDetailPage() {
                     <button
                       type="button"
                       onClick={() => setIsAddingHistory(false)}
-                      className="flex-1 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors active:scale-[0.97]"
+                      className="flex-1 py-2 text-sm text-gray-600 bg-white border border-divider rounded-lg hover:bg-gray-50 transition-colors active:scale-[0.97]"
                     >
                       취소
                     </button>
@@ -966,7 +966,7 @@ export default function PartnerDetailPage() {
                         }`}>
                           {entry.generation}기
                         </div>
-                        <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 group-hover:border-gray-300 transition-colors">
+                        <div className="flex-1 bg-white border border-divider rounded-xl p-4 group-hover:border-gray-300 transition-colors">
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2 mb-1">
@@ -1010,7 +1010,7 @@ export default function PartnerDetailPage() {
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
-            className="fixed inset-0 bg-gray-900/60"
+            className="fixed inset-0 bg-black/40"
             onClick={() => setIsDeleteModalOpen(false)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
@@ -1018,7 +1018,7 @@ export default function PartnerDetailPage() {
               className="relative bg-white rounded-lg shadow-xl max-w-md w-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-6 py-4 border-b border-gray-200">
+              <div className="px-6 py-4 border-b border-divider">
                 <h2 className="text-xl font-bold text-gray-900">파트너 관리</h2>
               </div>
               <div className="p-6">
@@ -1030,7 +1030,7 @@ export default function PartnerDetailPage() {
                   휴지통으로 이동되며, 30일 이내에 복구할 수 있습니다.
                 </p>
               </div>
-              <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+              <div className="px-4 sm:px-6 py-4 border-t border-divider flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
                 <button
                   onClick={() => setIsDeleteModalOpen(false)}
                   className="px-4 py-2.5 sm:py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors active:scale-[0.97] text-sm font-medium"

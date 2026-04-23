@@ -873,7 +873,7 @@ export default function DashboardPage() {
                 >
                   <X size={24} className="text-gray-400" />
                 </button>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">새 클라이언트를<br />추가할게요</h2>
+                <h2 className="text-page mb-2">새 클라이언트를<br />추가할게요</h2>
                 <p className="text-sm text-gray-500">클라이언트 정보를 입력해주세요</p>
               </div>
 
@@ -949,7 +949,7 @@ export default function DashboardPage() {
               </div>
 
               {/* 푸터 */}
-              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-gray-100 rounded-b-[28px]">
+              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-divider rounded-b-[28px]">
                 <div className="flex gap-3">
                   <button
                     onClick={() => setIsAddClientModalOpen(false)}
@@ -1044,7 +1044,7 @@ export default function DashboardPage() {
                 >
                   <X size={24} className="text-gray-400" />
                 </button>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">새 파트너를<br />추가할게요</h2>
+                <h2 className="text-page mb-2">새 파트너를<br />추가할게요</h2>
                 <p className="text-sm text-gray-500">파트너 정보를 입력해주세요</p>
               </div>
 
@@ -1121,13 +1121,13 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => setIsGenerationDropdownOpen(!isGenerationDropdownOpen)}
-                        className="w-full h-14 px-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-left flex items-center justify-between hover:border-gray-300 transition-all"
+                        className="w-full h-14 px-4 border-2 border-divider rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-left flex items-center justify-between hover:border-gray-300 transition-all"
                       >
                         <span className="text-gray-900 font-medium">{newPartner.generation}기</span>
                         <ChevronDown size={20} className="text-gray-400" />
                       </button>
                       {isGenerationDropdownOpen && (
-                        <div className="absolute z-20 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl overflow-hidden">
+                        <div className="absolute z-20 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-2xl overflow-hidden">
                           {[1, 2, 3].map((gen) => (
                             <button
                               key={gen}
@@ -1149,7 +1149,7 @@ export default function DashboardPage() {
               </div>
 
               {/* 푸터 */}
-              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-gray-100 rounded-b-[28px]">
+              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-divider rounded-b-[28px]">
                 <div className="flex gap-3">
                   <button
                     onClick={() => setIsAddPartnerModalOpen(false)}
@@ -1244,7 +1244,7 @@ export default function DashboardPage() {
                 >
                   <X size={24} className="text-gray-400" />
                 </button>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">새 프로젝트를<br />시작할게요</h2>
+                <h2 className="text-page mb-2">새 프로젝트를<br />시작할게요</h2>
                 <p className="text-sm text-gray-500">프로젝트 정보를 입력해주세요</p>
               </div>
 
@@ -1279,7 +1279,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
-                        className="w-full h-14 px-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-left flex items-center justify-between hover:border-gray-300 transition-all"
+                        className="w-full h-14 px-4 border-2 border-divider rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-left flex items-center justify-between hover:border-gray-300 transition-all"
                       >
                         {newProject.client ? (
                           <div className="flex items-center gap-3">
@@ -1294,7 +1294,7 @@ export default function DashboardPage() {
                         <ChevronDown size={20} className="text-gray-400" />
                       </button>
                       {isClientDropdownOpen && (
-                        <div className="absolute z-20 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-auto">
+                        <div className="absolute z-20 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-2xl max-h-60 overflow-auto">
                           {clients.length === 0 ? (
                             <div className="p-6 text-center text-gray-500">
                               <p className="mb-2">등록된 클라이언트가 없습니다</p>
@@ -1343,7 +1343,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => setIsPartnerDropdownOpen(!isPartnerDropdownOpen)}
-                        className="w-full h-14 px-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-left flex items-center justify-between hover:border-gray-300 transition-all"
+                        className="w-full h-14 px-4 border-2 border-divider rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-left flex items-center justify-between hover:border-gray-300 transition-all"
                       >
                         {newProject.partnerId ? (
                           <div className="flex items-center gap-3">
@@ -1360,7 +1360,7 @@ export default function DashboardPage() {
                         <ChevronDown size={20} className="text-gray-400" />
                       </button>
                       {isPartnerDropdownOpen && (
-                        <div className="absolute z-20 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-auto">
+                        <div className="absolute z-20 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-2xl max-h-60 overflow-auto">
                           {partners.length === 0 ? (
                             <div className="p-6 text-center text-gray-500">
                               <p className="mb-2">등록된 파트너가 없습니다</p>
@@ -1439,7 +1439,7 @@ export default function DashboardPage() {
               </div>
 
               {/* 푸터 */}
-              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-gray-100 rounded-b-[28px]">
+              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-divider rounded-b-[28px]">
                 <div className="flex gap-3">
                   <button
                     onClick={() => setIsAddProjectModalOpen(false)}

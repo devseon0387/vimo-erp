@@ -26,7 +26,7 @@ const ROLE_BADGE_CLASSES: Record<string, string> = {
 };
 
 function getRoleBadgeClass(role: string) {
-  return ROLE_BADGE_CLASSES[role] ?? 'bg-gray-100 text-gray-600 border border-gray-200';
+  return ROLE_BADGE_CLASSES[role] ?? 'bg-gray-100 text-gray-600 border border-divider';
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -319,8 +319,8 @@ export default function UsersSettingsPage() {
       </div>
 
       {/* 새 계정 생성 */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-divider flex items-center gap-2">
           <UserPlus size={18} className="text-orange-500" />
           <h2 className="text-base font-semibold text-gray-800">새 계정 생성</h2>
         </div>
@@ -332,7 +332,7 @@ export default function UsersSettingsPage() {
                 type="text"
                 value={createName}
                 onChange={e => setCreateName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                className="w-full px-4 py-2.5 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 placeholder="홍길동"
               />
             </div>
@@ -342,7 +342,7 @@ export default function UsersSettingsPage() {
                 type="email"
                 value={createEmail}
                 onChange={e => setCreateEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                className="w-full px-4 py-2.5 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 placeholder="user@example.com"
               />
             </div>
@@ -353,7 +353,7 @@ export default function UsersSettingsPage() {
               <select
                 value={createRole}
                 onChange={e => setCreateRole(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+                className="w-full px-4 py-2.5 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
               >
                 {allRoleOptions.map(r => (
                   <option key={r.value} value={r.value}>{r.label}</option>
@@ -368,7 +368,7 @@ export default function UsersSettingsPage() {
                     type={showCreatePw ? 'text' : 'password'}
                     value={createPassword}
                     onChange={e => setCreatePassword(e.target.value)}
-                    className="w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                    className="w-full px-4 py-2.5 pr-10 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                     placeholder="6자 이상"
                   />
                   <button
@@ -405,8 +405,8 @@ export default function UsersSettingsPage() {
       </div>
 
       {/* 역할 관리 */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-divider flex items-center gap-2">
           <Tag size={18} className="text-gray-500" />
           <h2 className="text-base font-semibold text-gray-800">역할 관리</h2>
         </div>
@@ -431,7 +431,7 @@ export default function UsersSettingsPage() {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {customRoles.map(role => (
-                  <div key={role} className="flex items-center gap-1 bg-gray-100 text-gray-700 border border-gray-200 text-xs font-medium px-3 py-1.5 rounded-full">
+                  <div key={role} className="flex items-center gap-1 bg-gray-100 text-gray-700 border border-divider text-xs font-medium px-3 py-1.5 rounded-full">
                     <span>{role}</span>
                     <button
                       onClick={() => handleDeleteRole(role)}
@@ -453,7 +453,7 @@ export default function UsersSettingsPage() {
               onChange={e => setNewRoleName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleAddRole(); }}
               placeholder="새 역할 이름 (예: PD, 에디터)"
-              className="flex-1 text-sm px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300"
+              className="flex-1 text-sm px-4 py-2 border border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300"
             />
             <button
               onClick={handleAddRole}
@@ -468,8 +468,8 @@ export default function UsersSettingsPage() {
       </div>
 
       {/* 등록된 계정 */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-divider flex items-center gap-2">
           <Users size={18} className="text-gray-500" />
           <h2 className="text-base font-semibold text-gray-800">등록된 계정</h2>
           <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
@@ -616,7 +616,7 @@ export default function UsersSettingsPage() {
                   <h3 className="text-lg font-bold text-gray-900">계정 생성 완료</h3>
                   <p className="text-sm text-gray-500 mt-1">{createdEmail}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                <div className="bg-gray-50 rounded-xl border border-divider p-4">
                   <p className="text-xs text-gray-400 font-medium mb-2">임시 비밀번호</p>
                   <div className="flex items-center justify-center gap-3">
                     <code className="text-lg font-mono font-bold text-gray-900 tracking-wider">
@@ -665,7 +665,7 @@ export default function UsersSettingsPage() {
               onClick={e => e.stopPropagation()}
             >
               {/* 모달 헤더 */}
-              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-6 py-5 border-b border-divider flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">계정 수정</h3>
                   <p className="text-xs text-gray-400 mt-0.5">{editingUser.name ?? editingUser.email}</p>
@@ -683,7 +683,7 @@ export default function UsersSettingsPage() {
                     type="text"
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
                     placeholder="이름"
                   />
                 </div>
@@ -693,7 +693,7 @@ export default function UsersSettingsPage() {
                     type="email"
                     value={editEmail}
                     onChange={e => setEditEmail(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
                     placeholder="이메일"
                   />
                 </div>
@@ -704,7 +704,7 @@ export default function UsersSettingsPage() {
                       type={showEditPw ? 'text' : 'password'}
                       value={editPassword}
                       onChange={e => setEditPassword(e.target.value)}
-                      className="w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                      className="w-full px-4 py-2.5 pr-11 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
                       placeholder="변경하지 않으려면 비워두세요"
                     />
                     <button
@@ -720,10 +720,10 @@ export default function UsersSettingsPage() {
               </div>
 
               {/* 모달 푸터 */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+              <div className="px-6 py-4 bg-gray-50 border-t border-divider flex justify-end gap-2">
                 <button
                   onClick={() => setEditingUser(null)}
-                  className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-divider rounded-xl hover:bg-gray-50 transition-colors"
                 >
                   취소
                 </button>

@@ -111,7 +111,7 @@ export default function SettlementPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">이번 달 정산</h1>
+            <h1 className="text-page">이번 달 정산</h1>
             <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-orange-100 text-orange-600 text-xs sm:text-sm rounded-full font-semibold">
               {new Date().getMonth() + 1}월
             </span>
@@ -120,7 +120,7 @@ export default function SettlementPage() {
         </div>
         <a
           href="/settlement/history"
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-medium text-gray-600 hover:border-gray-300 transition-all flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-white border border-divider rounded-xl text-xs sm:text-sm font-medium text-gray-600 hover:border-gray-300 transition-all flex-shrink-0"
         >
           <Receipt size={14} />
           <span className="hidden sm:inline">월별 정산 내역</span>
@@ -129,7 +129,7 @@ export default function SettlementPage() {
       </div>
 
       {/* 정산 흐름 요약 */}
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-divider p-4 sm:p-5">
         <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-3 sm:flex-wrap">
           <div className="sm:flex-1 sm:min-w-[100px]">
             <p className="text-[11px] sm:text-xs text-gray-400 mb-1 flex items-center gap-1.5">
@@ -160,7 +160,7 @@ export default function SettlementPage() {
           </div>
         </div>
         {allThisMonthEpisodes.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-4 text-xs">
+          <div className="mt-3 pt-3 border-t border-divider flex items-center gap-4 text-xs">
             <span className="text-gray-400">입금 현황</span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
@@ -181,7 +181,7 @@ export default function SettlementPage() {
       )}
 
       {/* 탭 네비게이션 */}
-      <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-2 shadow-sm border border-gray-200 flex sm:inline-flex gap-0.5 sm:gap-2 w-full sm:w-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-2 shadow-sm border border-divider flex sm:inline-flex gap-0.5 sm:gap-2 w-full sm:w-auto">
         {([
           { key: 'client'  as const, icon: Briefcase,     label: '클라이언트', labelFull: '클라이언트 정산' },
           { key: 'partner' as const, icon: Users,          label: '파트너', labelFull: '파트너 정산' },
@@ -223,8 +223,8 @@ export default function SettlementPage() {
 
           {/* 클라이언트 정산 */}
           {activeTab === 'client' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="bg-white rounded-2xl shadow-sm border border-divider overflow-hidden">
+              <div className="px-5 py-4 border-b border-divider flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Briefcase size={16} className="text-orange-500" />
                   <h2 className="font-semibold text-gray-900">클라이언트별 정산 내역</h2>
@@ -333,7 +333,7 @@ export default function SettlementPage() {
                       </div>
                     </div>
                   ))}
-                  <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+                  <div className="px-5 py-4 border-t border-divider flex items-center justify-between">
                     <span className="text-sm text-gray-500">총 수금 예정</span>
                     <span className="text-sm font-semibold text-gray-800">{(clientGrandTotal / 10000).toFixed(0)}만원</span>
                   </div>
@@ -344,8 +344,8 @@ export default function SettlementPage() {
 
           {/* 파트너 정산 */}
           {activeTab === 'partner' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="bg-white rounded-2xl shadow-sm border border-divider overflow-hidden">
+              <div className="px-5 py-4 border-b border-divider flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users size={16} className="text-orange-500" />
                   <h2 className="font-semibold text-gray-900">파트너별 정산 내역</h2>
@@ -454,7 +454,7 @@ export default function SettlementPage() {
                       </div>
                     </div>
                   ))}
-                  <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+                  <div className="px-5 py-4 border-t border-divider flex items-center justify-between">
                     <span className="text-sm font-semibold text-gray-500">총 지급 예정</span>
                     <span className="text-base font-bold text-orange-600">{(partnerGrandTotal / 10000).toFixed(0)}만원</span>
                   </div>
@@ -465,8 +465,8 @@ export default function SettlementPage() {
 
           {/* 매니저 정산 */}
           {activeTab === 'manager' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="bg-white rounded-2xl shadow-sm border border-divider overflow-hidden">
+              <div className="px-5 py-4 border-b border-divider flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ClipboardCheck size={16} className="text-orange-500" />
                   <h2 className="font-semibold text-gray-900">프로젝트별 매니징 비용</h2>
@@ -483,7 +483,7 @@ export default function SettlementPage() {
                 <div>
                   <div>
                   {/* 컬럼 헤더 */}
-                  <div className="px-3 sm:px-5 py-2.5 bg-gray-50 grid grid-cols-[1fr_70px_80px] sm:grid-cols-[1fr_72px_84px_60px] gap-2 sm:gap-3 text-[10px] sm:text-xs font-semibold text-gray-400 border-b border-gray-100">
+                  <div className="px-3 sm:px-5 py-2.5 bg-gray-50 grid grid-cols-[1fr_70px_80px] sm:grid-cols-[1fr_72px_84px_60px] gap-2 sm:gap-3 text-[10px] sm:text-xs font-semibold text-gray-400 border-b border-divider">
                     <span>프로젝트</span>
                     <span className="text-right hidden sm:block">총 매출</span>
                     <span className="text-right">매니징 비용</span>
@@ -508,7 +508,7 @@ export default function SettlementPage() {
                       );
                     })}
                   </div>
-                  <div className="px-3 sm:px-5 py-3 sm:py-4 border-t border-gray-100 grid grid-cols-[1fr_70px_80px] sm:grid-cols-[1fr_72px_84px_60px] gap-2 sm:gap-3 items-center">
+                  <div className="px-3 sm:px-5 py-3 sm:py-4 border-t border-divider grid grid-cols-[1fr_70px_80px] sm:grid-cols-[1fr_72px_84px_60px] gap-2 sm:gap-3 items-center">
                     <span className="text-[13px] sm:text-sm font-semibold text-gray-500">총 매니징 비용</span>
                     <span className="text-[13px] sm:text-sm text-gray-400 text-right hidden sm:block">{(clientGrandTotal / 10000).toFixed(0)}만</span>
                     <span className="text-[14px] sm:text-base font-bold text-orange-500 text-right">{(managerTotal / 10000).toFixed(0)}만원</span>

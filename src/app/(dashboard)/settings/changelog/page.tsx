@@ -150,7 +150,7 @@ export default function ChangelogPage() {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border-2 transition-all ${
                       isSelected
                         ? `${cfg.bg} ${cfg.color} border-current`
-                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                        : 'bg-white text-gray-500 border-divider hover:border-gray-300'
                     }`}
                   >
                     {cfg.icon}
@@ -247,7 +247,7 @@ export default function ChangelogPage() {
           const cfg = TYPE_CONFIG[item.type];
           const isExpanded = expandedIds.has(item.id);
           return (
-            <div key={item.id} className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+            <div key={item.id} className="bg-white border border-divider rounded-2xl shadow-sm overflow-hidden">
               <div className="flex items-start gap-4 hover:bg-gray-50 transition-colors">
                 <div
                   className="flex-1 min-w-0 p-5 cursor-pointer"
@@ -280,7 +280,7 @@ export default function ChangelogPage() {
               </div>
 
               {isExpanded && item.details.length > 0 && (
-                <div className="px-5 pb-5 border-t border-gray-100">
+                <div className="px-5 pb-5 border-t border-divider">
                   <ul className="space-y-2 mt-4">
                     {item.details.map((detail, i) => (
                       <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700">
