@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 import ManagementMain from './ManagementMain';
 import ManagementMissing from './ManagementMissing';
+import ManagementReport from './ManagementReport';
 
-type Tab = 'main' | 'missing';
+type Tab = 'main' | 'missing' | 'report';
 
 export default function ManagementPage() {
   const [activeTab, setActiveTab] = useState<Tab>('main');
@@ -21,6 +22,7 @@ export default function ManagementPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'main', label: '메인' },
     { key: 'missing', label: '미기입' },
+    { key: 'report', label: '리포트' },
   ];
 
   return (
@@ -98,8 +100,10 @@ export default function ManagementPage() {
           >
             {activeTab === 'main' ? (
               <ManagementMain />
-            ) : (
+            ) : activeTab === 'missing' ? (
               <ManagementMissing onMissingCount={handleMissingCount} />
+            ) : (
+              <ManagementReport />
             )}
           </motion.div>
         </AnimatePresence>
