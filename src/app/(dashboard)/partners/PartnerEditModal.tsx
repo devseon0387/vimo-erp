@@ -85,7 +85,7 @@ export default function PartnerEditModal({ partner, onClose, onSaved }: PartnerE
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div
-        className="fixed inset-0 bg-gray-900/60"
+        className="fixed inset-0 bg-black/40"
         onClick={onClose}
       />
       <div className="flex min-h-full items-center justify-center p-4">
@@ -93,7 +93,7 @@ export default function PartnerEditModal({ partner, onClose, onSaved }: PartnerE
           className="relative bg-white rounded-lg shadow-xl max-w-lg w-full"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+          <div className="px-4 sm:px-6 py-4 border-b border-divider">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">파트너 정보 수정</h2>
           </div>
           <div className="p-4 sm:p-6 space-y-5 max-h-[70vh] overflow-y-auto">
@@ -122,7 +122,7 @@ export default function PartnerEditModal({ partner, onClose, onSaved }: PartnerE
                     <button
                       type="button"
                       onClick={() => setIsBankDropdownOpen(!isBankDropdownOpen)}
-                      className="h-12 px-3 border-2 border-gray-200 rounded-xl bg-white flex items-center gap-2 hover:border-gray-300 transition-colors whitespace-nowrap min-w-[110px]"
+                      className="h-12 px-3 border-2 border-divider rounded-xl bg-white flex items-center gap-2 hover:border-gray-300 transition-colors whitespace-nowrap min-w-[110px]"
                     >
                       {editForm.bank ? (() => {
                         const b = KR_BANKS.find(b => b.name === editForm.bank);
@@ -148,7 +148,7 @@ export default function PartnerEditModal({ partner, onClose, onSaved }: PartnerE
                         className="fixed inset-0 z-20 sm:hidden"
                         onClick={() => setIsBankDropdownOpen(false)}
                       />
-                      <div className="fixed sm:absolute inset-x-4 sm:inset-x-auto bottom-4 sm:bottom-auto z-30 sm:left-0 sm:top-full sm:mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl p-3 sm:w-[320px]">
+                      <div className="fixed sm:absolute inset-x-4 sm:inset-x-auto bottom-4 sm:bottom-auto z-30 sm:left-0 sm:top-full sm:mt-2 bg-white border-2 border-divider rounded-2xl shadow-2xl p-3 sm:w-[320px]">
                         <p className="text-xs text-gray-400 font-medium mb-2 px-1">은행 선택</p>
                         <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
                           {KR_BANKS.map((bank) => {
@@ -187,7 +187,7 @@ export default function PartnerEditModal({ partner, onClose, onSaved }: PartnerE
                     placeholder="계좌번호 입력"
                     value={editForm.bankAccount}
                     onChange={(e) => setEditForm({ ...editForm, bankAccount: e.target.value })}
-                    className="flex-1 h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm text-gray-900 placeholder-gray-400 transition-colors"
+                    className="flex-1 h-12 px-4 border-2 border-divider rounded-xl focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm text-gray-900 placeholder-gray-400 transition-colors"
                   />
                 </div>
               </div>
@@ -224,13 +224,13 @@ export default function PartnerEditModal({ partner, onClose, onSaved }: PartnerE
                   <button
                     type="button"
                     onClick={() => setIsGenerationDropdownOpen(!isGenerationDropdownOpen)}
-                    className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl bg-white text-left flex items-center justify-between hover:border-gray-300 transition-colors"
+                    className="w-full h-12 px-4 border-2 border-divider rounded-xl bg-white text-left flex items-center justify-between hover:border-gray-300 transition-colors"
                   >
                     <span className="text-gray-900 font-medium">{editForm.generation}기</span>
                     <ChevronDown size={18} className="text-gray-400" />
                   </button>
                   {isGenerationDropdownOpen && (
-                    <div className="absolute z-20 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl overflow-hidden">
+                    <div className="absolute z-20 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-2xl overflow-hidden">
                       {[1, 2, 3].map((gen) => (
                         <button
                           key={gen}
@@ -295,7 +295,7 @@ export default function PartnerEditModal({ partner, onClose, onSaved }: PartnerE
               </div>
             </div>
           </div>
-          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <div className="px-4 sm:px-6 py-4 border-t border-divider flex justify-end space-x-3">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors active:scale-[0.97]"
