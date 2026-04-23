@@ -13,17 +13,18 @@ export default function UpdateNoticeModal() {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
+    // localStorage·sessionStorage는 클라이언트에서만 접근 가능하므로
+    // 마운트 이후 일회성으로 읽어 state를 동기화한다.
     const seen = localStorage.getItem(SEEN_KEY);
-    if (seen !== APP_VERSION) {
-      setShow(true);
-    }
+    let name = '';
     try {
       const profile = sessionStorage.getItem('vm_profile');
-      if (profile) {
-        const p = JSON.parse(profile);
-        setUserName(p.name || '');
-      }
+      if (profile) name = JSON.parse(profile).name || '';
     } catch { /* ignore */ }
+
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    if (name) setUserName(name);
+    if (seen !== APP_VERSION) setShow(true);
   }, []);
 
   const handleClose = () => {

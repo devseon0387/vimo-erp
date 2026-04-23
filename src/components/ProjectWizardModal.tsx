@@ -97,6 +97,9 @@ export default function ProjectWizardModal({
   const [customEpisodeCount, setCustomEpisodeCount] = useState('');
   const [episodeDates, setEpisodeDates] = useState<Array<{ startDate: string; endDate: string }>>([]);
 
+  // "프로젝트만 빠르게"에서 인라인으로 선택할 클라이언트
+  const [projectOnlyClientId, setProjectOnlyClientId] = useState('');
+
   // 모달 열릴 때 상태 초기화
   useEffect(() => {
     if (isOpen) {
@@ -126,9 +129,6 @@ export default function ProjectWizardModal({
       Array.from({ length: episodeCount }, (_, i) => prev[i] ?? { startDate: '', endDate: '' })
     );
   }, [episodeCount]);
-
-  // "프로젝트만 빠르게"에서 인라인으로 선택할 클라이언트
-  const [projectOnlyClientId, setProjectOnlyClientId] = useState('');
 
   // 드롭다운 상태
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
