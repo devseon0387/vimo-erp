@@ -106,7 +106,7 @@ export default function SettlementHistoryPage() {
         </div>
 
         {monthlyData.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-20 text-center">
+          <div className="bg-white rounded-2xl shadow-sm border border-divider py-20 text-center">
             <Receipt className="mx-auto mb-3 text-gray-200" size={36} />
             <p className="font-medium text-gray-500">정산 내역이 없어요</p>
             <p className="text-xs text-gray-400 mt-1">프로젝트를 추가하면 표시됩니다</p>
@@ -117,7 +117,7 @@ export default function SettlementHistoryPage() {
               <button
                 key={yearMonth}
                 onClick={() => setSelectedMonth(yearMonth)}
-                className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:border-orange-200 hover:shadow-md transition-all text-left group"
+                className="w-full bg-white rounded-2xl shadow-sm border border-divider p-5 hover:border-orange-200 hover:shadow-md transition-all text-left group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -184,7 +184,7 @@ export default function SettlementHistoryPage() {
         {/* 왼쪽: 고정 요약 사이드바 */}
         <div className="w-[240px] flex-shrink-0 space-y-3 sticky top-6 self-start">
           {/* 총 수금 */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="bg-white rounded-2xl border border-divider p-5">
             <p className="text-[10px] font-bold text-[#a8a29e] uppercase tracking-wider mb-3">총 수금</p>
             <p className="text-[32px] font-extrabold text-gray-900 tracking-tight leading-none">
               {(md.clientTotal / 10000).toFixed(0)}<span className="text-[14px] text-gray-400 font-semibold ml-0.5">만원</span>
@@ -192,7 +192,7 @@ export default function SettlementHistoryPage() {
           </div>
 
           {/* 지출 구성 */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-divider p-5 space-y-4">
             <p className="text-[10px] font-bold text-[#a8a29e] uppercase tracking-wider">지출 구성</p>
             <div>
               <div className="flex justify-between items-baseline mb-1.5">
@@ -214,7 +214,7 @@ export default function SettlementHistoryPage() {
               </div>
               <p className="text-[10px] text-gray-400 mt-1">{managerPct}%</p>
             </div>
-            <div className="pt-3 border-t border-gray-100">
+            <div className="pt-3 border-t border-divider">
               <div className="flex justify-between items-baseline">
                 <span className="text-[12px] text-emerald-600 font-semibold flex items-center gap-1.5"><Wallet size={11} />유보금</span>
                 <span className="text-[18px] font-extrabold text-emerald-600">{(md.margin / 10000).toFixed(0)}만</span>
@@ -227,8 +227,8 @@ export default function SettlementHistoryPage() {
         {/* 오른쪽: 상세 내역 */}
         <div className="flex-1 space-y-4 min-w-0">
           {/* 클라이언트 섹션 */}
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white rounded-2xl border border-divider overflow-hidden">
+            <div className="px-5 py-4 border-b border-divider flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center">
                   <Briefcase size={12} className="text-orange-500" />
@@ -299,8 +299,8 @@ export default function SettlementHistoryPage() {
           </div>
 
           {/* 파트너 섹션 */}
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white rounded-2xl border border-divider overflow-hidden">
+            <div className="px-5 py-4 border-b border-divider flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
                   <Users size={12} className="text-blue-500" />
@@ -369,8 +369,8 @@ export default function SettlementHistoryPage() {
           </div>
 
           {/* 매니저 섹션 */}
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white rounded-2xl border border-divider overflow-hidden">
+            <div className="px-5 py-4 border-b border-divider flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center">
                   <ClipboardCheck size={12} className="text-amber-500" />
@@ -387,7 +387,7 @@ export default function SettlementHistoryPage() {
             ) : (
               <div className="overflow-x-auto">
                 <div className="min-w-[380px]">
-                  <div className="px-5 py-2.5 bg-gray-50 grid grid-cols-[1fr_72px_84px_60px] gap-3 text-[10px] font-bold text-gray-400 border-b border-gray-100">
+                  <div className="px-5 py-2.5 bg-gray-50 grid grid-cols-[1fr_72px_84px_60px] gap-3 text-[10px] font-bold text-gray-400 border-b border-divider">
                     <span>프로젝트</span>
                     <span className="text-right">총 매출</span>
                     <span className="text-right">매니징 비용</span>

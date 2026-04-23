@@ -76,7 +76,7 @@ export default function VimoPartnersPage() {
                 key={gen}
                 onClick={() => setActiveTab(gen)}
                 className={`bg-white rounded-2xl border p-5 text-left transition-all hover:shadow-md ${
-                  activeTab === gen ? 'border-gray-800 shadow-sm' : 'border-gray-200'
+                  activeTab === gen ? 'border-gray-800 shadow-sm' : 'border-divider'
                 }`}
               >
                 <p className="text-2xl font-bold text-gray-900">{gen}기</p>
@@ -89,9 +89,9 @@ export default function VimoPartnersPage() {
       )}
 
       {/* 탭 + 파트너 목록 */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-divider overflow-hidden">
         {/* 탭 */}
-        <div className="flex items-center border-b border-gray-100 px-6 gap-1">
+        <div className="flex items-center border-b border-divider px-6 gap-1">
           {tabs.map((tab) => (
             <button
               key={String(tab.key)}
@@ -134,7 +134,7 @@ export default function VimoPartnersPage() {
 
 function PartnerCard({ partner }: { partner: Partner }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-sm transition-all">
+    <div className="bg-white rounded-xl border border-divider p-4 hover:border-gray-300 hover:shadow-sm transition-all">
       {/* 상단: 아이콘 + 기수 배지 */}
       <div className="flex items-start justify-between mb-3">
         <div className="w-11 h-11 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -167,7 +167,7 @@ function PartnerCard({ partner }: { partner: Partner }) {
       )}
 
       {/* 연락처 */}
-      <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
+      <div className="mt-3 pt-3 border-t border-divider space-y-1">
         {partner.phone && (
           <div className="flex items-center gap-1.5 text-xs text-gray-500">
             <Phone size={11} className="flex-shrink-0" />

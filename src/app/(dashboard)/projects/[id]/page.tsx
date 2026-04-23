@@ -15,6 +15,8 @@ import EpisodeDetailModal from '@/components/EpisodeDetailModal';
 import DateRangePicker from '@/components/DateRangePicker';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTutorial } from '@/components/tutorial/useTutorial';
+import { useToast } from '@/contexts/ToastContext';
+import { StatusBadge, EpisodeStatusBadge } from './StatusBadges';
 
 interface EpisodeWithProjectId extends Episode {
   projectId: string;
@@ -23,6 +25,7 @@ interface EpisodeWithProjectId extends Episode {
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<Project | null>(null);
@@ -497,7 +500,7 @@ export default function ProjectDetailPage() {
   const saveProjectEditModal = async () => {
     if (isSavingProject) return;
     if (!project || !tempEditedProject.title) {
-      alert('프로젝트 이름을 입력해주세요.');
+      toast.warning('프로젝트 이름을 입력해주세요.');
       return;
     }
     setIsSavingProject(true);
@@ -693,7 +696,7 @@ export default function ProjectDetailPage() {
         }
       `}</style>
       {/* 헤더 */}
-      <div data-tour="tour-detail-header" className="bg-white rounded-2xl border border-gray-100 px-4 sm:px-6 py-4 sm:py-5">
+      <div data-tour="tour-detail-header" className="bg-white rounded-2xl border border-divider px-4 sm:px-6 py-4 sm:py-5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link
@@ -742,8 +745,8 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* 탭 네비게이션 */}
-      <div data-tour="tour-detail-tabs" className="bg-white rounded-xl border border-gray-100 p-1.5 flex gap-1 overflow-x-auto scrollbar-hide">
+      {/* 탭 네비게이션 — 매니지먼트 스타일 */}
+      <div data-tour="tour-detail-tabs" className="inline-flex gap-1 p-1 bg-white border border-divider rounded-xl">
         {([
           { key: 'in-progress' as const, label: '진행 중인 회차', mobileLabel: '진행 중', count: activeEpisodes.length },
           { key: 'episodes' as const, label: '회차 관리', mobileLabel: '전체', count: episodes.length },
@@ -752,24 +755,24 @@ export default function ProjectDetailPage() {
           <button
             key={tab.key}
             onClick={() => switchTab(tab.key)}
-            className="relative px-3 sm:px-5 py-2.5 rounded-xl font-medium text-sm flex items-center gap-1.5 sm:gap-2 flex-shrink-0 whitespace-nowrap"
+            className="relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[13px] sm:text-[14px] font-semibold flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
           >
             {activeTab === tab.key && (
               <motion.div
                 layoutId="project-tab-pill"
-                className="absolute inset-0 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/30"
+                className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               />
             )}
-            <span className={`relative z-10 transition-colors duration-200 sm:hidden ${activeTab === tab.key ? 'text-white' : 'text-gray-500'}`}>
+            <span className={`relative z-10 transition-colors duration-200 sm:hidden ${activeTab === tab.key ? 'text-white' : 'text-[#78716c]'}`}>
               {tab.mobileLabel}
             </span>
-            <span className={`relative z-10 transition-colors duration-200 hidden sm:inline ${activeTab === tab.key ? 'text-white' : 'text-gray-500'}`}>
+            <span className={`relative z-10 transition-colors duration-200 hidden sm:inline ${activeTab === tab.key ? 'text-white' : 'text-[#78716c]'}`}>
               {tab.label}
             </span>
             {tab.count !== undefined && (
-              <span className={`relative z-10 px-2 py-0.5 rounded-full text-xs font-semibold transition-colors duration-200 ${
-                activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+              <span className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors duration-200 ${
+                activeTab === tab.key ? 'bg-white/22 text-white' : 'bg-gray-100 text-[#78716c]'
               }`}>
                 {tab.count}
               </span>
@@ -797,7 +800,7 @@ export default function ProjectDetailPage() {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* 기본 정보 */}
-        <div className="lg:col-span-3 bg-white rounded-xl border border-gray-100 p-4 sm:p-6 space-y-5 sm:space-y-6">
+        <div className="lg:col-span-3 bg-white rounded-xl border border-divider p-4 sm:p-6 space-y-5 sm:space-y-6">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-900">기본 정보</h2>
@@ -902,7 +905,7 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* 마감 예정 - 오늘 & 이번 주 */}
-              <div className="pt-4 border-t border-gray-100">
+              <div className="pt-4 border-t border-divider">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {/* 오늘 마감 */}
                     <div>
@@ -951,7 +954,7 @@ export default function ProjectDetailPage() {
                             <button
                               key={episode.id}
                               onClick={() => router.push(`/projects/${projectId}/episodes/${episode.id}`)}
-                              className="w-full flex items-center justify-between p-3 bg-orange-50 border border-gray-200 rounded-lg hover:bg-orange-100 transition-colors"
+                              className="w-full flex items-center justify-between p-3 bg-orange-50 border border-divider rounded-lg hover:bg-orange-100 transition-colors"
                               type="button"
                             >
                               <div className="flex items-center space-x-2">
@@ -979,7 +982,7 @@ export default function ProjectDetailPage() {
                 </div>
 
               {/* 진행 중인 작업 & 누적 작업 수 - 한 줄로 */}
-              <div className="pt-4 border-t border-gray-100">
+              <div className="pt-4 border-t border-divider">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* 진행 중인 작업 */}
                   <div>
@@ -1023,7 +1026,7 @@ export default function ProjectDetailPage() {
 
               {/* 최종 납품일 */}
               {lastDeliveryDate && (
-                <div className="pt-4 border-t border-gray-100">
+                <div className="pt-4 border-t border-divider">
                   <div className="flex items-start">
                     <Calendar size={20} className="text-gray-400 mr-3 mt-0.5" />
                     <div className="flex-1">
@@ -1041,7 +1044,7 @@ export default function ProjectDetailPage() {
               )}
 
               {project.description && (
-                <div className="pt-4 border-t border-gray-100">
+                <div className="pt-4 border-t border-divider">
                   <p className="text-sm font-medium text-gray-500 mb-2">설명</p>
                   <p className="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
                     {project.description}
@@ -1050,7 +1053,7 @@ export default function ProjectDetailPage() {
               )}
 
               {project.tags && project.tags.length > 0 && (
-                <div className="pt-4 border-t border-gray-100">
+                <div className="pt-4 border-t border-divider">
                   <p className="text-sm font-medium text-gray-500 mb-2">태그</p>
                   <div className="flex flex-wrap gap-2">
                     {project.tags.map((tag, index) => (
@@ -1070,7 +1073,7 @@ export default function ProjectDetailPage() {
 
         {/* 비용 정보 */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="bg-white rounded-xl border border-divider p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-900 flex items-center">
                 <DollarSign size={18} className="mr-2" />
@@ -1094,7 +1097,7 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* 파트너 지급, 매니징 비용 - 한 줄로 */}
-              <div className="pt-3 border-t border-gray-100">
+              <div className="pt-3 border-t border-divider">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1">파트너 지급 (합산)</p>
@@ -1113,7 +1116,7 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* 유보금, 마진율 - 한 줄로 */}
-              <div className="pt-3 border-t border-gray-100">
+              <div className="pt-3 border-t border-divider">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1">유보금</p>
@@ -1135,7 +1138,7 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* 작업별 비용 */}
-              <div className="pt-3 border-t border-gray-100">
+              <div className="pt-3 border-t border-divider">
                 <p className="text-sm font-medium text-gray-700 mb-3">작업별 비용</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   {/* 롱폼 */}
@@ -1242,8 +1245,8 @@ export default function ProjectDetailPage() {
 
       {/* 진행 중인 회차 탭 */}
       {activeTab === 'in-progress' && (
-      <div data-tour="tour-detail-inprogress" className="bg-white rounded-xl border border-gray-100">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+      <div data-tour="tour-detail-inprogress" className="bg-white rounded-xl border border-divider">
+        <div className="px-4 sm:px-6 py-4 border-b border-divider flex items-center justify-between gap-2">
           <div>
             <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
               진행 중인 회차
@@ -1311,8 +1314,8 @@ export default function ProjectDetailPage() {
                   <div key={episode.id} className="relative group">
                     <div
                       onClick={() => { if (!isEpisodeEditMode) router.push(`/projects/${projectId}/episodes/${episode.id}`); }}
-                      className={`w-full text-left bg-white rounded-xl border border-gray-100 p-3 sm:p-4 transition-all ${
-                        isEpisodeEditMode ? 'cursor-default' : 'cursor-pointer hover:border-gray-200 hover:shadow-sm'
+                      className={`w-full text-left bg-white rounded-xl border border-divider p-3 sm:p-4 transition-all ${
+                        isEpisodeEditMode ? 'cursor-default' : 'cursor-pointer hover:border-divider hover:shadow-sm'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1">
@@ -1410,7 +1413,7 @@ export default function ProjectDetailPage() {
                                     <ChevronDown size={14} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                   </button>
                                   {isOpen && (
-                                    <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl max-h-52 overflow-y-auto">
+                                    <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white border border-divider rounded-xl shadow-xl max-h-52 overflow-y-auto">
                                       {allPartners.map(p => (
                                         <button
                                           key={p.id}
@@ -1449,7 +1452,7 @@ export default function ProjectDetailPage() {
                                     <ChevronDown size={14} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                   </button>
                                   {isOpen && (
-                                    <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl max-h-52 overflow-y-auto">
+                                    <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white border border-divider rounded-xl shadow-xl max-h-52 overflow-y-auto">
                                       {allPartners.map(p => (
                                         <button
                                           key={p.id}
@@ -1499,13 +1502,13 @@ export default function ProjectDetailPage() {
                                 ? (() => { const d = new Date(episode.startDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()
                                 : '미정'}
                               {episode.dueDate && (
-                                <> <span className="text-[#d6d3d1]">→</span> <span className="text-[#ea580c] font-semibold">{(() => { const d = new Date(episode.dueDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()}</span></>
+                                <> <span className="text-[#d6d3d1]">→</span> <span className="text-[#f97316] font-semibold">{(() => { const d = new Date(episode.dueDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()}</span></>
                               )}
                             </span>
                             {episode.workContent.length > 0 && (
                               <div className="hidden sm:flex items-center gap-1">
                                 {episode.workContent.map((work, idx) => (
-                                  <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-[#fff7ed] border-[#fed7aa] text-[#ea580c]">
+                                  <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-[#fff7ed] border-[#fed7aa] text-[#f97316]">
                                     {work}
                                   </span>
                                 ))}
@@ -1546,8 +1549,8 @@ export default function ProjectDetailPage() {
 
       {/* 회차 탭 */}
       {activeTab === 'episodes' && (
-      <div className="bg-white rounded-xl border border-gray-100">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+      <div className="bg-white rounded-xl border border-divider">
+        <div className="px-4 sm:px-6 py-4 border-b border-divider flex items-center justify-between gap-2">
           <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 flex-shrink-0">
             회차 관리
             <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-xs font-semibold">
@@ -1715,7 +1718,7 @@ export default function ProjectDetailPage() {
                                   <ChevronDown size={14} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {isOpen && (
-                                  <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl max-h-52 overflow-y-auto">
+                                  <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white border border-divider rounded-xl shadow-xl max-h-52 overflow-y-auto">
                                     {allPartners.map(p => (
                                       <button
                                         key={p.id}
@@ -1754,7 +1757,7 @@ export default function ProjectDetailPage() {
                                   <ChevronDown size={14} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {isOpen && (
-                                  <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl max-h-52 overflow-y-auto">
+                                  <div className="absolute z-50 left-0 top-full mt-1 w-48 bg-white border border-divider rounded-xl shadow-xl max-h-52 overflow-y-auto">
                                     {allPartners.map(p => (
                                       <button
                                         key={p.id}
@@ -1804,7 +1807,7 @@ export default function ProjectDetailPage() {
                               ? (() => { const d = new Date(episode.startDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()
                               : '미정'}
                             {episode.dueDate && (
-                              <> <span className="text-[#d6d3d1]">→</span> <span className="text-[#ea580c] font-semibold">{(() => { const d = new Date(episode.dueDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()}</span></>
+                              <> <span className="text-[#d6d3d1]">→</span> <span className="text-[#f97316] font-semibold">{(() => { const d = new Date(episode.dueDate); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; })()}</span></>
                             )}
                           </span>
                           {episode.workContent.length > 0 && (
@@ -1812,8 +1815,8 @@ export default function ProjectDetailPage() {
                               {episode.workContent.map((work, idx) => (
                                 <span key={idx} className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
                                   episode.status === 'completed'
-                                    ? 'bg-[#f5f5f4] border-[#ede9e6] text-[#78716c]'
-                                    : 'bg-[#fff7ed] border-[#fed7aa] text-[#ea580c]'
+                                    ? 'bg-[#f5f5f4] border-divider text-[#78716c]'
+                                    : 'bg-[#fff7ed] border-[#fed7aa] text-[#f97316]'
                                 }`}>
                                   {work}
                                 </span>
@@ -1838,7 +1841,7 @@ export default function ProjectDetailPage() {
                       e.stopPropagation();
                       setDeleteEpisodeId(episode.id);
                     }}
-                    className="absolute top-2 right-2 p-1.5 bg-gray-50 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100 border border-gray-200 hover:border-red-300"
+                    className="absolute top-2 right-2 p-1.5 bg-gray-50 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100 border border-divider hover:border-red-300"
                     title="회차 삭제"
                   >
                     <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
@@ -1858,7 +1861,7 @@ export default function ProjectDetailPage() {
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
-            className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsDeleteModalOpen(false)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
@@ -1896,7 +1899,7 @@ export default function ProjectDetailPage() {
       {isProjectEditModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto animate-modal-overlay">
           <div
-            className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={cancelProjectEditModal}
           />
 
@@ -1906,7 +1909,7 @@ export default function ProjectDetailPage() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* 헤더 */}
-              <div className="sticky top-0 bg-gray-50 px-6 py-4 border-b border-gray-200 rounded-t-lg">
+              <div className="sticky top-0 bg-gray-50 px-6 py-4 border-b border-divider rounded-t-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-gray-900">프로젝트 수정</h2>
                   <button
@@ -1918,7 +1921,7 @@ export default function ProjectDetailPage() {
                 </div>
 
                 {/* 탭 네비게이션 */}
-                <div className="flex gap-2 border-b border-gray-200 bg-gray-50 px-2 rounded-t-lg">
+                <div className="flex gap-2 border-b border-divider bg-gray-50 px-2 rounded-t-lg">
                   <button
                     onClick={() => setActiveEditTab('basic')}
                     className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative rounded-t-lg ${
@@ -1969,7 +1972,7 @@ export default function ProjectDetailPage() {
                 {activeEditTab === 'basic' && (
                   <div className="space-y-5">
                     {/* 프로젝트 기본 정보 카드 */}
-                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-divider">
                       <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <FileText size={18} className="text-orange-600" />
                         프로젝트 기본
@@ -2019,7 +2022,7 @@ export default function ProjectDetailPage() {
                                 <ChevronRight size={16} className={`text-gray-500 transition-transform ${isStatusDropdownOpen ? 'rotate-90' : 'rotate-0'}`} />
                               </div>
                               {isStatusDropdownOpen && (
-                                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl overflow-hidden animate-modal-content">
+                                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-xl overflow-hidden animate-modal-content">
                                   {[
                                     { value: 'planning', label: '시작 전', icon: Clock, emoji: '🎯', color: 'orange', desc: '프로젝트 기획 단계' },
                                     { value: 'in_progress', label: '진행 중', icon: TrendingUp, emoji: '⚡', color: 'green', desc: '현재 작업 진행 중' },
@@ -2077,7 +2080,7 @@ export default function ProjectDetailPage() {
                                 <ChevronRight size={16} className={`text-gray-500 transition-transform ${isClientDropdownOpen ? 'rotate-90' : 'rotate-0'}`} />
                               </div>
                               {isClientDropdownOpen && (
-                                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto animate-modal-content">
+                                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-xl max-h-64 overflow-y-auto animate-modal-content">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -2137,7 +2140,7 @@ export default function ProjectDetailPage() {
                     </div>
 
                     {/* 분류 및 작업 카드 */}
-                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-divider">
                       <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <Tag size={18} className="text-orange-600" />
                         분류 및 작업
@@ -2168,7 +2171,7 @@ export default function ProjectDetailPage() {
                                 <ChevronRight size={16} className={`text-gray-500 transition-transform ${isCategoryDropdownOpen ? 'rotate-90' : 'rotate-0'}`} />
                               </div>
                               {isCategoryDropdownOpen && (
-                                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl overflow-hidden animate-modal-content">
+                                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-xl overflow-hidden animate-modal-content">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -2241,7 +2244,7 @@ export default function ProjectDetailPage() {
                                 <ChevronRight size={16} className={`text-gray-500 transition-transform ${isChannelDropdownOpen ? 'rotate-90' : 'rotate-0'}`} />
                               </div>
                               {isChannelDropdownOpen && (
-                                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl overflow-hidden animate-modal-content">
+                                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-xl overflow-hidden animate-modal-content">
                                   {[
                                     { value: '유튜브', icon: Youtube, desc: 'YouTube 채널' },
                                     { value: '레거시 미디어', icon: Monitor, desc: 'TV/방송 미디어' },
@@ -2304,7 +2307,7 @@ export default function ProjectDetailPage() {
                               <ChevronRight size={16} className={`text-gray-500 transition-transform ${isWorkContentDropdownOpen ? 'rotate-90' : 'rotate-0'}`} />
                             </div>
                             {isWorkContentDropdownOpen && (
-                              <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl overflow-hidden animate-modal-content">
+                              <div className="absolute z-50 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-xl overflow-hidden animate-modal-content">
                                 {[
                                   { value: '롱폼' as const, icon: Video, desc: '롱폼 영상 편집' },
                                   { value: '기획 숏폼' as const, icon: Video, desc: '기획 숏폼 영상 편집' },
@@ -2351,14 +2354,14 @@ export default function ProjectDetailPage() {
                 {activeEditTab === 'workers' && (
                   <div className="space-y-5">
                     {/* 매니저 카드 */}
-                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-divider">
                       <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <UserCircle size={18} className="text-orange-600" />
                         매니저 <span className="text-gray-400 text-xs font-normal">(선택)</span>
                       </h3>
                       <div className="space-y-3">
                         {tempManagerIds.length === 0 ? (
-                          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-divider">
                             <UserCircle size={32} className="mx-auto text-gray-300 mb-2" />
                             <p className="text-sm text-gray-500">매니저를 추가해보세요</p>
                           </div>
@@ -2427,14 +2430,14 @@ export default function ProjectDetailPage() {
                     </div>
 
                     {/* 담당 파트너 카드 */}
-                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-divider">
                       <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <Users size={18} className="text-green-600" />
                         담당 파트너 <span className="text-gray-400 text-xs font-normal">(선택)</span>
                       </h3>
                       <div className="space-y-3">
                         {tempPartnerIds.length === 0 ? (
-                          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-divider">
                             <Users size={32} className="mx-auto text-gray-300 mb-2" />
                             <p className="text-sm text-gray-500">파트너를 추가해보세요</p>
                           </div>
@@ -2526,7 +2529,7 @@ export default function ProjectDetailPage() {
                     </div>
 
                     {/* 작업별 비용 */}
-                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-gray-100">
+                    <div className="bg-gray-50 rounded-xl p-5 shadow-sm border border-divider">
                       <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <Tag size={18} className="text-orange-600" />
                         작업별 비용 <span className="text-gray-400 text-xs font-normal">(선택)</span>
@@ -2534,7 +2537,7 @@ export default function ProjectDetailPage() {
                       <div className="grid grid-cols-2 gap-4">
                         {/* 롱폼 */}
                         <div className={`bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border-2 shadow-sm hover:shadow-md transition-all ${
-                          tempWorkContent.includes('롱폼') ? 'border-gray-200 opacity-100' : 'border-gray-100 opacity-40'
+                          tempWorkContent.includes('롱폼') ? 'border-divider opacity-100' : 'border-divider opacity-40'
                         }`}>
                           <div className="flex items-center gap-2 mb-3">
                             <Video size={18} className="text-gray-600" />
@@ -2551,7 +2554,7 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['롱폼'].partnerCost)}
                                   onChange={(e) => updateTempWorkTypeCost('롱폼', 'partnerCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
@@ -2564,13 +2567,13 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['롱폼'].managementCost)}
                                   onChange={(e) => updateTempWorkTypeCost('롱폼', 'managementCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
                               </div>
                             </div>
-                            <div className="pt-2 mt-2 border-t-2 border-gray-200">
+                            <div className="pt-2 mt-2 border-t-2 border-divider">
                               <div className="flex justify-between items-center">
                                 <span className="text-xs font-semibold text-gray-600">소계</span>
                                 <span className="text-sm font-bold text-gray-900">
@@ -2583,7 +2586,7 @@ export default function ProjectDetailPage() {
 
                         {/* 기획 숏폼 */}
                         <div className={`bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border-2 shadow-sm hover:shadow-md transition-all ${
-                          tempWorkContent.includes('기획 숏폼') ? 'border-gray-200 opacity-100' : 'border-gray-100 opacity-40'
+                          tempWorkContent.includes('기획 숏폼') ? 'border-divider opacity-100' : 'border-divider opacity-40'
                         }`}>
                           <div className="flex items-center gap-2 mb-3">
                             <Video size={18} className="text-gray-600" />
@@ -2600,7 +2603,7 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['기획 숏폼'].partnerCost)}
                                   onChange={(e) => updateTempWorkTypeCost('기획 숏폼', 'partnerCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
@@ -2613,13 +2616,13 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['기획 숏폼'].managementCost)}
                                   onChange={(e) => updateTempWorkTypeCost('기획 숏폼', 'managementCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
                               </div>
                             </div>
-                            <div className="pt-2 mt-2 border-t-2 border-gray-200">
+                            <div className="pt-2 mt-2 border-t-2 border-divider">
                               <div className="flex justify-between items-center">
                                 <span className="text-xs font-semibold text-gray-600">소계</span>
                                 <span className="text-sm font-bold text-gray-900">
@@ -2632,7 +2635,7 @@ export default function ProjectDetailPage() {
 
                         {/* 본편 숏폼 */}
                         <div className={`bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border-2 shadow-sm hover:shadow-md transition-all ${
-                          tempWorkContent.includes('본편 숏폼') ? 'border-gray-200 opacity-100' : 'border-gray-100 opacity-40'
+                          tempWorkContent.includes('본편 숏폼') ? 'border-divider opacity-100' : 'border-divider opacity-40'
                         }`}>
                           <div className="flex items-center gap-2 mb-3">
                             <Video size={18} className="text-gray-600" />
@@ -2649,7 +2652,7 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['본편 숏폼'].partnerCost)}
                                   onChange={(e) => updateTempWorkTypeCost('본편 숏폼', 'partnerCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
@@ -2662,13 +2665,13 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['본편 숏폼'].managementCost)}
                                   onChange={(e) => updateTempWorkTypeCost('본편 숏폼', 'managementCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
                               </div>
                             </div>
-                            <div className="pt-2 mt-2 border-t-2 border-gray-200">
+                            <div className="pt-2 mt-2 border-t-2 border-divider">
                               <div className="flex justify-between items-center">
                                 <span className="text-xs font-semibold text-gray-600">소계</span>
                                 <span className="text-sm font-bold text-gray-900">
@@ -2681,7 +2684,7 @@ export default function ProjectDetailPage() {
 
                         {/* 썸네일 */}
                         <div className={`bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border-2 shadow-sm hover:shadow-md transition-all ${
-                          tempWorkContent.includes('썸네일') ? 'border-gray-200 opacity-100' : 'border-gray-100 opacity-40'
+                          tempWorkContent.includes('썸네일') ? 'border-divider opacity-100' : 'border-divider opacity-40'
                         }`}>
                           <div className="flex items-center gap-2 mb-3">
                             <Image size={18} className="text-gray-600" />
@@ -2698,7 +2701,7 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['썸네일'].partnerCost)}
                                   onChange={(e) => updateTempWorkTypeCost('썸네일', 'partnerCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
@@ -2711,13 +2714,13 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['썸네일'].managementCost)}
                                   onChange={(e) => updateTempWorkTypeCost('썸네일', 'managementCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
                               </div>
                             </div>
-                            <div className="pt-2 mt-2 border-t-2 border-gray-200">
+                            <div className="pt-2 mt-2 border-t-2 border-divider">
                               <div className="flex justify-between items-center">
                                 <span className="text-xs font-semibold text-gray-600">소계</span>
                                 <span className="text-sm font-bold text-gray-900">
@@ -2747,7 +2750,7 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['OAP'].partnerCost)}
                                   onChange={(e) => updateTempWorkTypeCost('OAP', 'partnerCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
@@ -2760,13 +2763,13 @@ export default function ProjectDetailPage() {
                                   type="text"
                                   value={formatCurrency(tempWorkTypeCosts['OAP'].managementCost)}
                                   onChange={(e) => updateTempWorkTypeCost('OAP', 'managementCost', e.target.value)}
-                                  className="w-full px-3 py-2.5 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
+                                  className="w-full px-3 py-2.5 pr-10 border-2 border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 transition-all"
                                   placeholder="0"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">원</span>
                               </div>
                             </div>
-                            <div className="pt-2 mt-2 border-t-2 border-gray-200">
+                            <div className="pt-2 mt-2 border-t-2 border-divider">
                               <div className="flex justify-between items-center">
                                 <span className="text-xs font-semibold text-gray-600">소계</span>
                                 <span className="text-sm font-bold text-gray-900">
@@ -2783,7 +2786,7 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* 푸터 */}
-              <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3 rounded-b-lg">
+              <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-divider flex justify-end gap-3 rounded-b-lg">
                 <button
                   onClick={cancelProjectEditModal}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
@@ -2807,7 +2810,7 @@ export default function ProjectDetailPage() {
       {deleteEpisodeId && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
-            className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setDeleteEpisodeId(null)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
@@ -2898,41 +2901,5 @@ export default function ProjectDetailPage() {
       )}
 
     </div>
-  );
-}
-
-// 상태 배지 컴포넌트
-function StatusBadge({ status }: { status: string }) {
-  const statusMap: Record<string, { label: string; color: string; bgColor: string }> = {
-    active: { label: '진행 중', color: 'text-green-700', bgColor: 'bg-green-100' },
-    standby: { label: '대기', color: 'text-blue-700', bgColor: 'bg-blue-100' },
-    dormant: { label: '휴면', color: 'text-orange-700', bgColor: 'bg-orange-100' },
-    inactive: { label: '비활성', color: 'text-gray-700', bgColor: 'bg-gray-100' },
-  };
-
-  const { label, color, bgColor } = statusMap[status] || statusMap.inactive;
-
-  return (
-    <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${color} ${bgColor}`}>
-      {label}
-    </span>
-  );
-}
-
-// 회차 상태 배지 컴포넌트
-function EpisodeStatusBadge({ status }: { status: string }) {
-  const statusMap: Record<string, { label: string; color: string; bgColor: string }> = {
-    waiting: { label: '대기', color: 'text-gray-700', bgColor: 'bg-gray-100' },
-    in_progress: { label: '진행 중', color: 'text-gray-600', bgColor: 'bg-orange-100' },
-    review: { label: '검토', color: 'text-yellow-700', bgColor: 'bg-yellow-100' },
-    completed: { label: '완료', color: 'text-gray-600', bgColor: 'bg-green-100' },
-  };
-
-  const { label, color, bgColor } = statusMap[status] || statusMap.waiting;
-
-  return (
-    <span className={`inline-flex items-center justify-center w-[52px] py-1 rounded-full text-[10px] font-semibold ${color} ${bgColor}`}>
-      {label}
-    </span>
   );
 }

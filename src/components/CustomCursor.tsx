@@ -38,16 +38,16 @@ export default function CustomCursor() {
       ring.style.opacity     = '0.45';
       ring.style.background  = 'transparent';
       ring.style.borderWidth = '2px';
-      ring.style.borderColor = 'rgba(234,88,12,0.7)';
+      ring.style.borderColor = 'rgba(249,115,22,0.7)';
     };
 
     const applyHover = () => {
       dot.style.opacity      = '0';
       ringScaleTarget        = 30 / RING_SIZE;
       ring.style.opacity     = '1';
-      ring.style.background  = 'rgba(234,88,12,0.13)';
+      ring.style.background  = 'rgba(249,115,22,0.13)';
       ring.style.borderWidth = '1.5px';
-      ring.style.borderColor = 'rgba(234,88,12,0.75)';
+      ring.style.borderColor = 'rgba(249,115,22,0.75)';
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -68,8 +68,8 @@ export default function CustomCursor() {
 
     const onMouseDown = () => {
       if (hovering) {
-        ring.style.background  = 'rgba(234,88,12,0.22)';
-        ring.style.borderColor = 'rgba(234,88,12,1)';
+        ring.style.background  = 'rgba(249,115,22,0.22)';
+        ring.style.borderColor = 'rgba(249,115,22,1)';
       } else {
         dotScaleTarget = (RING_SIZE - 4) / DOT_SIZE;
         ring.style.opacity = '0.6';
@@ -144,7 +144,7 @@ export default function CustomCursor() {
           width:         RING_SIZE,
           height:        RING_SIZE,
           borderRadius:  '50%',
-          border:        '2px solid rgba(234,88,12,0.7)',
+          border:        '2px solid rgba(249,115,22,0.7)',
           background:    'transparent',
           pointerEvents: 'none',
           zIndex:        99998,

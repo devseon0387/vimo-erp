@@ -13,6 +13,8 @@ import { Calendar, Plus, Bell, X, Link2, Search, ChevronLeft, ChevronRight, User
 import { Project, Episode, Partner, Client, WorkContentType, WorkStep } from '@/types';
 import Link from 'next/link';
 import ProjectWizardModal from '@/components/ProjectWizardModal';
+import EpisodeQuickViewContent from './EpisodeQuickViewContent';
+import { useToast } from '@/contexts/ToastContext';
 import DateTimePicker, { RepeatType } from '@/components/DateTimePicker';
 import { useTutorial } from '@/components/tutorial/useTutorial';
 import { APP_VERSION_LABEL } from '@/config/version';
@@ -82,6 +84,7 @@ function itemToRow(item: ChecklistItem): Omit<ChecklistRow, 'id' | 'user_id' | '
 }
 
 export default function ManagementMain() {
+  const toast = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -89,6 +92,16 @@ export default function ManagementMain() {
   const [activeTab, setActiveTab] = useState<'today' | 'week' | 'checklist'>('today');
   const [mobileChecklistOpen, setMobileChecklistOpen] = useState(false);
   const [quickViewEpisode, setQuickViewEpisode] = useState<(Episode & { projectId: string }) | null>(null);
+
+  // Esc 키로 인스펙터 닫기
+  useEffect(() => {
+    if (!quickViewEpisode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setQuickViewEpisode(null);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [quickViewEpisode]);
   const [tabDirection, setTabDirection] = useState(1);
 
   const TAB_ORDER = ['checklist', 'today', 'week'] as const;
@@ -238,7 +251,7 @@ export default function ManagementMain() {
     };
     const saved = await insertChecklist(itemToRow(newItem));
     if (!saved) {
-      alert('체크리스트 추가에 실패했습니다. 다시 시도해주세요.');
+      toast.error('체크리스트 추가에 실패했습니다. 다시 시도해주세요.');
       return;
     }
     await refreshChecklists();
@@ -344,7 +357,7 @@ export default function ManagementMain() {
     if (!item) return;
     const ok = await updateChecklist(id, { completed: !item.completed });
     if (!ok) {
-      alert('체크리스트 업데이트에 실패했습니다.');
+      toast.error('체크리스트 업데이트에 실패했습니다.');
       return;
     }
     await refreshChecklists();
@@ -353,7 +366,7 @@ export default function ManagementMain() {
   const deleteChecklistItem = async (id: string) => {
     const ok = await deleteChecklist(id);
     if (!ok) {
-      alert('체크리스트 삭제에 실패했습니다.');
+      toast.error('체크리스트 삭제에 실패했습니다.');
       return;
     }
     await refreshChecklists();
@@ -396,7 +409,7 @@ export default function ManagementMain() {
 
   // 알림 체크 (30초마다) - checklistItems를 ref로 참조해 인터벌 재생성 방지
   const checklistItemsRef = useRef<ChecklistItem[]>([]);
-  checklistItemsRef.current = checklistItems;
+  useEffect(() => { checklistItemsRef.current = checklistItems; }, [checklistItems]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -521,46 +534,46 @@ export default function ManagementMain() {
 
       {/* 모바일: 체크리스트 접기/펼치기 */}
       <div className="lg:hidden">
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-ink-100 overflow-hidden">
           <button
             onClick={() => setMobileChecklistOpen(v => !v)}
             className="w-full flex items-center justify-between px-4 py-3"
           >
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-bold">체크리스트</span>
-              <span className="text-[11px] text-orange-500 font-semibold">{checklistItems.filter(i => !i.completed).length}개 남음</span>
+              <span className="text-[11px] text-brand-500 font-semibold">{checklistItems.filter(i => !i.completed).length}개 남음</span>
             </div>
-            <ChevronRight size={16} className={`text-[#a8a29e] transition-transform duration-200 ${mobileChecklistOpen ? 'rotate-90' : ''}`} />
+            <ChevronRight size={16} className={`text-[var(--color-ink-400)] transition-transform duration-200 ${mobileChecklistOpen ? 'rotate-90' : ''}`} />
           </button>
           {mobileChecklistOpen && (
-            <div className="px-4 pb-4 border-t border-[#f0ece9]">
+            <div className="px-4 pb-4 border-t border-[var(--color-ink-200)]">
               <div className="flex flex-col gap-1 mt-3">
                 {oneTimeItems.filter(i => !i.completed).map(item => (
-                  <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg ${item.reminderTime ? 'bg-red-50 border border-red-200' : ''}`}>
+                  <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg ${item.reminderTime ? 'bg-bad-50 border border-red-200' : ''}`}>
                     <button
                       onClick={() => toggleChecklistItem(item.id)}
-                      className="w-[18px] h-[18px] rounded-[5px] border-2 border-[#d6d3d1] flex-shrink-0 flex items-center justify-center hover:border-orange-500 transition-colors"
+                      className="w-[18px] h-[18px] rounded-[5px] border-2 border-[var(--color-ink-300)] flex-shrink-0 flex items-center justify-center hover:border-brand-500 transition-colors"
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-[12px] font-medium block truncate">{item.text}</span>
                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                         {item.reminderTime && (
-                          <span className="text-[10px] font-semibold text-red-500 bg-red-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                         )}
                         {item.linkedProjectTitle && (
-                          <span className="text-[10px] text-[#78716c] bg-[#f5f5f4] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
+                          <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
                         )}
                       </div>
                     </div>
                   </div>
                 ))}
                 {oneTimeItems.filter(i => i.completed).length > 0 && (
-                  <div className="border-t border-[#f0ece9] pt-2 mt-1">
-                    <p className="text-[10px] text-[#a8a29e] mb-1">완료 · {oneTimeItems.filter(i => i.completed).length}개</p>
+                  <div className="border-t border-[var(--color-ink-200)] pt-2 mt-1">
+                    <p className="text-[10px] text-[var(--color-ink-400)] mb-1">완료 · {oneTimeItems.filter(i => i.completed).length}개</p>
                     {oneTimeItems.filter(i => i.completed).map(item => (
                       <div key={item.id} className="flex items-center gap-2 p-1.5 opacity-40">
-                        <button onClick={() => toggleChecklistItem(item.id)} className="w-[18px] h-[18px] rounded-[5px] bg-green-500 border-2 border-green-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]">✓</button>
-                        <span className="text-[12px] line-through text-[#a8a29e]">{item.text}</span>
+                        <button onClick={() => toggleChecklistItem(item.id)} className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]">✓</button>
+                        <span className="text-[12px] line-through text-[var(--color-ink-400)]">{item.text}</span>
                       </div>
                     ))}
                   </div>
@@ -568,7 +581,7 @@ export default function ManagementMain() {
               </div>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[#ede9e6] rounded-lg text-[12px] text-[#a8a29e] hover:border-[#d6d3d1] transition-colors"
+                className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-lg text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
               >
                 + 할 일 추가
               </button>
@@ -578,26 +591,26 @@ export default function ManagementMain() {
       </div>
 
       {/* C3 레이아웃: 타임라인 + 사이드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_430px] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_560px] gap-4 relative">
         {/* 왼쪽: 타임라인 */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
+        <div className="bg-white rounded-2xl border border-ink-100 p-4 sm:p-5">
           {/* 지연 */}
           {overdueEpisodes.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-red-500" />
-                <span className="text-[13px] font-bold text-red-600">지연</span>
-                <span className="text-[11px] text-red-500 font-semibold">{overdueEpisodes.length}</span>
+                <span className="text-[13px] font-bold text-bad-600">지연</span>
+                <span className="text-[11px] text-bad-500 font-semibold">{overdueEpisodes.length}</span>
               </div>
               <div className="ml-4 border-l-2 border-red-200 pl-3.5 flex flex-col gap-1.5">
                 {overdueEpisodes.map(ep => {
                   const { project, partner } = getEpisodeDetails(ep);
                   const days = Math.ceil((todayStart.getTime() - new Date(ep.dueDate!).getTime()) / (1000*60*60*24));
                   return (
-                    <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-red-200 bg-red-50 cursor-pointer hover:border-red-300 transition-colors" onClick={() => setQuickViewEpisode(ep)}>
+                    <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-red-200 bg-bad-50 cursor-pointer hover:border-red-300 transition-colors" onClick={() => setQuickViewEpisode(ep)}>
                       <div className="flex items-center justify-between">
-                        <div><div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[#a8a29e]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div><div className="text-[11px] text-[#a8a29e] mt-0.5">{project?.title} · {partner?.name || '미정'}</div></div>
-                        <span className="text-[11px] font-semibold text-red-500 bg-red-100 px-2 py-0.5 rounded-full">{days}일 지남</span>
+                        <div><div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div><div className="text-[11px] text-[var(--color-ink-400)] mt-0.5">{project?.title} · {partner?.name || '미정'}</div></div>
+                        <span className="text-[11px] font-semibold text-bad-500 bg-bad-100 px-2 py-0.5 rounded-full">{days}일 지남</span>
                       </div>
                     </div>
                   );
@@ -608,19 +621,19 @@ export default function ManagementMain() {
           {/* 오늘 */}
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-orange-500" />
+              <div className="w-2 h-2 rounded-full bg-brand-500" />
               <span className="text-[13px] font-bold">오늘</span>
-              <span className="text-[11px] text-orange-500 font-semibold">{todayDeadlines.length}</span>
+              <span className="text-[11px] text-brand-500 font-semibold">{todayDeadlines.length}</span>
             </div>
             <div className="ml-4 border-l-2 border-orange-200 pl-3.5 flex flex-col gap-1.5">
               {todayDeadlines.length === 0 ? (
-                <p className="text-[12px] text-[#a8a29e] py-2">오늘 마감인 회차가 없습니다</p>
+                <p className="text-[12px] text-[var(--color-ink-400)] py-2">오늘 마감인 회차가 없습니다</p>
               ) : todayDeadlines.map(ep => {
                 const { project, partner } = getEpisodeDetails(ep);
                 return (
-                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[#f0ece9] cursor-pointer hover:border-[#d6d3d1] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
-                    <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[#a8a29e]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-[#a8a29e] mt-0.5"><span>{project?.title}</span><span className="text-[#ede9e6]">·</span><div className="w-[14px] h-[14px] bg-[#f0ece9] rounded-full flex items-center justify-center text-[6px] font-bold text-[#78716c]">{partner?.name?.charAt(0) || '?'}</div><span>{partner?.name || '미정'}</span></div>
+                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
+                    <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-ink-400)] mt-0.5"><span>{project?.title}</span><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{partner?.name?.charAt(0) || '?'}</div><span>{partner?.name || '미정'}</span></div>
                   </div>
                 );
               })}
@@ -635,13 +648,13 @@ export default function ManagementMain() {
             </div>
             <div className="ml-4 border-l-2 border-amber-200 pl-3.5 flex flex-col gap-1.5">
               {tomorrowDeadlines.length === 0 ? (
-                <p className="text-[12px] text-[#a8a29e] py-2">내일 마감인 회차가 없습니다</p>
+                <p className="text-[12px] text-[var(--color-ink-400)] py-2">내일 마감인 회차가 없습니다</p>
               ) : tomorrowDeadlines.map(ep => {
                 const { project, partner } = getEpisodeDetails(ep);
                 return (
-                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[#f0ece9] cursor-pointer hover:border-[#d6d3d1] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
-                    <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[#a8a29e]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div>
-                    <div className="text-[11px] text-[#a8a29e] mt-0.5">{project?.title} · {partner?.name || '미정'}</div>
+                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
+                    <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div>
+                    <div className="text-[11px] text-[var(--color-ink-400)] mt-0.5">{project?.title} · {partner?.name || '미정'}</div>
                   </div>
                 );
               })}
@@ -652,18 +665,18 @@ export default function ManagementMain() {
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-gray-300" />
               <span className="text-[13px] font-bold">이번 주</span>
-              <span className="text-[11px] text-[#78716c] font-semibold">{thisWeekDeadlines.length}</span>
+              <span className="text-[11px] text-[var(--color-ink-500)] font-semibold">{thisWeekDeadlines.length}</span>
             </div>
-            <div className="ml-4 border-l-2 border-[#ede9e6] pl-3.5 flex flex-col gap-1.5">
+            <div className="ml-4 border-l-2 border-[var(--color-ink-200)] pl-3.5 flex flex-col gap-1.5">
               {thisWeekDeadlines.length === 0 ? (
-                <p className="text-[12px] text-[#a8a29e] py-2">이번 주 마감 예정이 없습니다</p>
+                <p className="text-[12px] text-[var(--color-ink-400)] py-2">이번 주 마감 예정이 없습니다</p>
               ) : thisWeekDeadlines.map(ep => {
                 const { project, partner } = getEpisodeDetails(ep);
                 const dueDate = new Date(ep.dueDate!);
                 return (
-                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[#f0ece9] cursor-pointer hover:border-[#d6d3d1] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
-                    <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[#a8a29e]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span><span className="text-[11px] text-[#a8a29e]">{dueDate.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</span></div>
-                    <div className="text-[11px] text-[#a8a29e] mt-0.5">{project?.title} · {partner?.name || '미정'}</div>
+                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
+                    <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span><span className="text-[11px] text-[var(--color-ink-400)]">{dueDate.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</span></div>
+                    <div className="text-[11px] text-[var(--color-ink-400)] mt-0.5">{project?.title} · {partner?.name || '미정'}</div>
                   </div>
                 );
               })}
@@ -673,17 +686,17 @@ export default function ManagementMain() {
           {thisWeekCompleted.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-[13px] font-bold text-green-600">이번 주 완료</span>
+                <div className="w-2 h-2 rounded-full bg-ok-500" />
+                <span className="text-[13px] font-bold text-ok-600">이번 주 완료</span>
                 <span className="text-[11px] text-green-500 font-semibold">{thisWeekCompleted.length}</span>
               </div>
               <div className="ml-4 border-l-2 border-green-200 pl-3.5 flex flex-col gap-1.5">
                 {thisWeekCompleted.map(ep => {
                   const { project, partner } = getEpisodeDetails(ep);
                   return (
-                    <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[#f0ece9] opacity-50 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => setQuickViewEpisode(ep)}>
+                    <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] opacity-50 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => setQuickViewEpisode(ep)}>
                       <div className="text-[13px] font-semibold">{ep.title || '제목 없음'}</div>
-                      <div className="text-[11px] text-[#a8a29e] mt-0.5">{partner?.name || '미정'} · {ep.completedAt ? new Date(ep.completedAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) : ''} 완료</div>
+                      <div className="text-[11px] text-[var(--color-ink-400)] mt-0.5">{partner?.name || '미정'} · {ep.completedAt ? new Date(ep.completedAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) : ''} 완료</div>
                     </div>
                   );
                 })}
@@ -693,9 +706,10 @@ export default function ManagementMain() {
         </div>
 
         {/* 오른쪽: 파트너 현황 + 달력 + 체크리스트 (데스크탑만) */}
-        <div className="hidden lg:block space-y-3 self-start" data-tour="tour-mgmt-checklist">
+        <div className="hidden lg:block relative self-start" data-tour="tour-mgmt-checklist">
+        <div className="space-y-3">
           {/* 파트너 현황 — 인라인 칩 */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <div className="bg-white rounded-2xl border border-ink-100 p-4">
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-[13px] font-bold">파트너 현황</span>
             </div>
@@ -721,21 +735,21 @@ export default function ManagementMain() {
                   return (
                     <div key={p.id} className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] transition-colors ${
                       isExec
-                        ? hasWork ? 'bg-purple-50' : 'bg-[#fafaf9]'
-                        : hasWork ? 'bg-[#fff7ed]' : 'bg-[#fafaf9]'
+                        ? hasWork ? 'bg-purple-50' : 'bg-[var(--color-ink-50)]'
+                        : hasWork ? 'bg-[var(--color-brand-50)]' : 'bg-[var(--color-ink-50)]'
                     }`}>
                       <div className={`w-[20px] h-[20px] rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0 ${
                         isExec
                           ? hasWork ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-400'
-                          : hasWork ? 'bg-orange-500 text-white' : 'bg-[#ede9e6] text-[#a8a29e]'
+                          : hasWork ? 'bg-brand-500 text-white' : 'bg-[var(--color-ink-200)] text-[var(--color-ink-400)]'
                       }`}>
                         {p.name.charAt(0)}
                       </div>
-                      <span className={hasWork ? 'font-semibold text-[#1c1917]' : 'text-[#a8a29e]'}>{p.name}</span>
+                      <span className={hasWork ? 'font-semibold text-[var(--color-ink-900)]' : 'text-[var(--color-ink-400)]'}>{p.name}</span>
                       <span className={`font-bold ml-0.5 ${
                         isExec
-                          ? hasWork ? 'text-purple-500' : 'text-[#d6d3d1]'
-                          : hasWork ? 'text-orange-500' : 'text-[#d6d3d1]'
+                          ? hasWork ? 'text-purple-500' : 'text-[var(--color-ink-300)]'
+                          : hasWork ? 'text-brand-500' : 'text-[var(--color-ink-300)]'
                       }`}>{total}</span>
                     </div>
                   );
@@ -745,21 +759,21 @@ export default function ManagementMain() {
           </div>
 
           {/* 미니 달력 */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <div className="bg-white rounded-2xl border border-ink-100 p-4">
             {/* 달력 헤더 */}
             <div className="flex items-center justify-between mb-3">
-              <button onClick={() => { if (calMonth === 0) { setCalYear(calYear - 1); setCalMonth(11); } else setCalMonth(calMonth - 1); }} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <ChevronLeft size={14} className="text-[#a8a29e]" />
+              <button onClick={() => { if (calMonth === 0) { setCalYear(calYear - 1); setCalMonth(11); } else setCalMonth(calMonth - 1); }} className="p-1 hover:bg-ink-100 rounded-lg transition-colors">
+                <ChevronLeft size={14} className="text-[var(--color-ink-400)]" />
               </button>
               <span className="text-[13px] font-bold">{calYear}년 {calMonth + 1}월</span>
-              <button onClick={() => { if (calMonth === 11) { setCalYear(calYear + 1); setCalMonth(0); } else setCalMonth(calMonth + 1); }} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <ChevronRight size={14} className="text-[#a8a29e]" />
+              <button onClick={() => { if (calMonth === 11) { setCalYear(calYear + 1); setCalMonth(0); } else setCalMonth(calMonth + 1); }} className="p-1 hover:bg-ink-100 rounded-lg transition-colors">
+                <ChevronRight size={14} className="text-[var(--color-ink-400)]" />
               </button>
             </div>
             {/* 요일 */}
             <div className="grid grid-cols-7 mb-1">
               {['일','월','화','수','목','금','토'].map(d => (
-                <div key={d} className={`text-center text-[10px] font-semibold py-1 ${d === '일' ? 'text-red-400' : d === '토' ? 'text-blue-400' : 'text-[#a8a29e]'}`}>{d}</div>
+                <div key={d} className={`text-center text-[10px] font-semibold py-1 ${d === '일' ? 'text-red-400' : d === '토' ? 'text-blue-400' : 'text-[var(--color-ink-400)]'}`}>{d}</div>
               ))}
             </div>
             {/* 날짜 그리드 */}
@@ -784,10 +798,10 @@ export default function ManagementMain() {
                     onClick={() => setSelectedCalendarDay(selectedCalendarDay === dateStr ? null : dateStr)}
                     className={`relative text-center py-1.5 rounded-lg text-[12px] font-medium transition-all ${
                       isToday
-                        ? 'bg-orange-500 text-white font-bold'
+                        ? 'bg-brand-500 text-white font-bold'
                         : selectedCalendarDay === dateStr
                         ? 'bg-orange-100 text-orange-700'
-                        : 'hover:bg-gray-50'
+                        : 'hover:bg-ink-50'
                     } ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : ''} ${isToday ? '!text-white' : ''}`}
                   >
                     {d}
@@ -802,10 +816,10 @@ export default function ManagementMain() {
           </div>
 
           {/* 체크리스트 */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <div className="bg-white rounded-2xl border border-ink-100 p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[13px] font-bold">체크리스트</span>
-              <span className="text-[11px] text-orange-500 font-semibold">{checklistItems.filter(i => !i.completed).length}개 남음</span>
+              <span className="text-[11px] text-brand-500 font-semibold">{checklistItems.filter(i => !i.completed).length}개 남음</span>
             </div>
 
             {/* 체크리스트 아이템 렌더링 */}
@@ -819,22 +833,22 @@ export default function ManagementMain() {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className={`flex items-center gap-2 p-2 rounded-lg ${item.reminderTime ? 'bg-red-50 border border-red-200' : 'hover:bg-[#fafaf9]'}`}>
+                    <div className={`flex items-center gap-2 p-2 rounded-lg ${item.reminderTime ? 'bg-bad-50 border border-red-200' : 'hover:bg-[var(--color-ink-50)]'}`}>
                       <button
                         onClick={() => toggleChecklistItem(item.id)}
-                        className="w-[18px] h-[18px] rounded-[5px] border-2 border-[#d6d3d1] flex-shrink-0 flex items-center justify-center hover:border-orange-500 transition-colors"
+                        className="w-[18px] h-[18px] rounded-[5px] border-2 border-[var(--color-ink-300)] flex-shrink-0 flex items-center justify-center hover:border-brand-500 transition-colors"
                       />
                       <div className="flex-1 min-w-0">
                         <span className="text-[12px] font-medium block truncate">{item.text}</span>
                         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                           {item.reminderTime && (
-                            <span className="text-[10px] font-semibold text-red-500 bg-red-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                           )}
                           {item.linkedProjectTitle && (
-                            <span className="text-[10px] text-[#78716c] bg-[#f5f5f4] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
+                            <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
                           )}
                           {item.linkedEpisodeTitle && (
-                            <span className="text-[10px] text-[#78716c] bg-[#f5f5f4] px-1.5 py-0.5 rounded">🎬 {item.linkedEpisodeNumber}편</span>
+                            <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">🎬 {item.linkedEpisodeNumber}편</span>
                           )}
                         </div>
                       </div>
@@ -845,15 +859,15 @@ export default function ManagementMain() {
 
               {/* 완료 항목 */}
               {oneTimeItems.filter(i => i.completed).length > 0 && (
-                <div className="border-t border-[#f0ece9] pt-2 mt-2">
-                  <p className="text-[10px] text-[#a8a29e] mb-1.5">완료 · {oneTimeItems.filter(i => i.completed).length}개</p>
+                <div className="border-t border-[var(--color-ink-200)] pt-2 mt-2">
+                  <p className="text-[10px] text-[var(--color-ink-400)] mb-1.5">완료 · {oneTimeItems.filter(i => i.completed).length}개</p>
                   {oneTimeItems.filter(i => i.completed).map(item => (
                     <div key={item.id} className="flex items-center gap-2 p-1.5 opacity-40">
                       <button
                         onClick={() => toggleChecklistItem(item.id)}
-                        className="w-[18px] h-[18px] rounded-[5px] bg-green-500 border-2 border-green-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]"
+                        className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]"
                       >✓</button>
-                      <span className="text-[12px] line-through text-[#a8a29e]">{item.text}</span>
+                      <span className="text-[12px] line-through text-[var(--color-ink-400)]">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -861,12 +875,44 @@ export default function ManagementMain() {
             </div>
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[#ede9e6] rounded-lg text-[12px] text-[#a8a29e] hover:border-[#d6d3d1] transition-colors"
+              className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-lg text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
             >
               + 할 일 추가
             </button>
           </div>
         </div>
+        </div>
+
+        {/* 데스크탑 인스펙터 (회차 클릭 시) — 우측 컬럼 내부에 정확히 맞춤 */}
+        <AnimatePresence>
+          {quickViewEpisode && (
+            <motion.div
+              key={`insp-${quickViewEpisode.id}`}
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 20, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="hidden lg:flex absolute top-0 bottom-0 right-0 w-[560px] bg-white rounded-2xl border border-ink-100 shadow-[-6px_0_20px_-8px_rgba(0,0,0,0.08)] flex-col overflow-y-auto z-10"
+            >
+              <EpisodeQuickViewContent
+                ep={quickViewEpisode}
+                projects={projects}
+                partners={partners}
+                onClose={() => setQuickViewEpisode(null)}
+                onStepStatusChange={async (workType, stepId, newStatus) => {
+                  const ep = quickViewEpisode;
+                  const workSteps = (ep.workSteps || {}) as Record<WorkContentType, WorkStep[]>;
+                  const steps = workSteps[workType] || [];
+                  const updated = steps.map(s => s.id === stepId ? { ...s, status: newStatus } : s);
+                  const newWorkSteps = { ...workSteps, [workType]: updated };
+                  setQuickViewEpisode({ ...ep, workSteps: newWorkSteps } as typeof ep);
+                  await updateEpisodeFields(ep.id, { workSteps: newWorkSteps });
+                  loadData();
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* 항목 추가 모달 */}
@@ -893,8 +939,8 @@ export default function ManagementMain() {
             >
               {/* 헤더 */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4">
-                <h3 className="text-base font-bold text-gray-900">할 일 추가</h3>
-                <button onClick={resetInlineForm} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400">
+                <h3 className="text-base font-bold text-ink-900">할 일 추가</h3>
+                <button onClick={resetInlineForm} className="p-1.5 rounded-lg hover:bg-ink-100 transition-colors text-ink-400">
                   <X size={16} />
                 </button>
               </div>
@@ -912,7 +958,7 @@ export default function ManagementMain() {
                     if (e.key === 'Enter' && !activeLinkPicker) addChecklistItem();
                     if (e.key === 'Escape') resetInlineForm();
                   }}
-                  className="w-full text-base text-gray-900 placeholder-gray-300 focus:outline-none bg-transparent border-b-2 border-gray-100 focus:border-orange-400 pb-2 transition-colors"
+                  className="w-full text-base text-ink-900 placeholder-gray-300 focus:outline-none bg-transparent border-b-2 border-ink-100 focus:border-orange-400 pb-2 transition-colors"
                 />
               </div>
 
@@ -926,7 +972,7 @@ export default function ManagementMain() {
                   onRepeatChange={setRepeatType}
                   onRepeatDaysChange={setRepeatDays}
                 >
-                  <div className={`inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${newItemReminder ? 'text-orange-600 bg-orange-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}>
+                  <div className={`inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${newItemReminder ? 'text-brand-600 bg-brand-50' : 'text-ink-400 hover:text-ink-600 hover:bg-ink-50'}`}>
                     <Bell size={14} />
                     {newItemReminder
                       ? new Date(newItemReminder).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -934,7 +980,7 @@ export default function ManagementMain() {
                     {newItemReminder && (
                       <span
                         onClick={e => { e.stopPropagation(); setNewItemReminder(''); }}
-                        className="ml-1 text-orange-400 hover:text-orange-600"
+                        className="ml-1 text-orange-400 hover:text-brand-600"
                       >
                         <X size={12} />
                       </span>
@@ -944,7 +990,7 @@ export default function ManagementMain() {
               </div>
 
               {/* 구분선 */}
-              <div className="border-t border-gray-100 mx-5" />
+              <div className="border-t border-ink-100 mx-5" />
 
               {/* 연결 영역 */}
               <div className="px-5 py-4 space-y-3">
@@ -952,13 +998,13 @@ export default function ManagementMain() {
                 {(formLink.episodeId || formLink.projectId || formLink.clientName || formLink.partnerId) && (
                   <div className="flex flex-wrap gap-2">
                     {formLink.episodeId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
                         <Link2 size={11} /> {formLink.episodeNumber}회차 {formLink.episodeTitle}
                         <button onClick={() => clearLink('episode')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>
                       </span>
                     )}
                     {formLink.projectId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
                         📁 {formLink.projectTitle}
                         {!formLink.episodeId && <button onClick={() => clearLink('project')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>}
                       </span>
@@ -970,7 +1016,7 @@ export default function ManagementMain() {
                       </span>
                     )}
                     {formLink.partnerId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
                         👤 {formLink.partnerName}
                         {!formLink.projectId && <button onClick={() => clearLink('partner')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>}
                       </span>
@@ -982,25 +1028,25 @@ export default function ManagementMain() {
                 <div className="flex items-center gap-2 flex-wrap">
                   {!formLink.episodeId && (
                     <button onClick={() => { setActiveLinkPicker('episode'); setLinkSearch(''); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-gray-200 text-gray-500 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50 transition-all">
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-ink-200 text-ink-500 hover:border-orange-300 hover:text-brand-600 hover:bg-brand-50 transition-all">
                       <Plus size={11} /> 회차 연결
                     </button>
                   )}
                   {!formLink.projectId && !formLink.episodeId && (
                     <button onClick={() => { setActiveLinkPicker('project'); setLinkSearch(''); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-gray-200 text-gray-500 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50 transition-all">
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-ink-200 text-ink-500 hover:border-orange-300 hover:text-brand-600 hover:bg-brand-50 transition-all">
                       <Plus size={11} /> 프로젝트 연결
                     </button>
                   )}
                   {!formLink.clientName && !formLink.projectId && (
                     <button onClick={() => { setActiveLinkPicker('client'); setLinkSearch(''); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50 transition-all">
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-ink-200 text-ink-500 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50 transition-all">
                       <Plus size={11} /> 클라이언트 연결
                     </button>
                   )}
                   {!formLink.partnerId && !formLink.projectId && (
                     <button onClick={() => { setActiveLinkPicker('partner'); setLinkSearch(''); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-gray-200 text-gray-500 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50 transition-all">
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-ink-200 text-ink-500 hover:border-orange-300 hover:text-brand-600 hover:bg-brand-50 transition-all">
                       <Plus size={11} /> 파트너 연결
                     </button>
                   )}
@@ -1010,11 +1056,11 @@ export default function ManagementMain() {
               {/* 하단 버튼 */}
               <div className="flex gap-3 px-5 pb-5">
                 <button onClick={resetInlineForm}
-                  className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors active:scale-[0.97]">
+                  className="flex-1 py-2.5 bg-ink-100 text-ink-600 rounded-xl text-sm font-medium hover:bg-ink-200 transition-colors active:scale-[0.97]">
                   취소
                 </button>
                 <button onClick={addChecklistItem} disabled={!newItemText.trim()}
-                  className="flex-1 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors active:scale-[0.97] disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
+                  className="flex-1 py-2.5 bg-brand-500 text-white rounded-xl text-sm font-semibold hover:bg-brand-600 transition-colors active:scale-[0.97] disabled:bg-ink-100 disabled:text-ink-400 disabled:cursor-not-allowed">
                   추가
                 </button>
               </div>
@@ -1051,11 +1097,11 @@ export default function ManagementMain() {
               {/* 모달 헤더 */}
               <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div className="flex items-center gap-2">
-                  {activeLinkPicker === 'episode' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-orange-600">EP</span></div>}
-                  {activeLinkPicker === 'project' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-orange-600">P</span></div>}
+                  {activeLinkPicker === 'episode' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">EP</span></div>}
+                  {activeLinkPicker === 'project' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
                   {activeLinkPicker === 'client' && <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center"><span className="text-[10px] font-bold text-emerald-600">C</span></div>}
-                  {activeLinkPicker === 'partner' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-orange-600">P</span></div>}
-                  <h3 className="text-sm font-bold text-gray-900">
+                  {activeLinkPicker === 'partner' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
+                  <h3 className="text-sm font-bold text-ink-900">
                     {activeLinkPicker === 'episode' && '회차 연결'}
                     {activeLinkPicker === 'project' && '프로젝트 연결'}
                     {activeLinkPicker === 'client' && '클라이언트 연결'}
@@ -1064,7 +1110,7 @@ export default function ManagementMain() {
                 </div>
                 <button
                   onClick={() => { setActiveLinkPicker(null); setLinkSearch(''); }}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400"
+                  className="p-1.5 rounded-lg hover:bg-ink-100 transition-colors text-ink-400"
                 >
                   <X size={16} />
                 </button>
@@ -1072,8 +1118,8 @@ export default function ManagementMain() {
 
               {/* 검색 */}
               <div className="px-4 pb-3">
-                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">
-                  <Search size={14} className="text-gray-400 flex-shrink-0" />
+                <div className="flex items-center gap-2 bg-ink-50 rounded-xl px-3 py-2.5 border border-ink-100">
+                  <Search size={14} className="text-ink-400 flex-shrink-0" />
                   <input
                     autoFocus
                     type="text"
@@ -1086,10 +1132,10 @@ export default function ManagementMain() {
                     value={linkSearch}
                     onChange={e => setLinkSearch(e.target.value)}
                     onKeyDown={e => e.key === 'Escape' && (setActiveLinkPicker(null), setLinkSearch(''))}
-                    className="flex-1 text-sm bg-transparent focus:outline-none text-gray-700 placeholder-gray-400"
+                    className="flex-1 text-sm bg-transparent focus:outline-none text-ink-700 placeholder-gray-400"
                   />
                   {linkSearch && (
-                    <button onClick={() => setLinkSearch('')} className="text-gray-400 hover:text-gray-600"><X size={13} /></button>
+                    <button onClick={() => setLinkSearch('')} className="text-ink-400 hover:text-ink-600"><X size={13} /></button>
                   )}
                 </div>
               </div>
@@ -1102,23 +1148,23 @@ export default function ManagementMain() {
                     const proj = projects.find(p => p.id === ep.projectId);
                     return (
                       <button key={ep.id} onClick={() => selectEpisode(ep)}
-                        className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors flex items-center gap-3">
+                        className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
                         <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center">
-                          <span className="text-xs font-bold text-orange-600">{ep.episodeNumber}편</span>
+                          <span className="text-xs font-bold text-brand-600">{ep.episodeNumber}편</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{ep.title}</p>
-                          {proj && <p className="text-xs text-gray-400 mt-0.5 truncate">{proj.title}</p>}
+                          <p className="text-sm font-semibold text-ink-900 truncate">{ep.title}</p>
+                          {proj && <p className="text-xs text-ink-400 mt-0.5 truncate">{proj.title}</p>}
                         </div>
                       </button>
                     );
                   }) : (
                     <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-gray-400" />
+                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
+                        <Search size={18} className="text-ink-400" />
                       </div>
-                      <p className="text-sm text-gray-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 회차가 없습니다'}</p>
-                      <p className="text-xs text-gray-400 mt-1">{linkSearch ? '다른 검색어를 입력해보세요' : '프로젝트에서 회차를 먼저 추가해주세요'}</p>
+                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 회차가 없습니다'}</p>
+                      <p className="text-xs text-ink-400 mt-1">{linkSearch ? '다른 검색어를 입력해보세요' : '프로젝트에서 회차를 먼저 추가해주세요'}</p>
                     </div>
                   );
                 })()}
@@ -1127,21 +1173,21 @@ export default function ManagementMain() {
                   const filtered = projects.filter(p => !linkSearch || p.title.toLowerCase().includes(linkSearch.toLowerCase())).slice(0, 12);
                   return filtered.length > 0 ? filtered.map(p => (
                     <button key={p.id} onClick={() => selectProject(p)}
-                      className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors flex items-center gap-3">
+                      className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
                       <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center">
-                        <span className="text-xs font-bold text-orange-600">{p.title.charAt(0)}</span>
+                        <span className="text-xs font-bold text-brand-600">{p.title.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{p.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5 truncate">{p.client}</p>
+                        <p className="text-sm font-semibold text-ink-900 truncate">{p.title}</p>
+                        <p className="text-xs text-ink-400 mt-0.5 truncate">{p.client}</p>
                       </div>
                     </button>
                   )) : (
                     <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-gray-400" />
+                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
+                        <Search size={18} className="text-ink-400" />
                       </div>
-                      <p className="text-sm text-gray-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}</p>
+                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}</p>
                     </div>
                   );
                 })()}
@@ -1155,16 +1201,16 @@ export default function ManagementMain() {
                         <span className="text-sm font-bold text-emerald-600">{c.name.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{c.name}</p>
-                        {c.company && <p className="text-xs text-gray-400 mt-0.5 truncate">{c.company}</p>}
+                        <p className="text-sm font-semibold text-ink-900 truncate">{c.name}</p>
+                        {c.company && <p className="text-xs text-ink-400 mt-0.5 truncate">{c.company}</p>}
                       </div>
                     </button>
                   )) : (
                     <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-gray-400" />
+                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
+                        <Search size={18} className="text-ink-400" />
                       </div>
-                      <p className="text-sm text-gray-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 클라이언트가 없습니다'}</p>
+                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 클라이언트가 없습니다'}</p>
                     </div>
                   );
                 })()}
@@ -1173,21 +1219,21 @@ export default function ManagementMain() {
                   const filtered = partners.filter(p => !linkSearch || p.name.includes(linkSearch)).slice(0, 12);
                   return filtered.length > 0 ? filtered.map(p => (
                     <button key={p.id} onClick={() => selectPartner(p)}
-                      className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors flex items-center gap-3">
+                      className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
                       <div className="flex-shrink-0 w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center">
-                        <span className="text-sm font-bold text-orange-600">{p.name.charAt(0)}</span>
+                        <span className="text-sm font-bold text-brand-600">{p.name.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
-                        <p className="text-xs text-gray-400 mt-0.5 truncate">{p.email}</p>
+                        <p className="text-sm font-semibold text-ink-900 truncate">{p.name}</p>
+                        <p className="text-xs text-ink-400 mt-0.5 truncate">{p.email}</p>
                       </div>
                     </button>
                   )) : (
                     <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-gray-400" />
+                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
+                        <Search size={18} className="text-ink-400" />
                       </div>
-                      <p className="text-sm text-gray-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 파트너가 없습니다'}</p>
+                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 파트너가 없습니다'}</p>
                     </div>
                   );
                 })()}
@@ -1228,16 +1274,16 @@ export default function ManagementMain() {
               style={{ zIndex: 50, boxShadow: '0 24px 64px -8px rgba(0,0,0,0.18), 0 4px 16px -4px rgba(0,0,0,0.08)' }}
             >
               {/* 헤더 */}
-              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[#f0ece9]">
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[var(--color-ink-200)]">
                 <div>
-                  <h3 className="text-[15px] font-extrabold text-gray-900">
+                  <h3 className="text-[15px] font-extrabold text-ink-900">
                     {new Date(selectedCalendarDay + 'T00:00:00').toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
                   </h3>
-                  <p className="text-[11px] text-[#a8a29e] mt-0.5">
+                  <p className="text-[11px] text-[var(--color-ink-400)] mt-0.5">
                     {totalCount > 0 ? `${totalCount}개의 일정` : '일정 없음'}
                   </p>
                 </div>
-                <button onClick={() => setSelectedCalendarDay(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400"><X size={16} /></button>
+                <button onClick={() => setSelectedCalendarDay(null)} className="p-1.5 rounded-lg hover:bg-ink-100 transition-colors text-ink-400"><X size={16} /></button>
               </div>
 
               <div className="px-5 py-4 max-h-[60vh] overflow-y-auto">
@@ -1245,21 +1291,21 @@ export default function ManagementMain() {
                 {dayEpisodes.length > 0 && (
                   <div className="mb-4">
                     <div className="flex items-center gap-1.5 mb-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                      <span className="text-[11px] font-semibold text-[#a8a29e]">마감 회차</span>
-                      <span className="text-[11px] text-orange-500 font-semibold">{dayEpisodes.length}</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                      <span className="text-[11px] font-semibold text-[var(--color-ink-400)]">마감 회차</span>
+                      <span className="text-[11px] text-brand-500 font-semibold">{dayEpisodes.length}</span>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       {dayEpisodes.map(ep => {
                         const project = projects.find(p => p.id === ep.projectId);
                         const partner = partners.find(p => p.id === ep.assignee);
                         return (
-                          <div key={ep.id} className="p-3 rounded-xl border border-[#f0ece9] cursor-pointer hover:border-[#d6d3d1] transition-colors" onClick={() => { setSelectedCalendarDay(null); setQuickViewEpisode(ep); }}>
+                          <div key={ep.id} className="p-3 rounded-xl border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => { setSelectedCalendarDay(null); setQuickViewEpisode(ep); }}>
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-[12px] font-bold text-[#a8a29e]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span>
+                              <span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span>
                               <span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span>
                             </div>
-                            <div className="text-[11px] text-[#a8a29e] mt-1">{project?.title} · {partner?.name || '미정'}</div>
+                            <div className="text-[11px] text-[var(--color-ink-400)] mt-1">{project?.title} · {partner?.name || '미정'}</div>
                           </div>
                         );
                       })}
@@ -1271,27 +1317,27 @@ export default function ManagementMain() {
                 {dayChecklistItems.length > 0 && (
                   <div className="mb-4">
                     <div className="flex items-center gap-1.5 mb-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      <span className="text-[11px] font-semibold text-[#a8a29e]">체크리스트</span>
-                      <span className="text-[11px] text-green-600 font-semibold">{dayChecklistItems.length}</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-ok-500" />
+                      <span className="text-[11px] font-semibold text-[var(--color-ink-400)]">체크리스트</span>
+                      <span className="text-[11px] text-ok-600 font-semibold">{dayChecklistItems.length}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       {dayChecklistItems.map(item => (
-                        <div key={item.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[#fafaf9] transition-colors">
+                        <div key={item.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[var(--color-ink-50)] transition-colors">
                           <button
                             onClick={() => toggleChecklistItem(item.id)}
                             className={`w-[18px] h-[18px] rounded-[5px] border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                              item.completed ? 'bg-green-500 border-green-500 text-white text-[10px]' : 'border-[#d6d3d1] hover:border-orange-500'
+                              item.completed ? 'bg-ok-500 border-ok-500 text-white text-[10px]' : 'border-[var(--color-ink-300)] hover:border-brand-500'
                             }`}
                           >{item.completed ? '✓' : ''}</button>
                           <div className="flex-1 min-w-0">
-                            <span className={`text-[13px] font-medium ${item.completed ? 'line-through text-[#a8a29e]' : ''}`}>{item.text}</span>
+                            <span className={`text-[13px] font-medium ${item.completed ? 'line-through text-[var(--color-ink-400)]' : ''}`}>{item.text}</span>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               {item.reminderTime && (
-                                <span className="text-[10px] text-orange-500">🔔 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[10px] text-brand-500">🔔 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                               )}
                               {item.repeatType && item.repeatType !== 'none' && (
-                                <span className="text-[10px] text-orange-500 bg-orange-100 px-1.5 py-0.5 rounded-full">
+                                <span className="text-[10px] text-brand-500 bg-orange-100 px-1.5 py-0.5 rounded-full">
                                   {item.repeatType === 'daily' ? '매일' : item.repeatType === 'weekly' ? '매주' : item.repeatDays ? ['일','월','화','수','목','금','토'].filter((_, i) => item.repeatDays!.includes(i)).join('·') : ''}
                                 </span>
                               )}
@@ -1306,7 +1352,7 @@ export default function ManagementMain() {
                 {/* 빈 상태 */}
                 {totalCount === 0 && (
                   <div className="text-center py-8">
-                    <p className="text-[13px] text-[#a8a29e]">이 날에는 일정이 없습니다</p>
+                    <p className="text-[13px] text-[var(--color-ink-400)]">이 날에는 일정이 없습니다</p>
                   </div>
                 )}
               </div>
@@ -1315,7 +1361,7 @@ export default function ManagementMain() {
               <div className="px-5 pb-4">
                 <button
                   onClick={() => { setSelectedCalendarDay(null); setShowAddForm(true); }}
-                  className="w-full p-2.5 border-[1.5px] border-dashed border-[#ede9e6] rounded-xl text-[12px] text-[#a8a29e] hover:border-[#d6d3d1] transition-colors"
+                  className="w-full p-2.5 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-xl text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
                 >
                   + 이 날짜에 할 일 추가
                 </button>
@@ -1369,7 +1415,7 @@ export default function ManagementMain() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[50]"
+                className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[50] lg:hidden"
                 onClick={() => setQuickViewEpisode(null)}
               />
               <motion.div
@@ -1378,23 +1424,23 @@ export default function ManagementMain() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[51] w-[calc(100%-2rem)] sm:w-[540px] max-h-[85vh] overflow-y-auto bg-white rounded-2xl shadow-2xl"
+                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[51] w-[calc(100%-2rem)] sm:w-[540px] max-h-[85vh] overflow-y-auto bg-white rounded-2xl shadow-2xl lg:hidden"
               >
                 {/* 헤더 */}
-                <div className="px-6 pt-5 pb-3 border-b border-[#f0ece9]">
+                <div className="px-6 pt-5 pb-3 border-b border-[var(--color-ink-200)]">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-[13px] font-bold text-[#a8a29e]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span>
+                        <span className="text-[13px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span>
                         <h3 className="text-[17px] font-extrabold">{ep.title || '제목 없음'}</h3>
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1 text-[11px] text-[#a8a29e]">
+                      <div className="flex items-center gap-1.5 mt-1 text-[11px] text-[var(--color-ink-400)]">
                         <span>{project?.title}</span>
-                        {assignee && <><span className="text-[#ede9e6]">·</span><div className="w-[14px] h-[14px] bg-[#f0ece9] rounded-full flex items-center justify-center text-[6px] font-bold text-[#78716c]">{assignee.name.charAt(0)}</div><span>{assignee.name}</span></>}
-                        {finalDueDate && <><span className="text-[#ede9e6]">·</span><span>마감 {(() => { const d = new Date(finalDueDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
+                        {assignee && <><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{assignee.name.charAt(0)}</div><span>{assignee.name}</span></>}
+                        {finalDueDate && <><span className="text-[var(--color-ink-200)]">·</span><span>마감 {(() => { const d = new Date(finalDueDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
                       </div>
                     </div>
-                    <button onClick={() => setQuickViewEpisode(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-[#a8a29e]">
+                    <button onClick={() => setQuickViewEpisode(null)} className="p-1.5 rounded-lg hover:bg-ink-100 transition-colors text-[var(--color-ink-400)]">
                       <X size={16} />
                     </button>
                   </div>
@@ -1402,7 +1448,7 @@ export default function ManagementMain() {
 
                 {/* 파이프라인 */}
                 {workTypes.length > 0 && (
-                  <div className="mx-6 mt-4 flex items-stretch rounded-2xl bg-[#fafaf9] border border-gray-100 overflow-hidden">
+                  <div className="mx-6 mt-4 flex items-stretch rounded-2xl bg-[var(--color-ink-50)] border border-ink-100 overflow-hidden">
                     {workTypes.map((workType, index) => {
                       const status = getWorkTypeStatus(workType);
                       const stepsCount = (workSteps[workType] || []).length;
@@ -1414,28 +1460,28 @@ export default function ManagementMain() {
                           key={workType}
                           style={{ flex: flexValue, transition: 'flex 0.6s cubic-bezier(0.4,0,0.2,1), background-color 0.5s ease' }}
                           className={`flex flex-col items-center justify-center gap-1 py-3 ${
-                            index > 0 ? 'border-l border-gray-100' : ''
-                          } ${status === 'completed' ? 'bg-green-50/60' : isActive ? 'bg-yellow-50/80' : ''}`}
+                            index > 0 ? 'border-l border-ink-100' : ''
+                          } ${status === 'completed' ? 'bg-ok-50/60' : isActive ? 'bg-warn-50/80' : ''}`}
                         >
                           <div className={`w-7 h-7 rounded-full border-[2.5px] flex items-center justify-center transition-all text-[10px] font-bold ${
-                            status === 'completed' ? 'border-green-500 bg-green-500 text-white' : isActive ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-300 bg-white text-gray-400'
+                            status === 'completed' ? 'border-ok-500 bg-ok-500 text-white' : isActive ? 'border-warn-500 bg-warn-50 text-warn-700' : 'border-ink-300 bg-white text-ink-400'
                           }`}>
                             {status === 'completed' ? <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : index + 1}
                           </div>
-                          <span className={`text-[11px] font-semibold ${status === 'completed' ? 'text-green-800' : isActive ? 'text-gray-900' : 'text-gray-500'}`}>{workType}</span>
-                          <span className={`text-[10px] ${status === 'completed' ? 'text-green-600' : isActive ? 'text-yellow-700' : 'text-gray-400'}`}>
+                          <span className={`text-[11px] font-semibold ${status === 'completed' ? 'text-ok-700' : isActive ? 'text-ink-900' : 'text-ink-500'}`}>{workType}</span>
+                          <span className={`text-[10px] ${status === 'completed' ? 'text-ok-600' : isActive ? 'text-warn-700' : 'text-ink-400'}`}>
                             {status === 'completed' ? '완료' : stepsCount > 0 ? `${completedCount}/${stepsCount}` : '대기'}
                           </span>
                         </div>
                       );
                     })}
                     {/* 마감 */}
-                    <div style={{ flex: overallCompleted ? 1 : 0.7, transition: 'flex 0.6s cubic-bezier(0.4,0,0.2,1)' }} className={`flex flex-col items-center justify-center gap-1 py-3 border-l border-gray-100 ${overallCompleted ? 'bg-green-50/60' : ''}`}>
-                      <div className={`w-7 h-7 rounded-full border-[2.5px] flex items-center justify-center text-[11px] ${overallCompleted ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300 bg-white'}`}>
-                        {overallCompleted ? <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : <Calendar size={12} className="text-gray-400" />}
+                    <div style={{ flex: overallCompleted ? 1 : 0.7, transition: 'flex 0.6s cubic-bezier(0.4,0,0.2,1)' }} className={`flex flex-col items-center justify-center gap-1 py-3 border-l border-ink-100 ${overallCompleted ? 'bg-ok-50/60' : ''}`}>
+                      <div className={`w-7 h-7 rounded-full border-[2.5px] flex items-center justify-center text-[11px] ${overallCompleted ? 'border-ok-500 bg-ok-500 text-white' : 'border-ink-300 bg-white'}`}>
+                        {overallCompleted ? <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : <Calendar size={12} className="text-ink-400" />}
                       </div>
-                      <span className={`text-[11px] font-semibold ${overallCompleted ? 'text-green-800' : 'text-gray-500'}`}>마감</span>
-                      <span className={`text-[10px] ${overallCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className={`text-[11px] font-semibold ${overallCompleted ? 'text-ok-700' : 'text-ink-500'}`}>마감</span>
+                      <span className={`text-[10px] ${overallCompleted ? 'text-ok-600' : 'text-ink-400'}`}>
                         {finalDueDate ? (() => { const d = new Date(finalDueDate); return `${d.getMonth()+1}월 ${d.getDate()}일`; })() : '미정'}
                       </span>
                     </div>
@@ -1445,7 +1491,7 @@ export default function ManagementMain() {
                 {/* 작업 타입별 체크리스트 */}
                 <div className="px-6 py-4">
                   {workTypes.length === 0 ? (
-                    <p className="text-center text-[13px] text-[#a8a29e] py-8">작업이 없습니다</p>
+                    <p className="text-center text-[13px] text-[var(--color-ink-400)] py-8">작업이 없습니다</p>
                   ) : (
                     <div className="space-y-5">
                       {workTypes.map(workType => {
@@ -1458,19 +1504,19 @@ export default function ManagementMain() {
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-[14px] font-bold">{workType}</span>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                                status === 'completed' ? 'bg-green-100 text-green-600' : status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
+                                status === 'completed' ? 'bg-ok-50 text-ok-600' : status === 'in_progress' ? 'bg-warn-50 text-warn-700' : 'bg-ink-100 text-ink-500'
                               }`}>{status === 'completed' ? '완료' : status === 'in_progress' ? '진행 중' : '대기'}</span>
-                              {total > 0 && <span className="text-[11px] text-[#a8a29e]">{completed}/{total}</span>}
+                              {total > 0 && <span className="text-[11px] text-[var(--color-ink-400)]">{completed}/{total}</span>}
                             </div>
                             {total === 0 ? (
-                              <p className="text-[12px] text-[#d6d3d1] pl-1">단계 없음</p>
+                              <p className="text-[12px] text-[var(--color-ink-300)] pl-1">단계 없음</p>
                             ) : (
                               <div className="flex flex-col gap-1.5">
                                 {steps.map(step => {
                                   const stepPartner = partners.find(p => p.id === step.assigneeId);
                                   return (
                                     <div key={step.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
-                                      step.status === 'completed' ? 'border-[#f0ece9] bg-white opacity-40' : step.status === 'in_progress' ? 'border-[#fde68a] bg-[#fffef5]' : 'border-[#f0ece9] bg-white'
+                                      step.status === 'completed' ? 'border-[var(--color-ink-200)] bg-white opacity-40' : step.status === 'in_progress' ? 'border-[#fde68a] bg-[#fffef5]' : 'border-[var(--color-ink-200)] bg-white'
                                     }`}>
                                       <button
                                         onClick={() => {
@@ -1478,21 +1524,21 @@ export default function ManagementMain() {
                                           handleStepStatusChange(workType, step.id, next);
                                         }}
                                         className={`w-[20px] h-[20px] rounded-[6px] border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                                          step.status === 'completed' ? 'bg-green-500 border-green-500 text-white text-[10px]' : step.status === 'in_progress' ? 'border-yellow-400 bg-yellow-50' : 'border-[#d6d3d1] hover:border-orange-500'
+                                          step.status === 'completed' ? 'bg-ok-500 border-ok-500 text-white text-[10px]' : step.status === 'in_progress' ? 'border-warn-500 bg-warn-50' : 'border-[var(--color-ink-300)] hover:border-brand-500'
                                         }`}
                                       >
-                                        {step.status === 'completed' ? '✓' : step.status === 'in_progress' ? <div className="w-2 h-2 rounded-full bg-yellow-400" /> : ''}
+                                        {step.status === 'completed' ? '✓' : step.status === 'in_progress' ? <div className="w-2 h-2 rounded-full bg-warn-500" /> : ''}
                                       </button>
                                       <div className="flex-1 min-w-0">
-                                        <span className={`text-[12px] font-semibold ${step.status === 'completed' ? 'line-through text-[#a8a29e]' : ''}`}>{step.label}</span>
-                                        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-[#a8a29e]">
-                                          {stepPartner && <><div className="w-[14px] h-[14px] bg-[#f0ece9] rounded-full flex items-center justify-center text-[6px] font-bold text-[#78716c]">{stepPartner.name.charAt(0)}</div><span>{stepPartner.name}</span></>}
-                                          {step.startDate && <><span className="text-[#ede9e6]">·</span><span>{(() => { const d = new Date(step.startDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
-                                          {step.dueDate && <><span className="text-[#d6d3d1]">→</span><span className="text-[#ea580c] font-semibold">{(() => { const d = new Date(step.dueDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
+                                        <span className={`text-[12px] font-semibold ${step.status === 'completed' ? 'line-through text-[var(--color-ink-400)]' : ''}`}>{step.label}</span>
+                                        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-[var(--color-ink-400)]">
+                                          {stepPartner && <><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{stepPartner.name.charAt(0)}</div><span>{stepPartner.name}</span></>}
+                                          {step.startDate && <><span className="text-[var(--color-ink-200)]">·</span><span>{(() => { const d = new Date(step.startDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
+                                          {step.dueDate && <><span className="text-[var(--color-ink-300)]">→</span><span className="text-[var(--color-brand-600)] font-semibold">{(() => { const d = new Date(step.dueDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
                                         </div>
                                       </div>
                                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
-                                        step.status === 'completed' ? 'bg-green-100 text-green-600' : step.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
+                                        step.status === 'completed' ? 'bg-ok-50 text-ok-600' : step.status === 'in_progress' ? 'bg-warn-50 text-warn-700' : 'bg-ink-100 text-ink-500'
                                       }`}>
                                         {step.status === 'completed' ? '완료' : step.status === 'in_progress' ? '진행' : '대기'}
                                       </span>
@@ -1512,7 +1558,7 @@ export default function ManagementMain() {
                 <div className="px-6 pb-5">
                   <Link
                     href={`/projects/${ep.projectId}/episodes/${ep.id}`}
-                    className="block w-full text-center py-2.5 bg-orange-500 text-white rounded-xl text-[13px] font-semibold hover:bg-orange-600 transition-colors"
+                    className="block w-full text-center py-2.5 bg-brand-500 text-white rounded-xl text-[13px] font-semibold hover:bg-brand-600 transition-colors"
                     onClick={() => setQuickViewEpisode(null)}
                   >
                     상세 보기 →

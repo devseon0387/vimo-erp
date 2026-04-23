@@ -191,7 +191,7 @@ export default function PartnerSettlementDetailPage() {
   return (
     <div className="space-y-5">
       {/* 헤더 카드 */}
-      <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4">
+      <div className="bg-white rounded-2xl border border-divider px-5 py-4">
         <div className="flex items-center gap-3">
           <Link href="/finance/partner-settlement" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <ArrowLeft size={18} className="text-[#a8a29e]" />
@@ -236,7 +236,7 @@ export default function PartnerSettlementDetailPage() {
 
       {/* 월 이동 + 모두 정산 완료 */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 bg-white border border-[#ede9e6] rounded-[10px] px-1 py-1 w-fit">
+        <div className="flex items-center gap-1 bg-white border border-divider rounded-[10px] px-1 py-1 w-fit">
           <button onClick={prevMonth} disabled={isMinMonth} className={`p-1.5 rounded-lg transition-colors ${isMinMonth ? 'invisible' : 'hover:bg-gray-100'}`}>
             <ChevronLeft size={14} className="text-[#a8a29e]" />
           </button>
@@ -264,7 +264,7 @@ export default function PartnerSettlementDetailPage() {
         <button
           onClick={handleExport}
           disabled={exporting || allItems.length === 0}
-          className="flex items-center gap-1.5 px-3 sm:px-3 py-2 bg-white border border-[#ede9e6] text-[#44403c] rounded-xl text-[12px] font-semibold hover:bg-[#fafaf9] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 sm:px-3 py-2 bg-white border border-divider text-[#44403c] rounded-xl text-[12px] font-semibold hover:bg-[#fafaf9] transition-colors disabled:opacity-50"
         >
           <Download size={14} />
           <span className="hidden sm:inline">{exporting ? '내보내는 중...' : '내보내기'}</span>
@@ -272,7 +272,7 @@ export default function PartnerSettlementDetailPage() {
       </div>
 
       {/* 통합 카드: 통계 + 테이블 */}
-      <div className="bg-white rounded-2xl border border-gray-100" style={{ overflow: 'clip' }}>
+      <div className="bg-white rounded-2xl border border-divider" style={{ overflow: 'clip' }}>
         {/* 통계 바 (모바일 숨김 — 합계 실 지급액으로 대체) */}
         <div className="hidden sm:block px-5 py-4 border-b border-[#f0ece9]">
           <div className="flex items-baseline justify-between mb-1.5">
@@ -440,7 +440,7 @@ export default function PartnerSettlementDetailPage() {
               <div className="flex items-center gap-2">
                 <span className="text-[12px] font-semibold text-[#78716c]">합계</span>
                 {partner.bank && partner.bankAccount ? (
-                  <button onClick={copyAccount} className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 bg-white border border-[#ede9e6] rounded-lg hover:border-[#d6d3d1] transition-colors">
+                  <button onClick={copyAccount} className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 bg-white border border-divider rounded-lg hover:border-[#d6d3d1] transition-colors">
                     <Landmark size={10} className="text-[#a8a29e]" />
                     <span className="text-[#78716c]">{partner.bank} {partner.bankAccount}</span>
                     {copiedId ? <Check size={10} className="text-green-500" /> : <Copy size={10} className="text-[#d6d3d1]" />}
@@ -465,7 +465,7 @@ export default function PartnerSettlementDetailPage() {
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-semibold text-[#78716c]">합계</span>
               {partner.bank && partner.bankAccount ? (
-                <button onClick={copyAccount} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-white border border-[#ede9e6] rounded-lg hover:border-[#d6d3d1] transition-colors">
+                <button onClick={copyAccount} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-white border border-divider rounded-lg hover:border-[#d6d3d1] transition-colors">
                   <Landmark size={11} className="text-[#a8a29e]" />
                   <span className="text-[#78716c]">{partner.bank} {partner.bankAccount}</span>
                   {copiedId ? <Check size={11} className="text-green-500" /> : <Copy size={11} className="text-[#d6d3d1]" />}
@@ -507,7 +507,7 @@ export default function PartnerSettlementDetailPage() {
                   <p style={{ fontSize: '11px', color: '#a8a29e', margin: '2px 0 0' }}>발행일 {new Date().toLocaleDateString('ko-KR')}</p>
                 </div>
               </div>
-              <div style={{ height: '2px', background: 'linear-gradient(to right, #ea580c, #f97316)', borderRadius: '1px', marginBottom: '24px' }} />
+              <div style={{ height: '2px', background: 'linear-gradient(to right, #f97316, #f97316)', borderRadius: '1px', marginBottom: '24px' }} />
 
               {/* 요약 */}
               <div style={{ display: 'flex', gap: '16px', marginBottom: '28px' }}>
@@ -661,7 +661,7 @@ export default function PartnerSettlementDetailPage() {
                       inputMode="numeric"
                       value={editAmount ? parseInt(editAmount).toLocaleString() : ''}
                       onChange={e => setEditAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-full px-3 py-2.5 border border-[#ede9e6] rounded-xl text-[14px] font-semibold tabular-nums focus:outline-none focus:border-orange-400 transition-colors pr-8"
+                      className="w-full px-3 py-2.5 border border-divider rounded-xl text-[14px] font-semibold tabular-nums focus:outline-none focus:border-orange-400 transition-colors pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#a8a29e]">원</span>
                   </div>

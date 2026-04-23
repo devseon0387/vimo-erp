@@ -332,7 +332,7 @@ export default function InquiriesPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
+                <tr className="bg-gray-50 border-b border-divider">
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">프로젝트 유형</th>
@@ -393,11 +393,11 @@ export default function InquiriesPage() {
       {/* 상세 모달 */}
       {isDetailModalOpen && selectedInquiry && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setIsDetailModalOpen(false)} />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsDetailModalOpen(false)} />
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full animate-inquiry-modal" onClick={(e) => e.stopPropagation()}>
               {/* 모달 헤더 */}
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-divider flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-bold text-gray-900">문의 상세</h2>
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_CONFIG[selectedInquiry.status].bgColor} ${STATUS_CONFIG[selectedInquiry.status].textColor}`}>
@@ -621,7 +621,7 @@ export default function InquiriesPage() {
               </div>
 
               {/* 모달 푸터 */}
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="px-6 py-4 border-t border-divider flex items-center justify-between">
                 <div>
                   {showDeleteConfirm ? (
                     <div className="flex items-center gap-2">

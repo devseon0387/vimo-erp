@@ -184,8 +184,8 @@ function BlockEl({
         style={{
           marginTop: '3px',
           width: '17px', height: '17px', borderRadius: '4px', flexShrink: 0,
-          border: block.checked ? '2px solid #ea580c' : '2px solid #d6cec8',
-          background: block.checked ? '#ea580c' : 'transparent',
+          border: block.checked ? '2px solid #f97316' : '2px solid #d6cec8',
+          background: block.checked ? '#f97316' : 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', transition: 'all 0.15s',
         }}
@@ -406,7 +406,7 @@ export default function PageEditor() {
             background: '#fff7f3', border: '1px solid #fde8d8',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <FileText size={22} style={{ color: '#ea580c' }} />
+            <FileText size={22} style={{ color: '#f97316' }} />
           </div>
         </div>
 

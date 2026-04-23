@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Search, Bell, Sparkles, FolderOpen, Briefcase, Users, HelpCircle, MessageSquarePlus, FilePlus } from 'lucide-react';
+import { Plus, Search, Bell, Sparkles, FolderOpen, Briefcase, Users, HelpCircle, MessageSquarePlus, FilePlus, Bot } from 'lucide-react';
 
 interface FABAction {
   label: string;
@@ -26,6 +26,14 @@ function hasTutorial(pathname: string): boolean {
 
 function getPageActions(pathname: string): FABAction[] {
   const common: FABAction[] = [
+    {
+      label: '비봇',
+      icon: Bot,
+      onClick: () => window.dispatchEvent(new CustomEvent('fab:action', { detail: 'bibot' })),
+      bg: 'bg-gradient-to-r from-orange-500 to-pink-500',
+      text: 'text-white',
+      iconColor: 'text-white',
+    },
     {
       label: '개선사항',
       icon: MessageSquarePlus,
@@ -159,7 +167,13 @@ export default function GlobalFAB() {
   const actions = getPageActions(pathname);
 
   return (
-    <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 flex flex-col items-end gap-3">
+    <div
+      className="fixed bottom-6 sm:bottom-8 z-40 flex flex-col items-end gap-3"
+      style={{
+        right: 'calc(1.5rem + var(--bibot-pad, 0px))',
+        transition: 'right 0.25s cubic-bezier(0.4,0,0.2,1)',
+      }}
+    >
       {/* 배경 오버레이 */}
       <AnimatePresence>
         {isOpen && (

@@ -56,7 +56,7 @@ export default function ChangePasswordPage() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
           {/* 헤더 */}
           <div className="px-8 pt-8 pb-4 text-center">
             <div className="inline-flex p-3 bg-orange-100 rounded-xl mb-4">
@@ -77,7 +77,7 @@ export default function ChangePasswordPage() {
                   type={showPw ? 'text' : 'password'}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                  className="w-full px-4 py-3 pr-11 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
                   placeholder="6자 이상 입력"
                   required
                 />
@@ -98,7 +98,7 @@ export default function ChangePasswordPage() {
                   type={showConfirm ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                  className="w-full px-4 py-3 pr-11 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
                   placeholder="비밀번호를 다시 입력"
                   required
                 />

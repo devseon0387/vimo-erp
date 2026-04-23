@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>매니지먼트 메인 — Today Focus 위젯 시안</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --ink-50:  #fafaf9;
+      --ink-100: #f5f5f4;
+      --ink-200: #ede9e6;
+      --ink-300: #d6d3d1;
+      --ink-400: #a8a29e;
+      --ink-500: #78716c;
+      --ink-600: #57534e;
+      --ink-700: #44403c;
+      --ink-900: #1c1917;
+      --brand-50:  #fff7ed;
+      --brand-100: #ffedd5;
+      --brand-500: #f97316;
+      --brand-600: #ea580c;
+      --ok-50:  #f0fdf4;
+      --ok-500: #22c55e;
+      --ok-600: #16a34a;
+      --warn-50: #fef3c7;
+      --bad-50:  #fef2f2;
+      --bad-500: #ef4444;
+    }
+    body {
+      background: #f5f4f2;
+      color: var(--ink-900);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+    .section-card {
+      background: white;
+      border: 1px solid var(--ink-200);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .label {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: var(--ink-100);
+      color: var(--ink-600);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .text-meta    { font-size: 10px; color: var(--ink-400); font-weight: 500; }
+    .text-caption { font-size: 11px; color: var(--ink-500); }
+
+    /* ── 공통: 매니지먼트 헤더(탭 포함) 프레임 ── */
+    .mgmt-frame {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--ink-200);
+      padding: 24px;
+    }
+    .mgmt-title { font-size: 20px; font-weight: 700; color: var(--ink-900); }
+    .mgmt-sub { font-size: 13px; color: var(--ink-500); margin-top: 4px; }
+    .mgmt-tabs {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      background: white;
+      border: 1px solid var(--ink-200);
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+    .mgmt-tab {
+      position: relative;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink-500);
+    }
+    .mgmt-tab.active {
+      background: var(--brand-500);
+      color: white;
+      box-shadow: 0 2px 4px rgba(249, 115, 22, .2);
+    }
+    .mgmt-content {
+      margin-top: 20px;
+      height: 120px;
+      border: 1px dashed var(--ink-300);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ink-400); font-size: 12.5px;
+    }
+
+    /* ───── A. Horizontal Focus Bar ───── */
+    .focus-bar {
+      background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+      border: 1px solid #fde68a;
+      border-radius: 14px;
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: 1.2fr repeat(4, 1fr);
+      gap: 20px;
+      align-items: center;
+    }
+    .focus-head { display: flex; align-items: center; gap: 10px; }
+    .focus-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--brand-500); color: white;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 900;
+    }
+    .focus-headtitle { font-size: 13px; font-weight: 700; color: var(--ink-900); }
+    .focus-headsub { font-size: 11px; color: var(--ink-500); margin-top: 2px; }
+    .focus-item { border-left: 1px solid rgba(0,0,0,.08); padding-left: 20px; }
+    .focus-label { font-size: 10.5px; font-weight: 600; color: var(--ink-500); text-transform: uppercase; letter-spacing: .3px; }
+    .focus-value { font-size: 22px; font-weight: 800; color: var(--ink-900); margin-top: 2px; line-height: 1; }
+    .focus-note { font-size: 11px; margin-top: 4px; }
+    .focus-note.bad  { color: var(--bad-500); }
+    .focus-note.warn { color: #b45309; }
+    .focus-note.ok   { color: var(--ok-600); }
+    .focus-link {
+      font-size: 11px; color: var(--brand-600); font-weight: 600;
+      margin-top: 6px; display: inline-block;
+    }
+
+    /* ───── B. Action Card Grid ───── */
+    .card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .act-card {
+      background: white; border: 1px solid var(--ink-200);
+      border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .act-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.04); }
+    .act-card.bad   { border-left: 3px solid var(--bad-500); }
+    .act-card.warn  { border-left: 3px solid #f59e0b; }
+    .act-card.ok    { border-left: 3px solid var(--ok-500); }
+    .act-card.brand { border-left: 3px solid var(--brand-500); }
+    .act-header { display: flex; align-items: center; justify-content: space-between; }
+    .act-ico {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--ink-100); color: var(--ink-600);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .act-card.bad   .act-ico { background: var(--bad-50);   color: var(--bad-500); }
+    .act-card.warn  .act-ico { background: #fef3c7;          color: #b45309; }
+    .act-card.ok    .act-ico { background: var(--ok-50);    color: var(--ok-600); }
+    .act-card.brand .act-ico { background: var(--brand-50); color: var(--brand-600); }
+    .act-count {
+      font-size: 22px; font-weight: 800; color: var(--ink-900); line-height: 1;
+    }
+    .act-title { font-size: 12.5px; font-weight: 700; color: var(--ink-700); margin-top: 4px; }
+    .act-list {
+      font-size: 11px; color: var(--ink-600);
+      margin-top: 4px; line-height: 1.55;
+    }
+    .act-list li { margin-bottom: 2px; }
+    .act-cta {
+      font-size: 11px; font-weight: 600; color: var(--brand-600);
+      margin-top: auto; padding-top: 4px;
+    }
+
+    /* ───── C. Todo Timeline ───── */
+    .todo-wrap {
+      background: white; border: 1px solid var(--ink-200);
+      border-radius: 14px; padding: 6px;
+    }
+    .todo-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px 10px;
+    }
+    .todo-title { font-size: 13px; font-weight: 700; color: var(--ink-900); }
+    .todo-count { font-size: 11px; font-weight: 700; color: var(--brand-600); background: var(--brand-50); padding: 3px 8px; border-radius: 999px; }
+    .todo-item {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: 10px; align-items: center;
+      padding: 10px 14px; border-top: 1px solid var(--ink-100);
+    }
+    .todo-item:first-of-type { border-top: none; }
+    .todo-ico {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px;
+    }
+    .todo-bad   .todo-ico { background: var(--bad-50);  color: var(--bad-500); }
+    .todo-warn  .todo-ico { background: var(--warn-50); color: #b45309; }
+    .todo-brand .todo-ico { background: var(--brand-50); color: var(--brand-600); }
+    .todo-ok    .todo-ico { background: var(--ok-50); color: var(--ok-600); }
+    .todo-text { font-size: 13px; color: var(--ink-900); }
+    .todo-meta { font-size: 11px; color: var(--ink-500); margin-top: 1px; }
+    .todo-action {
+      font-size: 11px; font-weight: 600; color: var(--brand-600);
+      padding: 4px 10px; border: 1px solid var(--brand-200);
+      border-radius: 8px;
+    }
+
+    /* ───── D. Hybrid (KPI bar + Todo) ───── */
+    .hybrid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 14px; }
+    .hybrid-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hybrid-kpi {
+      background: white; border: 1px solid var(--ink-200);
+      border-radius: 12px; padding: 14px;
+    }
+    .hybrid-kpi .hk-title { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; color: var(--ink-500); }
+    .hybrid-kpi .hk-value { font-size: 22px; font-weight: 800; margin-top: 4px; line-height: 1.1; }
+    .hybrid-kpi .hk-sub { font-size: 11px; margin-top: 4px; color: var(--ink-500); }
+    .hybrid-kpi.bad .hk-value { color: var(--bad-500); }
+    .hybrid-kpi.warn .hk-value { color: #b45309; }
+  </style>
+</head>
+<body>
+  <div class="max-w-[1100px] mx-auto px-6 py-10">
+    <header class="mb-10">
+      <h1 class="text-3xl font-extrabold mb-2">매니지먼트 — Today Focus 위젯 시안</h1>
+      <p class="text-[14px]" style="color: var(--ink-500);">
+        매니지먼트 메인 탭 <b>맨 위에 추가되는 통합 위젯</b>. "오늘 체크할 4-5가지"를 한 화면에서 보여줘 여러 페이지 순회를 없앱니다.
+        4가지 안을 제안해요. 마음에 드는 번호를 알려 주세요.
+      </p>
+    </header>
+
+    <!-- ═══════ A. Focus Bar ═══════ -->
+    <section class="section-card">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="label">A</span>
+        <h2 class="text-lg font-bold">Focus Bar — 가로 한 줄 요약</h2>
+      </div>
+      <div class="mgmt-frame">
+        <div class="mgmt-title">매니지먼트</div>
+        <div class="mgmt-sub">2026년 4월 24일 금요일</div>
+        <div class="mgmt-tabs">
+          <button class="mgmt-tab active">메인</button>
+          <button class="mgmt-tab">미기입</button>
+          <button class="mgmt-tab">리포트</button>
+        </div>
+
+        <!-- Focus Bar -->
+        <div class="focus-bar" style="margin-top: 16px;">
+          <div class="focus-head">
+            <div class="focus-icon">!</div>
+            <div>
+              <div class="focus-headtitle">오늘 챙길 4가지</div>
+              <div class="focus-headsub">각 영역 클릭 시 해당 페이지로</div>
+            </div>
+          </div>
+          <div class="focus-item">
+            <div class="focus-label">마감 임박</div>
+            <div class="focus-value">5</div>
+            <div class="focus-note bad">D-3 이내 · 회차 페이지</div>
+            <a class="focus-link">보러가기 →</a>
+          </div>
+          <div class="focus-item">
+            <div class="focus-label">미기입</div>
+            <div class="focus-value">7</div>
+            <div class="focus-note warn">정보 누락 회차</div>
+            <a class="focus-link">미기입 탭 →</a>
+          </div>
+          <div class="focus-item">
+            <div class="focus-label">연락 필요</div>
+            <div class="focus-value">3</div>
+            <div class="focus-note warn">60일+ 무연락 클라이언트</div>
+            <a class="focus-link">클라이언트 →</a>
+          </div>
+          <div class="focus-item">
+            <div class="focus-label">미수금</div>
+            <div class="focus-value">₩12.8M</div>
+            <div class="focus-note bad">5건 미입금</div>
+            <a class="focus-link">정산 →</a>
+          </div>
+        </div>
+
+        <div class="mgmt-content">(기존 매니지먼트 메인 콘텐츠)</div>
+      </div>
+      <p class="text-caption mt-3">
+        한 줄로 쭉 펼쳐 <b>가장 정보 밀도가 높은</b> 안. 모바일에선 2x2로 접혀요.
+      </p>
+    </section>
+
+    <!-- ═══════ B. Action Card Grid ═══════ -->
+    <section class="section-card">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="label">B</span>
+        <h2 class="text-lg font-bold">Action Card Grid — 4개 독립 카드</h2>
+      </div>
+      <div class="mgmt-frame">
+        <div class="mgmt-title">매니지먼트</div>
+        <div class="mgmt-sub">2026년 4월 24일 금요일</div>
+        <div class="mgmt-tabs">
+          <button class="mgmt-tab active">메인</button>
+          <button class="mgmt-tab">미기입</button>
+          <button class="mgmt-tab">리포트</button>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <div class="text-[12px] font-bold mb-2" style="color: var(--ink-500); text-transform: uppercase; letter-spacing: .3px;">오늘 체크</div>
+          <div class="card-grid">
+            <!-- 마감 임박 -->
+            <div class="act-card bad">
+              <div class="act-header">
+                <div class="act-ico">⏰</div>
+                <div class="act-count">5</div>
+              </div>
+              <div class="act-title">마감 임박 회차</div>
+              <ul class="act-list">
+                <li>· 디지털원 Ep.12 — 오늘</li>
+                <li>· 비젼컴 Ep.3 — D-1</li>
+                <li>· JTBC Ep.8 — D-3</li>
+              </ul>
+              <div class="act-cta">회차 관리 →</div>
+            </div>
+            <!-- 미기입 -->
+            <div class="act-card warn">
+              <div class="act-header">
+                <div class="act-ico">⚠</div>
+                <div class="act-count">7</div>
+              </div>
+              <div class="act-title">미기입 회차</div>
+              <ul class="act-list">
+                <li>· 단가 누락 4건</li>
+                <li>· 담당자 미지정 2건</li>
+                <li>· 마감일 미지정 1건</li>
+              </ul>
+              <div class="act-cta">미기입 탭 →</div>
+            </div>
+            <!-- 연락 필요 -->
+            <div class="act-card brand">
+              <div class="act-header">
+                <div class="act-ico">✉</div>
+                <div class="act-count">3</div>
+              </div>
+              <div class="act-title">연락 필요 클라이언트</div>
+              <ul class="act-list">
+                <li>· 라이프트렌드 — 32일</li>
+                <li>· 홈쇼핑코리아 — 67일</li>
+                <li>· ABC기획 — 91일</li>
+              </ul>
+              <div class="act-cta">클라이언트 →</div>
+            </div>
+            <!-- 미수금 -->
+            <div class="act-card bad">
+              <div class="act-header">
+                <div class="act-ico">₩</div>
+                <div class="act-count">₩12.8M</div>
+              </div>
+              <div class="act-title">미수금 합계</div>
+              <ul class="act-list">
+                <li>· 홈쇼핑 ₩8.2M (67일)</li>
+                <li>· 디지털원 ₩3.1M (45일)</li>
+                <li>· 비젼컴 ₩1.5M (18일)</li>
+              </ul>
+              <div class="act-cta">정산 →</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mgmt-content" style="margin-top: 20px;">(기존 매니지먼트 메인 콘텐츠)</div>
+      </div>
+      <p class="text-caption mt-3">
+        각 영역이 자기 카드라 <b>세부 목록 3개까지 보임</b>. 정보는 제일 많지만 세로 공간을 차지해요.
+      </p>
+    </section>
+
+    <!-- ═══════ C. Todo Timeline ═══════ -->
+    <section class="section-card">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="label">C</span>
+        <h2 class="text-lg font-bold">Todo Timeline — 할 일 리스트</h2>
+      </div>
+      <div class="mgmt-frame">
+        <div class="mgmt-title">매니지먼트</div>
+        <div class="mgmt-sub">2026년 4월 24일 금요일</div>
+        <div class="mgmt-tabs">
+          <button class="mgmt-tab active">메인</button>
+          <button class="mgmt-tab">미기입</button>
+          <button class="mgmt-tab">리포트</button>
+        </div>
+
+        <div class="todo-wrap" style="margin-top: 16px;">
+          <div class="todo-head">
+            <div class="todo-title">오늘 체크할 일</div>
+            <div class="todo-count">8개</div>
+          </div>
+          <div class="todo-item todo-bad">
+            <div class="todo-ico">⏰</div>
+            <div>
+              <div class="todo-text">디지털원 Ep.12 · 오늘 마감</div>
+              <div class="todo-meta">담당 이수아 · 진행 중 · 단가 ₩3.2M</div>
+            </div>
+            <a class="todo-action">바로가기</a>
+          </div>
+          <div class="todo-item todo-bad">
+            <div class="todo-ico">₩</div>
+            <div>
+              <div class="todo-text">홈쇼핑코리아 미수금 ₩8.2M</div>
+              <div class="todo-meta">67일 경과 · 3건 미입금</div>
+            </div>
+            <a class="todo-action">정산으로</a>
+          </div>
+          <div class="todo-item todo-warn">
+            <div class="todo-ico">⚠</div>
+            <div>
+              <div class="todo-text">미기입 회차 7건</div>
+              <div class="todo-meta">단가 · 담당자 · 마감일 정보 누락</div>
+            </div>
+            <a class="todo-action">채우기</a>
+          </div>
+          <div class="todo-item todo-warn">
+            <div class="todo-ico">⏰</div>
+            <div>
+              <div class="todo-text">비젼컴퍼니 Ep.3 · D-1</div>
+              <div class="todo-meta">담당 박준형 · 검토</div>
+            </div>
+            <a class="todo-action">바로가기</a>
+          </div>
+          <div class="todo-item todo-brand">
+            <div class="todo-ico">✉</div>
+            <div>
+              <div class="todo-text">라이프트렌드 — 32일 무연락</div>
+              <div class="todo-meta">활성 프로젝트 1건, 매출 ₩18M</div>
+            </div>
+            <a class="todo-action">메일쓰기</a>
+          </div>
+        </div>
+
+        <div class="mgmt-content" style="margin-top: 20px;">(기존 매니지먼트 메인 콘텐츠)</div>
+      </div>
+      <p class="text-caption mt-3">
+        <b>오늘 할 일 체크리스트</b> 형태. 항목 단위로 바로 액션 가능. "매니저의 할 일 중심" UX.
+      </p>
+    </section>
+
+    <!-- ═══════ D. Hybrid ═══════ -->
+    <section class="section-card">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="label">D</span>
+        <h2 class="text-lg font-bold">Hybrid — 좌측 KPI + 우측 할 일</h2>
+      </div>
+      <div class="mgmt-frame">
+        <div class="mgmt-title">매니지먼트</div>
+        <div class="mgmt-sub">2026년 4월 24일 금요일</div>
+        <div class="mgmt-tabs">
+          <button class="mgmt-tab active">메인</button>
+          <button class="mgmt-tab">미기입</button>
+          <button class="mgmt-tab">리포트</button>
+        </div>
+
+        <div class="hybrid" style="margin-top: 16px;">
+          <div class="hybrid-kpis">
+            <div class="hybrid-kpi bad">
+              <div class="hk-title">마감 임박</div>
+              <div class="hk-value">5</div>
+              <div class="hk-sub">D-3 이내 회차 · 2건 오늘</div>
+            </div>
+            <div class="hybrid-kpi warn">
+              <div class="hk-title">미기입</div>
+              <div class="hk-value">7</div>
+              <div class="hk-sub">정보 누락 회차</div>
+            </div>
+            <div class="hybrid-kpi warn">
+              <div class="hk-title">연락 필요</div>
+              <div class="hk-value">3</div>
+              <div class="hk-sub">60일+ 무연락</div>
+            </div>
+            <div class="hybrid-kpi bad">
+              <div class="hk-title">미수금</div>
+              <div class="hk-value">₩12.8M</div>
+              <div class="hk-sub">5건 미입금</div>
+            </div>
+          </div>
+
+          <div class="todo-wrap">
+            <div class="todo-head">
+              <div class="todo-title">오늘 최우선</div>
+              <div class="todo-count">3개</div>
+            </div>
+            <div class="todo-item todo-bad">
+              <div class="todo-ico">⏰</div>
+              <div>
+                <div class="todo-text">디지털원 Ep.12 · 오늘 마감</div>
+                <div class="todo-meta">담당 이수아 · 진행 중</div>
+              </div>
+              <a class="todo-action">바로</a>
+            </div>
+            <div class="todo-item todo-bad">
+              <div class="todo-ico">₩</div>
+              <div>
+                <div class="todo-text">홈쇼핑 미수금 ₩8.2M</div>
+                <div class="todo-meta">67일 경과</div>
+              </div>
+              <a class="todo-action">정산</a>
+            </div>
+            <div class="todo-item todo-brand">
+              <div class="todo-ico">✉</div>
+              <div>
+                <div class="todo-text">라이프트렌드 팔로업</div>
+                <div class="todo-meta">32일 무연락</div>
+              </div>
+              <a class="todo-action">메일</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="mgmt-content" style="margin-top: 20px;">(기존 매니지먼트 메인 콘텐츠)</div>
+      </div>
+      <p class="text-caption mt-3">
+        <b>숫자(KPI) + 액션(할 일)을 동시에</b>. 정보량·액션성 균형. 가장 대시보드스러움.
+      </p>
+    </section>
+
+    <footer class="mt-10 p-6 rounded-2xl" style="background: white; border: 1px solid var(--ink-200);">
+      <h3 class="text-lg font-extrabold mb-3">어느 방향이 좋아요?</h3>
+      <ul class="text-[13.5px] space-y-2" style="color: var(--ink-700);">
+        <li><b>A (Focus Bar)</b> — 한 줄 정보 요약 · 제일 컴팩트 · 세부 액션은 페이지 이동 후</li>
+        <li><b>B (Card Grid)</b> — 가장 정보 많음 (각 카드에 TOP 3) · 세로 공간 소비 큼</li>
+        <li><b>C (Todo Timeline)</b> — "할 일"에 집중 · 항목별 바로 액션 · 일 중심 UX</li>
+        <li><b>D (Hybrid)</b> — KPI + 할 일 조합 · 균형 잡힘 · <b>추천</b></li>
+      </ul>
+      <p class="text-[12.5px] mt-3" style="color: var(--ink-500);">
+        혼합(예: A 배경 + D 아래 할 일)도 가능해요. 고른 번호 또는 조합 알려 주세요.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

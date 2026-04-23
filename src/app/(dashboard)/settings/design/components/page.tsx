@@ -102,7 +102,7 @@ export default function DesignComponentsPage() {
         </div>
 
         {/* 미리보기 */}
-        <div className="p-6 bg-gray-50 rounded-xl border border-gray-200 flex flex-wrap gap-4">
+        <div className="p-6 bg-gray-50 rounded-xl border border-divider flex flex-wrap gap-4">
           {/* 성공 */}
           <div className="bg-gradient-to-r from-green-500/95 to-green-600/95 backdrop-blur-xl text-white px-6 py-4 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3 w-fit">
             <div className="flex-shrink-0">
@@ -223,12 +223,12 @@ export default function DesignComponentsPage() {
             <p className="text-sm text-gray-600">bg-white/40 + backdrop-blur-xl</p>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-50/20 to-orange-50/20 rounded-xl border border-gray-200/40 backdrop-blur-md p-6 shadow-md">
+          <div className="bg-gradient-to-br from-orange-50/20 to-orange-50/20 rounded-xl border border-divider/40 backdrop-blur-md p-6 shadow-md">
             <h3 className="font-bold text-gray-900 mb-2">그라디언트 카드</h3>
             <p className="text-sm text-gray-600">그라디언트 배경 + 투명도</p>
           </div>
 
-          <div className="border border-gray-200/50 rounded-xl p-6 hover:bg-gray-50/50 transition-all cursor-pointer">
+          <div className="border border-divider/50 rounded-xl p-6 hover:bg-gray-50/50 transition-all cursor-pointer">
             <h3 className="font-bold text-gray-900 mb-2">보더 카드</h3>
             <p className="text-sm text-gray-600">호버 시 배경 변화</p>
           </div>
@@ -245,7 +245,7 @@ export default function DesignComponentsPage() {
 
 {/* 그라디언트 카드 */}
 <div className="bg-gradient-to-br from-orange-50/20
-  to-orange-50/20 rounded-xl border border-gray-200/40
+  to-orange-50/20 rounded-xl border border-divider/40
   backdrop-blur-md p-6">
   내용
 </div>`}
@@ -288,7 +288,7 @@ export default function DesignComponentsPage() {
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">Secondary (블러)</h3>
             <div className="flex flex-wrap gap-3">
-              <button className="px-6 py-3 bg-white/60 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white/80 transition-colors font-medium border border-gray-200/60 shadow-sm">
+              <button className="px-6 py-3 bg-white/60 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white/80 transition-colors font-medium border border-divider/60 shadow-sm">
                 보조 버튼
               </button>
               <button className="px-6 py-3 bg-orange-500/90 backdrop-blur-sm text-white rounded-xl hover:bg-orange-600 transition-colors shadow-md font-medium">
@@ -327,7 +327,7 @@ export default function DesignComponentsPage() {
 {/* Secondary 블러 */}
 <button className="px-6 py-3 bg-white/60 backdrop-blur-sm
   text-gray-700 rounded-xl hover:bg-white/80
-  transition-colors font-medium border border-gray-200/60">
+  transition-colors font-medium border border-divider/60">
   버튼
 </button>`}
             </pre>
@@ -356,7 +356,7 @@ export default function DesignComponentsPage() {
             <input
               type="text"
               placeholder="내용을 입력하세요"
-              className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+              className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-divider/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
             />
           </div>
 
@@ -364,13 +364,13 @@ export default function DesignComponentsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">날짜 입력</label>
             <input
               type="date"
-              className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+              className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-divider/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">선택 (Select)</label>
-            <select className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all">
+            <select className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-divider/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all">
               <option>대기</option>
               <option>진행중</option>
               <option>완료</option>
@@ -378,7 +378,7 @@ export default function DesignComponentsPage() {
           </div>
 
           {/* Floating Label Inputs */}
-          <div className="pt-6 border-t border-gray-200">
+          <div className="pt-6 border-t border-divider">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">✨ Floating Label (추천)</h3>
             <div className="space-y-4">
               <FloatingLabelInput
@@ -412,7 +412,7 @@ export default function DesignComponentsPage() {
 {`<input
   type="text"
   className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm
-    border border-gray-200/60 rounded-lg
+    border border-divider/60 rounded-lg
     focus:outline-none focus:ring-2 focus:ring-orange-500/50
     transition-all"
 />`}
@@ -485,7 +485,7 @@ export default function DesignComponentsPage() {
             <div className="max-w-md space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">기본 셀렉트</label>
-                <select className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all cursor-pointer">
+                <select className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-divider/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all cursor-pointer">
                   <option>선택하세요</option>
                   <option>옵션 1</option>
                   <option>옵션 2</option>
@@ -495,7 +495,7 @@ export default function DesignComponentsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">상태 선택</label>
-                <select className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all cursor-pointer">
+                <select className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-divider/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all cursor-pointer">
                   <option>대기</option>
                   <option>진행중</option>
                   <option>완료</option>
@@ -569,7 +569,7 @@ export default function DesignComponentsPage() {
               <p className="text-xs text-gray-400 mb-2">기본 셀렉트:</p>
               <pre className="text-xs text-green-400 overflow-x-auto">
 {`<select className="w-full px-4 py-2 bg-white/60
-  backdrop-blur-sm border border-gray-200/60 rounded-lg
+  backdrop-blur-sm border border-divider/60 rounded-lg
   focus:outline-none focus:ring-2 focus:ring-orange-500/50
   transition-all cursor-pointer">
   <option>선택하세요</option>
@@ -633,7 +633,7 @@ export default function DesignComponentsPage() {
           </button>
         </div>
 
-        <div className="p-6 bg-gradient-to-br from-orange-50/20 to-orange-50/20 rounded-xl border border-gray-200/40">
+        <div className="p-6 bg-gradient-to-br from-orange-50/20 to-orange-50/20 rounded-xl border border-divider/40">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-green-500"></div>
@@ -654,7 +654,7 @@ export default function DesignComponentsPage() {
           <div className="mt-6 p-4 bg-gray-900 rounded-xl">
             <pre className="text-xs text-green-400 overflow-x-auto">
 {`<div className="p-6 bg-gradient-to-br from-orange-50/20
-  to-orange-50/20 rounded-xl border border-gray-200/40">
+  to-orange-50/20 rounded-xl border border-divider/40">
   {/* 타임라인 내용 */}
 </div>`}
             </pre>
@@ -672,7 +672,7 @@ export default function DesignComponentsPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="relative pb-3 border-b border-gray-100 -mx-2 px-2 rounded-lg hover:bg-gray-50/80 hover:border-transparent transition-all duration-200 group cursor-pointer">
+          <div className="relative pb-3 border-b border-divider -mx-2 px-2 rounded-lg hover:bg-gray-50/80 hover:border-transparent transition-all duration-200 group cursor-pointer">
             <div className="flex items-center gap-4">
               <span className="text-gray-700">작업 항목 1</span>
               <button className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded">
@@ -680,7 +680,7 @@ export default function DesignComponentsPage() {
               </button>
             </div>
           </div>
-          <div className="relative pb-3 border-b border-gray-100 -mx-2 px-2 rounded-lg hover:bg-gray-50/80 hover:border-transparent transition-all duration-200 group cursor-pointer">
+          <div className="relative pb-3 border-b border-divider -mx-2 px-2 rounded-lg hover:bg-gray-50/80 hover:border-transparent transition-all duration-200 group cursor-pointer">
             <div className="flex items-center gap-4">
               <span className="text-gray-700">작업 항목 2</span>
               <button className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded">
@@ -851,7 +851,7 @@ const tabSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);`}
 
   {/* 스티키 헤더 (탭) */}
   <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-2xl
-    border-b border-gray-200">
+    border-b border-divider">
     <div className="flex gap-2 p-4">
       <button onClick={() => switchTab('tab1')}
         className={\`px-4 py-2 rounded-lg transition-colors \${
@@ -947,9 +947,9 @@ const tabSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);`}
         </div>
 
         {/* 미리보기 */}
-        <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="p-6 bg-gray-50 rounded-xl border border-divider">
           <div className="bg-white rounded-[28px] p-8 shadow-2xl max-w-md mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">클라이언트 추가</h2>
+            <h2 className="text-page mb-8">클라이언트 추가</h2>
 
             {/* 기본 정보 섹션 */}
             <div className="space-y-6 mb-8">
@@ -988,7 +988,7 @@ const tabSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);`}
 
     {/* 헤더 */}
     <div className="px-8 pt-8 pb-4">
-      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+      <h2 className="text-page">
         제목
       </h2>
     </div>
@@ -1082,7 +1082,7 @@ const tabSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);`}
         </div>
 
         {/* 미리보기 */}
-        <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="p-6 bg-gray-50 rounded-xl border border-divider">
           <div className="flex flex-col items-center justify-center py-12">
             <div className="relative">
               {/* 파란 원 */}
@@ -1224,7 +1224,7 @@ const handleSuccess = () => {
         </div>
 
         {/* 미리보기 */}
-        <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="p-6 bg-gray-50 rounded-xl border border-divider">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl mx-auto overflow-hidden">
             {/* 헤더 */}
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 text-white">
@@ -1254,7 +1254,7 @@ const handleSuccess = () => {
             </div>
 
             {/* 체크리스트 그룹 1 */}
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-divider">
               <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                 기획 단계
@@ -1341,7 +1341,7 @@ const handleSuccess = () => {
             </div>
 
             {/* 푸터 */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+            <div className="px-6 py-4 bg-gray-50 border-t border-divider flex justify-between items-center">
               <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">
                 + 새 항목 추가
               </button>
@@ -1409,7 +1409,7 @@ const handleSuccess = () => {
     </div>
 
     {/* 체크리스트 그룹 */}
-    <div className="p-6 border-b border-gray-100">
+    <div className="p-6 border-b border-divider">
       <h4 className="text-sm font-semibold text-gray-700 mb-4
         flex items-center gap-2">
         <span className="w-2 h-2 bg-orange-500 rounded-full" />
@@ -1553,9 +1553,9 @@ const groupedChecklist = checklist.reduce((acc, item) => {
         </div>
 
         {/* 미리보기 */}
-        <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="p-6 bg-gray-50 rounded-xl border border-divider">
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-gray-200/60 rounded-xl hover:bg-white/80 transition-all font-medium shadow-sm">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-divider/60 rounded-xl hover:bg-white/80 transition-all font-medium shadow-sm">
               <Plus size={18} />
               <span>클라이언트</span>
             </button>
@@ -1578,7 +1578,7 @@ const groupedChecklist = checklist.reduce((acc, item) => {
               <pre className="text-xs text-green-400 overflow-x-auto">
 {`{/* 블러 스타일 */}
 <button className="flex items-center gap-2 px-4 py-2
-  bg-white/60 backdrop-blur-sm border border-gray-200/60
+  bg-white/60 backdrop-blur-sm border border-divider/60
   rounded-xl hover:bg-white/80 transition-all font-medium
   shadow-sm">
   <Plus size={18} />
@@ -1700,7 +1700,7 @@ const groupedChecklist = checklist.reduce((acc, item) => {
               </button>
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2 bg-white/60 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white/80 transition-colors font-medium border border-gray-200/60"
+                className="flex-1 px-4 py-2 bg-white/60 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white/80 transition-colors font-medium border border-divider/60"
               >
                 취소
               </button>

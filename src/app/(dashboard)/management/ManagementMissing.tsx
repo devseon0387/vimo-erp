@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Save, Sparkles, Check, ChevronDown, ChevronUp, User, Search } from 'lucide-react';
+import { AlertTriangle, Save, Sparkles, Check, ChevronDown, User, Search, Wallet, Users, Calendar } from 'lucide-react';
 import { Project, Partner, Episode } from '@/types';
 import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { useToast } from '@/contexts/ToastContext';
-import DatePickerModal from '@/components/DatePickerModal';
 import DateTripleModal from '@/components/DateTripleModal';
 
 // ── 제목에서 금액 힌트 추출
@@ -87,6 +86,7 @@ interface BatchRow {
 interface EditFields {
   cost?: number;
   mgmt?: number;
+  total?: number;
   date?: string;
   assignee?: string;
   manager?: string;
@@ -106,10 +106,8 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
   const [filter, setFilter] = useState<FilterKey>('all');
 
   const [edits, setEdits] = useState<Record<string, EditFields>>({});
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [activeEpId, setActiveEpId] = useState<string | null>(null);
 
-  const [bulkDate, setBulkDate] = useState('');
-  const [showBulkDate, setShowBulkDate] = useState(false);
   const [dateModalEpId, setDateModalEpId] = useState<string | null>(null);
 
   const loadData = useCallback(() => {
@@ -198,12 +196,58 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
 
   // ── 필터
   const filtered = useMemo(() => {
-    if (filter === 'cost') return rows.filter(r => r.missing.cost || r.missing.mgmt);
-    if (filter === 'date') return rows.filter(r => r.missing.date);
-    if (filter === 'person') return rows.filter(r => r.missing.assignee || r.missing.manager);
-    if (filter === 'schedule') return rows.filter(r => r.missing.startDate || r.missing.dueDate);
-    return rows;
+    let list = rows;
+    if (filter === 'cost') list = list.filter(r => r.missing.cost || r.missing.mgmt);
+    else if (filter === 'date') list = list.filter(r => r.missing.date);
+    else if (filter === 'person') list = list.filter(r => r.missing.assignee || r.missing.manager);
+    else if (filter === 'schedule') list = list.filter(r => r.missing.startDate || r.missing.dueDate);
+
+    return list;
   }, [rows, filter]);
+
+  // 활성 회차
+  const activeIdx = useMemo(() => filtered.findIndex(r => r.episode.id === activeEpId), [filtered, activeEpId]);
+  const activeRow = activeIdx >= 0 ? filtered[activeIdx] : null;
+  // 방향 감지 (다음=1, 이전=-1)
+  const prevIdxRef = useRef<number>(activeIdx);
+  const [direction, setDirection] = useState(0);
+  useEffect(() => {
+    if (activeIdx !== prevIdxRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDirection(activeIdx > prevIdxRef.current ? 1 : -1);
+      prevIdxRef.current = activeIdx;
+    }
+  }, [activeIdx]);
+
+  // 필터 변경 시 활성 회차 자동 보정
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (filtered.length === 0) {
+      setActiveEpId(null);
+    } else if (!activeEpId || !filtered.some(r => r.episode.id === activeEpId)) {
+      setActiveEpId(filtered[0].episode.id);
+    }
+  }, [filtered, activeEpId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const goPrev = useCallback(() => {
+    if (activeIdx > 0) setActiveEpId(filtered[activeIdx - 1].episode.id);
+  }, [activeIdx, filtered]);
+  const goNext = useCallback(() => {
+    if (activeIdx >= 0 && activeIdx < filtered.length - 1) setActiveEpId(filtered[activeIdx + 1].episode.id);
+  }, [activeIdx, filtered]);
+
+  // 키보드 네비게이션
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tgt = e.target as HTMLElement;
+      const isInput = tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable;
+      if (e.key === 'ArrowLeft' && !isInput) { e.preventDefault(); goPrev(); }
+      else if (e.key === 'ArrowRight' && !isInput) { e.preventDefault(); goNext(); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [goPrev, goNext]);
 
   const missingCostCount = rows.filter(r => r.missing.cost || r.missing.mgmt).length;
   const missingDateCount = rows.filter(r => r.missing.date).length;
@@ -228,32 +272,6 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
     setEdits(prev => ({ ...prev, [epId]: { ...prev[epId], cost } }));
   };
 
-  // ── 선택
-  const allSelected = filtered.length > 0 && filtered.every(r => selected.has(r.episode.id));
-  const toggleAll = () => {
-    if (allSelected) setSelected(new Set());
-    else setSelected(new Set(filtered.map(r => r.episode.id)));
-  };
-  const toggleRow = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  // ── 선택 항목 일괄 정산일 적용
-  const applyBulkDate = () => {
-    if (!bulkDate) return;
-    setEdits(prev => {
-      const next = { ...prev };
-      selected.forEach(id => { next[id] = { ...next[id], date: bulkDate }; });
-      return next;
-    });
-    setShowBulkDate(false);
-    toast.success(`${selected.size}건에 정산일 적용됨`);
-  };
-
   // ── 저장
   const handleSave = async () => {
     const entries = Object.entries(edits);
@@ -265,9 +283,9 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
         const original = allEpisodes.find(ep => ep.id === episodeId);
         const fields: Partial<Episode> = {};
 
-        if (changes.cost !== undefined || changes.mgmt !== undefined) {
+        if (changes.cost !== undefined || changes.mgmt !== undefined || changes.total !== undefined) {
           fields.budget = {
-            totalAmount: original?.budget?.totalAmount ?? 0,
+            totalAmount: changes.total ?? original?.budget?.totalAmount ?? 0,
             partnerPayment: changes.cost ?? original?.budget?.partnerPayment ?? 0,
             managementFee: changes.mgmt ?? original?.budget?.managementFee ?? 0,
           };
@@ -288,7 +306,6 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
     else toast.warning(`${ok}건 성공, ${fail}건 실패`);
 
     setEdits({});
-    setSelected(new Set());
     loadData();
     setSaving(false);
   };
@@ -301,6 +318,7 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
     switch (field) {
       case 'cost': { const v = ep.budget?.partnerPayment ?? 0; return v > 0 ? String(v) : ''; }
       case 'mgmt': { const v = ep.budget?.managementFee ?? 0; return v > 0 ? String(v) : ''; }
+      case 'total': { const v = ep.budget?.totalAmount ?? 0; return v > 0 ? String(v) : ''; }
       case 'date': return normalizeDate(ep.paymentDueDate);
       case 'assignee': return ep.assignee ?? '';
       case 'manager': return ep.manager ?? '';
@@ -316,26 +334,9 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
   const inputCls = (epId: string, field: keyof EditFields, isMissing: boolean) => {
     const edited = edits[epId]?.[field] !== undefined;
     const filled = edited && getVal({ episode: { id: epId } } as BatchRow, field) !== '';
-    if (edited && filled) return 'border-green-400 bg-green-50/50 text-green-700';
-    if (isMissing) return 'border-dashed border-orange-300 bg-orange-50/30';
-    return 'border-[#ede9e6] bg-[#fafaf9]';
-  };
-
-  // ── 상태 뱃지
-  const getStatusBadge = (row: BatchRow) => {
-    const epId = row.episode.id;
-    const ed = edits[epId];
-    if (!ed) {
-      const cnt = countMissing(row.missing);
-      if (cnt >= 4) return <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#fee2e2] text-red-500 font-semibold">{cnt}개 미입력</span>;
-      if (cnt >= 2) return <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#fff7ed] text-orange-500 font-semibold">{cnt}개 미입력</span>;
-      return <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#fef9c3] text-yellow-600 font-semibold">1개 미입력</span>;
-    }
-    return (
-      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#f0fdf4] text-green-600 font-semibold">
-        <Check size={10} />수정됨
-      </span>
-    );
+    if (edited && filled) return 'border-ok-500 bg-ok-50/50 text-ok-700';
+    if (isMissing) return 'border-dashed border-brand-200 bg-brand-50/30';
+    return 'border-[var(--color-ink-200)] bg-[var(--color-ink-50)]';
   };
 
   // ── 탭
@@ -357,9 +358,9 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
     placeholder: string,
   ) => {
     const isManager = field === 'manager';
-    const accentBg = isManager ? 'bg-purple-500' : 'bg-orange-500';
-    const accentBgLight = isManager ? 'bg-purple-50' : 'bg-orange-50';
-    const accentText = isManager ? 'text-purple-500' : 'text-orange-500';
+    const accentBg = isManager ? 'bg-purple-500' : 'bg-brand-500';
+    const accentBgLight = isManager ? 'bg-purple-50' : 'bg-brand-50';
+    const accentText = isManager ? 'text-purple-500' : 'text-brand-500';
 
     const dropdownId = `${epId}-${field}`;
     const isOpen = openDropdown === dropdownId;
@@ -378,28 +379,28 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
           }}
           className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg border cursor-pointer transition-all ${
             edited && selectedPartner
-              ? 'border-green-400 bg-green-50/50'
+              ? 'border-ok-500 bg-ok-50/50'
               : isMissing
-                ? 'border-dashed border-orange-300 bg-orange-50/30'
-                : 'border-[#ede9e6] bg-[#fafaf9]'
-          } ${isOpen ? 'border-orange-500 bg-white shadow-[0_0_0_3px_rgba(234,88,12,0.08)]' : 'hover:border-[#d6cec8]'}`}
+                ? 'border-dashed border-brand-200 bg-brand-50/30'
+                : 'border-[var(--color-ink-200)] bg-[var(--color-ink-50)]'
+          } ${isOpen ? 'border-brand-500 bg-white shadow-[0_0_0_3px_rgba(249,115,22,0.08)]' : 'hover:border-[#d6cec8]'}`}
         >
           {selectedPartner ? (
             <>
               <div className={`w-5 h-5 rounded-full ${accentBg} flex items-center justify-center flex-shrink-0`}>
                 <User size={10} className="text-white" />
               </div>
-              <span className="text-[12px] font-medium text-gray-900 truncate">{selectedPartner.name}</span>
+              <span className="text-[12px] font-medium text-ink-900 truncate">{selectedPartner.name}</span>
             </>
           ) : (
             <>
               <div className={`w-5 h-5 rounded-full ${accentBgLight} flex items-center justify-center flex-shrink-0`}>
                 <User size={10} className={accentText} />
               </div>
-              <span className="text-[12px] text-[#a8a29e]">{placeholder}</span>
+              <span className="text-[12px] text-[var(--color-ink-400)]">{placeholder}</span>
             </>
           )}
-          <ChevronDown size={12} className={`ml-auto text-[#a8a29e] flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown size={12} className={`ml-auto text-[var(--color-ink-400)] flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </div>
         <AnimatePresence>
           {isOpen && (
@@ -408,11 +409,11 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.97 }}
               transition={{ duration: 0.12 }}
-              className="absolute top-full left-0 mt-1 z-20 w-[200px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-xl shadow-2xl max-h-72 overflow-hidden"
+              className="absolute top-full left-0 mt-1 z-20 w-[200px] bg-white/95 backdrop-blur-xl border border-ink-200 rounded-xl shadow-2xl max-h-72 overflow-hidden"
             >
-              <div className="sticky top-0 p-2 border-b border-gray-100 bg-white/95">
-                <div className="flex items-center gap-1.5 px-2 py-1.5 border border-gray-200 rounded-lg bg-white">
-                  <Search size={12} className="text-gray-400 flex-shrink-0" />
+              <div className="sticky top-0 p-2 border-b border-ink-100 bg-white/95">
+                <div className="flex items-center gap-1.5 px-2 py-1.5 border border-ink-200 rounded-lg bg-white">
+                  <Search size={12} className="text-ink-400 flex-shrink-0" />
                   <input
                     type="text"
                     value={dropdownSearch}
@@ -432,9 +433,9 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
                     setOpenDropdown(null);
                     setDropdownSearch('');
                   }}
-                  className="w-full flex items-center px-3 py-2 hover:bg-gray-50 transition-colors text-left border-b border-gray-50"
+                  className="w-full flex items-center px-3 py-2 hover:bg-ink-50 transition-colors text-left border-b border-gray-50"
                 >
-                  <span className="text-[12px] text-gray-400">선택 안함</span>
+                  <span className="text-[12px] text-ink-400">선택 안함</span>
                 </button>
                 {filteredOptions.map(p => (
                   <button
@@ -445,19 +446,19 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
                       setOpenDropdown(null);
                       setDropdownSearch('');
                     }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors text-left ${
+                    className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-ink-50 transition-colors text-left ${
                       currentValue === p.id ? accentBgLight : ''
                     }`}
                   >
                     <div className={`w-5 h-5 rounded-full ${accentBg} flex items-center justify-center flex-shrink-0`}>
                       <User size={10} className="text-white" />
                     </div>
-                    <span className="text-[12px] font-medium text-gray-900">{p.name}</span>
+                    <span className="text-[12px] font-medium text-ink-900">{p.name}</span>
                     {currentValue === p.id && <Check size={12} className={`ml-auto ${accentText}`} />}
                   </button>
                 ))}
                 {filteredOptions.length === 0 && (
-                  <div className="px-3 py-4 text-center text-[12px] text-gray-400">결과 없음</div>
+                  <div className="px-3 py-4 text-center text-[12px] text-ink-400">결과 없음</div>
                 )}
               </div>
             </motion.div>
@@ -470,16 +471,16 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
   return (
     <div className="space-y-5">
       {/* 통합 카드 */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-ink-100">
         {/* 툴바 */}
-        <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-[#f0ece9] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-[var(--color-ink-200)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-[20px] sm:text-[22px] font-extrabold tracking-tight">
-              {rows.length}<span className="text-[13px] text-[#a8a29e] font-medium ml-1">건</span>
+              {rows.length}<span className="text-[13px] text-[var(--color-ink-400)] font-medium ml-1">건</span>
             </span>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#fff7ed] rounded-full">
-              <AlertTriangle size={12} className="text-orange-500" />
-              <span className="text-[11px] font-semibold text-orange-500">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[var(--color-brand-50)] rounded-full">
+              <AlertTriangle size={12} className="text-brand-500" />
+              <span className="text-[11px] font-semibold text-brand-500">
                 비용 {missingCostCount} · 정산일 {missingDateCount} · 담당자 {missingPersonCount} · 일정 {missingScheduleCount}
               </span>
             </div>
@@ -496,41 +497,16 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
                   {filter === tab.key && (
                     <motion.div
                       layoutId="batch-tab"
-                      className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
+                      className="absolute inset-0 bg-brand-500 rounded-lg shadow-sm shadow-orange-500/20"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
-                  <span className={`relative z-10 whitespace-nowrap ${filter === tab.key ? 'text-white' : 'text-[#78716c]'}`}>
+                  <span className={`relative z-10 whitespace-nowrap ${filter === tab.key ? 'text-white' : 'text-[var(--color-ink-500)]'}`}>
                     {tab.label} {tab.count}
                   </span>
                 </button>
               ))}
             </div>
-
-            {/* 선택 항목 일괄 정산일 */}
-            {selected.size > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowBulkDate(!showBulkDate)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f5f4f2] hover:bg-[#ede9e6] rounded-lg text-[12px] font-semibold text-[#44403c] transition-colors"
-                >
-                  선택 {selected.size}건 정산일 일괄
-                  {showBulkDate ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                </button>
-                {showBulkDate && (
-                  <div className="absolute right-0 top-full mt-2 bg-white border border-[#ede9e6] rounded-xl shadow-lg p-3 z-30 flex items-center gap-2">
-                    <DatePickerModal
-                      value={bulkDate}
-                      onChange={v => setBulkDate(v)}
-                      placeholder="날짜 선택"
-                    />
-                    <button onClick={applyBulkDate} className="px-3 py-2 bg-orange-500 text-white rounded-lg text-[12px] font-semibold hover:bg-orange-600 transition-colors whitespace-nowrap">
-                      적용
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* 저장 */}
             <button
@@ -538,8 +514,8 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
               disabled={editCount === 0 || saving}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${
                 editCount > 0
-                  ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-500/20'
-                  : 'bg-[#e7e5e4] text-[#a8a29e] cursor-not-allowed'
+                  ? 'bg-brand-500 text-white hover:bg-brand-600 shadow-sm shadow-orange-500/20'
+                  : 'bg-[#e7e5e4] text-[var(--color-ink-400)] cursor-not-allowed'
               }`}
             >
               {saving ? (
@@ -552,159 +528,126 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
           </div>
         </div>
 
-        {/* 테이블 */}
+        {/* 스플릿 뷰 */}
         {loading ? (
-          <div className="flex items-center justify-center h-40">
+          <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-20 text-center">
-            <Check className="mx-auto mb-3 text-green-400" size={36} />
-            <p className="font-medium text-gray-500">미입력 항목이 없습니다</p>
-            <p className="text-xs mt-1 text-[#a8a29e]">모든 에피소드의 정보가 입력되었습니다</p>
+            <Check className="mx-auto mb-3 text-ok-500" size={36} />
+            <p className="font-medium text-ink-500">미입력 항목이 없습니다</p>
+            <p className="text-xs mt-1 text-[var(--color-ink-400)]">모든 에피소드의 정보가 입력되었습니다</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            {/* 헤더 */}
-            <div className="grid grid-cols-[32px_1fr_120px_110px_110px_120px_100px_100px_100px_70px] gap-1.5 px-4 py-2.5 text-[10px] font-semibold text-[#a8a29e] border-b border-[#f0ece9] bg-[#fafaf9] min-w-[1080px] uppercase tracking-wide">
-              <div className="flex items-center justify-center">
-                <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-[14px] h-[14px] accent-orange-500 cursor-pointer" />
+          <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] min-h-[560px]">
+            {/* 왼쪽 리스트 */}
+            <div className="border-r border-ink-100 bg-ink-50 overflow-y-auto max-h-[640px] p-3">
+              <div className="px-2 pb-2 flex justify-between items-center sticky top-0 bg-ink-50 z-10">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-ink-400">미입력 {filtered.length}건</span>
+                <span className="text-[10px] text-ink-400">누락 많은 순</span>
               </div>
-              <span>프로젝트 · 회차</span>
-              <span>담당 파트너</span>
-              <span>담당 매니저</span>
-              <span className="text-right">파트너 비용</span>
-              <span className="text-right">매니징 비용</span>
-              <span>정산 예정일</span>
-              <span>작업 시작일</span>
-              <span>마감일</span>
-              <span className="text-center">상태</span>
-            </div>
+              <div className="space-y-1">
+                {filtered.map(row => {
+                  const epId = row.episode.id;
+                  const isActive = epId === activeEpId;
+                  const missingCount = countMissing(row.missing);
+                  const total = 7; // 전체 필드 수
+                  const filledPct = Math.round(((total - missingCount) / total) * 100);
+                  const missTags = ([
+                    { key: 'cost', label: '파트너' },
+                    { key: 'mgmt', label: '매니징' },
+                    { key: 'date', label: '정산일' },
+                    { key: 'assignee', label: '담당자' },
+                    { key: 'manager', label: '매니저' },
+                    { key: 'startDate', label: '시작일' },
+                    { key: 'dueDate', label: '마감일' },
+                  ] as const).filter(t => row.missing[t.key]);
+                  const edited = isEdited(epId);
 
-            {/* 행 */}
-            <div className="divide-y divide-[#f8f7f6] min-w-[1080px]">
-              {filtered.map((row, idx) => {
-                const epId = row.episode.id;
-                const edited = isEdited(epId);
-
-                return (
-                  <motion.div
-                    key={epId}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.15, delay: Math.min(idx * 0.015, 0.4) }}
-                    className={`grid grid-cols-[32px_1fr_120px_110px_110px_120px_100px_100px_100px_70px] gap-1.5 px-4 py-2.5 items-center transition-colors ${
-                      edited ? 'bg-orange-50/40' : 'hover:bg-[#fafaf9]'
-                    }`}
-                  >
-                    {/* 체크 */}
-                    <div className="flex items-center justify-center">
-                      <input type="checkbox" checked={selected.has(epId)} onChange={() => toggleRow(epId)} className="w-[14px] h-[14px] accent-orange-500 cursor-pointer" />
-                    </div>
-
-                    {/* 프로젝트 · 회차 */}
-                    <div className="min-w-0">
-                      <div className="text-[11px] text-[#a8a29e] font-medium truncate">{row.project?.title ?? ''}</div>
-                      <div className="text-[13px] text-[#1c1917] font-medium truncate">{row.episode.title || `${row.episode.episodeNumber}회차`}</div>
-                    </div>
-
-                    {/* 담당 파트너 */}
-                    <div>
-                      {renderPersonDropdown(epId, 'assignee', getVal(row, 'assignee'), activePartners, row.missing.assignee, '미지정')}
-                    </div>
-
-                    {/* 담당 매니저 */}
-                    <div>
-                      {renderPersonDropdown(epId, 'manager', getVal(row, 'manager'), managerPartners, row.missing.manager, '미지정')}
-                    </div>
-
-                    {/* 파트너 비용 */}
-                    <div className="flex flex-col items-end gap-0.5">
-                      <div className="flex items-center gap-1">
-                        {row.suggestedCost && row.missing.cost && !edits[epId]?.cost && (
-                          <button
-                            onClick={() => applySuggestion(epId, row.suggestedCost!)}
-                            className="flex items-center gap-0.5 px-1 py-0.5 bg-orange-50 text-orange-600 rounded text-[9px] font-semibold hover:bg-orange-100 transition-colors flex-shrink-0"
-                          >
-                            <Sparkles size={8} />
-                            {(row.suggestedCost / 10000)}만
-                          </button>
+                  return (
+                    <button
+                      key={epId}
+                      type="button"
+                      onClick={() => setActiveEpId(epId)}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg relative transition-[background-color,box-shadow] duration-200 ${
+                        isActive ? 'bg-white shadow-sm' : 'hover:bg-white/60'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-2 relative">
+                        <div className="min-w-0 flex-1">
+                          <div className={`text-[13px] font-semibold truncate ${isActive ? 'text-brand-500' : 'text-ink-700'}`}>
+                            {row.project?.title ?? '-'} <span className="text-ink-400 font-normal">·</span> {row.episode.episodeNumber}화
+                          </div>
+                          <div className="text-[11px] text-ink-400 font-medium truncate mt-0.5">
+                            {row.project?.client ?? ''}
+                          </div>
+                        </div>
+                        {edited ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-ok-50 text-ok-600 font-semibold shrink-0 inline-flex items-center gap-0.5">
+                            <Check size={9} /> 수정
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold shrink-0 bg-brand-50 text-brand-500 tabular-nums">
+                            {missingCount}
+                          </span>
                         )}
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={(() => {
-                            const v = getVal(row, 'cost');
-                            if (!v || v === '0') return '';
-                            return Number(v).toLocaleString('ko-KR');
-                          })()}
-                          onChange={e => {
-                            const raw = e.target.value.replace(/[^0-9]/g, '');
-                            updateEdit(epId, 'cost', raw ? parseInt(raw) : 0);
+                      </div>
+                      {missTags.length > 0 && (
+                        <div className="text-[10px] text-ink-400 mt-1.5 truncate relative">
+                          {missTags.slice(0, 3).map(t => t.label).join(' · ')}
+                          {missTags.length > 3 && ` 외 ${missTags.length - 3}`}
+                        </div>
+                      )}
+                      <div className="mt-2 h-[2px] bg-ink-200/60 rounded-full overflow-hidden relative">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${filledPct}%`,
+                            background: filledPct === 100 ? '#a3d9a5' : '#fb923c',
                           }}
-                          placeholder="0원"
-                          className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'cost', row.missing.cost)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
                         />
                       </div>
-                    </div>
-
-                    {/* 매니징 비용 */}
-                    <div className="flex justify-end">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={(() => {
-                          const v = getVal(row, 'mgmt');
-                          if (!v || v === '0') return '';
-                          return Number(v).toLocaleString('ko-KR');
-                        })()}
-                        onChange={e => {
-                          const raw = e.target.value.replace(/[^0-9]/g, '');
-                          updateEdit(epId, 'mgmt', raw ? parseInt(raw) : 0);
-                        }}
-                        placeholder="0원"
-                        className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'mgmt', row.missing.mgmt)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
-                      />
-                    </div>
-
-                    {/* 정산 예정일 */}
-                    {[
-                      { field: 'date' as const, missing: row.missing.date },
-                      { field: 'startDate' as const, missing: row.missing.startDate },
-                      { field: 'dueDate' as const, missing: row.missing.dueDate },
-                    ].map(({ field, missing }) => {
-                      const val = getVal(row, field);
-                      const hasVal = val && val.length === 10;
-                      const editedField = edits[epId]?.[field] !== undefined;
-                      return (
-                        <div key={field}>
-                          <button
-                            type="button"
-                            onClick={() => setDateModalEpId(epId)}
-                            className={`w-full px-2 py-1.5 rounded-lg border text-[12px] font-medium text-left transition-all ${
-                              editedField && hasVal
-                                ? 'border-green-400 bg-green-50/50 text-green-700'
-                                : hasVal
-                                  ? 'border-[#ede9e6] bg-[#fafaf9] text-gray-700'
-                                  : missing
-                                    ? 'border-dashed border-orange-300 bg-orange-50/30 text-[#a8a29e]'
-                                    : 'border-[#ede9e6] bg-[#fafaf9] text-[#a8a29e]'
-                            } hover:border-[#d6cec8]`}
-                          >
-                            {hasVal ? `${val.slice(2, 4)}.${val.slice(5, 7)}.${val.slice(8, 10)}` : '-'}
-                          </button>
-                        </div>
-                      );
-                    })}
-
-                    {/* 상태 */}
-                    <div className="text-center">
-                      {getStatusBadge(row)}
-                    </div>
-                  </motion.div>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* 오른쪽 상세 */}
+            <AnimatePresence mode="wait">
+              {activeRow ? (
+                <motion.div
+                  key={activeRow.episode.id}
+                  initial={{ opacity: 0, y: direction >= 0 ? 10 : -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: direction >= 0 ? -10 : 10 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <DetailPane
+                    row={activeRow}
+                    idx={activeIdx}
+                    total={filtered.length}
+                    activePartners={activePartners}
+                    managerPartners={managerPartners}
+                    edits={edits}
+                    getVal={getVal}
+                    inputCls={inputCls}
+                    updateEdit={updateEdit}
+                    applySuggestion={applySuggestion}
+                    renderPersonDropdown={renderPersonDropdown}
+                    onOpenDateModal={setDateModalEpId}
+                    onPrev={goPrev}
+                    onNext={goNext}
+                    onSaveAndNext={async () => {
+                      await handleSave();
+                    }}
+                  />
+                </motion.div>
+              ) : (
+                <div className="flex items-center justify-center text-[var(--color-ink-400)] text-sm">회차를 선택하세요</div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>
@@ -725,6 +668,257 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
           />
         );
       })()}
+    </div>
+  );
+}
+
+// ─── 상세 편집 패널 ───
+interface DetailPaneProps {
+  row: BatchRow;
+  idx: number;
+  total: number;
+  activePartners: Partner[];
+  managerPartners: Partner[];
+  edits: Record<string, EditFields>;
+  getVal: (row: BatchRow, field: keyof EditFields) => string;
+  inputCls: (epId: string, field: keyof EditFields, isMissing: boolean) => string;
+  updateEdit: (epId: string, field: keyof EditFields, value: number | string) => void;
+  applySuggestion: (epId: string, cost: number) => void;
+  renderPersonDropdown: (
+    epId: string,
+    field: 'assignee' | 'manager',
+    currentValue: string,
+    options: Partner[],
+    isMissing: boolean,
+    placeholder: string,
+  ) => React.ReactNode;
+  onOpenDateModal: (epId: string) => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onSaveAndNext: () => void | Promise<void>;
+}
+
+function DetailPane({
+  row, idx, total, activePartners, managerPartners, edits,
+  getVal, inputCls, updateEdit, applySuggestion,
+  renderPersonDropdown, onOpenDateModal, onPrev, onNext, onSaveAndNext,
+}: DetailPaneProps) {
+  const epId = row.episode.id;
+  const isEdited = !!edits[epId];
+  const missingKeys: { key: keyof MissingFlags; label: string }[] = [
+    { key: 'cost', label: '파트너 비용' },
+    { key: 'mgmt', label: '매니징 비용' },
+    { key: 'assignee', label: '담당 파트너' },
+    { key: 'manager', label: '담당 매니저' },
+    { key: 'date', label: '정산 예정일' },
+    { key: 'startDate', label: '작업 시작일' },
+    { key: 'dueDate', label: '마감일' },
+  ];
+  const missing = missingKeys.filter(k => row.missing[k.key]);
+  const countMissAmount = (row.missing.cost ? 1 : 0) + (row.missing.mgmt ? 1 : 0);
+  const countMissPerson = (row.missing.assignee ? 1 : 0) + (row.missing.manager ? 1 : 0);
+  const countMissSchedule = (row.missing.date ? 1 : 0) + (row.missing.startDate ? 1 : 0) + (row.missing.dueDate ? 1 : 0);
+
+  const dateVal = (field: 'date' | 'startDate' | 'dueDate') => {
+    const v = getVal(row, field);
+    if (!v || v.length < 10) return '-';
+    return `${v.slice(2, 4)}.${v.slice(5, 7)}.${v.slice(8, 10)}`;
+  };
+  const dateBtnCls = (field: 'date' | 'startDate' | 'dueDate', isMissing: boolean) => {
+    const v = getVal(row, field);
+    const hasVal = v && v.length === 10;
+    const edited = edits[epId]?.[field] !== undefined;
+    if (edited && hasVal) return 'border-ok-500 bg-ok-50/50 text-ok-700';
+    if (hasVal) return 'border-[var(--color-ink-200)] bg-[var(--color-ink-50)] text-ink-700';
+    if (isMissing) return 'border-dashed border-brand-200 bg-brand-50/30 text-[var(--color-ink-400)]';
+    return 'border-[var(--color-ink-200)] bg-[var(--color-ink-50)] text-[var(--color-ink-400)]';
+  };
+
+  return (
+    <div className="flex flex-col min-h-[560px]">
+      {/* 진척 세그먼트 */}
+      <div className="px-6 pt-5">
+        <div className="flex gap-[3px]">
+          {Array.from({ length: total }).map((_, i) => (
+            <span
+              key={i}
+              className={`flex-1 h-1 rounded-full ${
+                i < idx ? 'bg-green-400' :
+                i === idx ? 'bg-brand-500' :
+                'bg-ink-200'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 헤더 */}
+      <div className="px-6 pt-4 pb-5 flex justify-between items-start gap-4">
+        <div className="min-w-0">
+          <div className="text-[12px] text-[var(--color-ink-500)] font-semibold">{idx + 1} / {total}</div>
+          <div className="text-[20px] font-bold mt-1 truncate">
+            {row.project?.title ?? '-'} · {row.episode.episodeNumber}화
+          </div>
+          <div className="text-[13px] text-[var(--color-ink-500)] mt-0.5 truncate">
+            {row.project?.client ?? ''}{row.episode.title ? ` · ${row.episode.title}` : ''}
+          </div>
+        </div>
+        <div className="flex gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onPrev}
+            disabled={idx <= 0}
+            className="px-2.5 py-1.5 border border-[var(--color-ink-200)] bg-white rounded-lg text-[12px] font-semibold hover:border-brand-500 hover:text-brand-500 disabled:opacity-40 disabled:hover:border-[var(--color-ink-200)] disabled:hover:text-inherit disabled:cursor-not-allowed"
+            aria-label="이전"
+          >← 이전</button>
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={idx >= total - 1}
+            className="px-2.5 py-1.5 border border-[var(--color-ink-200)] bg-white rounded-lg text-[12px] font-semibold hover:border-brand-500 hover:text-brand-500 disabled:opacity-40 disabled:hover:border-[var(--color-ink-200)] disabled:hover:text-inherit disabled:cursor-not-allowed"
+            aria-label="다음"
+          >다음 →</button>
+        </div>
+      </div>
+
+      <div className="px-6 flex-1 space-y-4">
+        {/* 알림 */}
+        {missing.length > 0 && (
+          <div className="bg-gradient-to-br from-[var(--color-brand-50)] to-[#ffedd5] border border-orange-200 rounded-xl p-3 flex items-center gap-3">
+            <div className="w-7 h-7 rounded-full bg-orange-400 text-white flex items-center justify-center shrink-0">
+              <AlertTriangle size={14} />
+            </div>
+            <div className="text-[13px] text-brand-700">
+              <strong className="font-bold">{missing.length}개 항목</strong>이 비어있어요 — {missing.map(m => m.label).join(', ')}
+            </div>
+          </div>
+        )}
+
+        {/* 금액 */}
+        <div className="bg-[var(--color-ink-50)] rounded-xl p-4">
+          <h5 className="text-[12px] font-bold text-[var(--color-ink-600)] mb-3 flex items-center gap-1.5">
+            <Wallet size={13} className="text-ink-500" /> 금액
+            {countMissAmount > 0 && (
+              <span className="text-[10px] bg-brand-50 text-brand-500 px-1.5 py-0.5 rounded-md font-semibold">{countMissAmount}</span>
+            )}
+          </h5>
+          <div className="grid grid-cols-3 gap-2.5">
+            <div>
+              <label className="text-[11px] text-[var(--color-ink-500)] font-semibold block mb-1">총액</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={(() => { const v = getVal(row, 'total'); return v && v !== '0' ? Number(v).toLocaleString('ko-KR') : ''; })()}
+                onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); updateEdit(epId, 'total', raw ? parseInt(raw) : 0); }}
+                placeholder="0원"
+                className={`w-full px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'total', false)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-[var(--color-ink-500)] font-semibold block mb-1 flex items-center gap-1">
+                파트너 비용
+                {row.missing.cost && <span className="text-[9px] bg-bad-100 text-bad-700 px-1 py-px rounded font-bold">필요</span>}
+              </label>
+              <div className="flex items-center gap-1.5">
+                {row.suggestedCost && row.missing.cost && !edits[epId]?.cost && (
+                  <button
+                    onClick={() => applySuggestion(epId, row.suggestedCost!)}
+                    className="flex items-center gap-0.5 px-1.5 py-1 bg-brand-50 text-brand-600 rounded text-[10px] font-bold hover:bg-brand-100 shrink-0"
+                  >
+                    <Sparkles size={9} />
+                    {(row.suggestedCost / 10000)}만
+                  </button>
+                )}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={(() => { const v = getVal(row, 'cost'); return v && v !== '0' ? Number(v).toLocaleString('ko-KR') : ''; })()}
+                  onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); updateEdit(epId, 'cost', raw ? parseInt(raw) : 0); }}
+                  placeholder="0원"
+                  className={`flex-1 px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'cost', row.missing.cost)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] text-[var(--color-ink-500)] font-semibold block mb-1">매니징 비용</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={(() => { const v = getVal(row, 'mgmt'); return v && v !== '0' ? Number(v).toLocaleString('ko-KR') : ''; })()}
+                onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); updateEdit(epId, 'mgmt', raw ? parseInt(raw) : 0); }}
+                placeholder="0원"
+                className={`w-full px-3 py-2 text-right text-[13px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'mgmt', row.missing.mgmt)} focus:border-brand-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 인원 */}
+        <div className="bg-[var(--color-ink-50)] rounded-xl p-4">
+          <h5 className="text-[12px] font-bold text-[var(--color-ink-600)] mb-3 flex items-center gap-1.5">
+            <Users size={13} className="text-ink-500" /> 인원
+            {countMissPerson > 0 && (
+              <span className="text-[10px] bg-brand-50 text-brand-500 px-1.5 py-0.5 rounded-md font-semibold">{countMissPerson}</span>
+            )}
+          </h5>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="text-[11px] text-[var(--color-ink-500)] font-semibold block mb-1">담당 파트너</label>
+              {renderPersonDropdown(epId, 'assignee', getVal(row, 'assignee'), activePartners, row.missing.assignee, '미지정')}
+            </div>
+            <div>
+              <label className="text-[11px] text-[var(--color-ink-500)] font-semibold block mb-1">담당 매니저</label>
+              {renderPersonDropdown(epId, 'manager', getVal(row, 'manager'), managerPartners, row.missing.manager, '미지정')}
+            </div>
+          </div>
+        </div>
+
+        {/* 일정 */}
+        <div className="bg-[var(--color-ink-50)] rounded-xl p-4">
+          <h5 className="text-[12px] font-bold text-[var(--color-ink-600)] mb-3 flex items-center gap-1.5">
+            <Calendar size={13} className="text-ink-500" /> 일정
+            {countMissSchedule > 0 && (
+              <span className="text-[10px] bg-brand-50 text-brand-500 px-1.5 py-0.5 rounded-md font-semibold">{countMissSchedule}</span>
+            )}
+          </h5>
+          <div className="grid grid-cols-3 gap-2.5">
+            {([
+              { key: 'date' as const, label: '정산 예정일', missing: row.missing.date },
+              { key: 'startDate' as const, label: '작업 시작일', missing: row.missing.startDate },
+              { key: 'dueDate' as const, label: '마감일', missing: row.missing.dueDate },
+            ]).map(item => (
+              <div key={item.key}>
+                <label className="text-[11px] text-[var(--color-ink-500)] font-semibold block mb-1">{item.label}</label>
+                <button
+                  type="button"
+                  onClick={() => onOpenDateModal(epId)}
+                  className={`w-full px-3 py-2 rounded-lg border text-[13px] font-medium text-left transition-all hover:border-[#d6cec8] ${dateBtnCls(item.key, item.missing)}`}
+                >
+                  {dateVal(item.key)}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 푸터 */}
+      <div className="px-6 py-4 mt-4 border-t border-[var(--color-ink-200)] bg-[var(--color-ink-50)] flex justify-between items-center flex-wrap gap-3">
+        <div className="text-[11px] text-[var(--color-ink-500)]">
+          <kbd className="inline-block px-1.5 py-0.5 bg-white border border-[#e7e5e4] rounded text-[10px] font-mono mx-0.5">←</kbd>
+          <kbd className="inline-block px-1.5 py-0.5 bg-white border border-[#e7e5e4] rounded text-[10px] font-mono mx-0.5">→</kbd>
+          회차 이동
+        </div>
+        <button
+          type="button"
+          onClick={() => { if (isEdited) onSaveAndNext(); else onNext(); }}
+          className={`px-4 py-2 rounded-lg text-[13px] font-bold transition-colors ${
+            isEdited ? 'bg-brand-500 text-white hover:bg-brand-600' : 'bg-white border border-[var(--color-ink-200)] text-[var(--color-ink-600)] hover:border-[var(--color-ink-900)]'
+          }`}
+        >
+          {isEdited ? '저장 후 다음 ↓' : '다음 →'}
+        </button>
+      </div>
     </div>
   );
 }

@@ -123,7 +123,7 @@ export default function AllMailPage() {
       <div className="bg-white rounded-lg shadow" style={{ border: '1px solid #ede9e6' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid #f0ece9' }}>
           <div className="flex items-center gap-2">
-            <Archive size={20} style={{ color: '#ea580c' }} />
+            <Archive size={20} style={{ color: '#f97316' }} />
             <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1c1917' }}>전체 메일</h2>
             {!loading && <span style={{ fontSize: '13px', color: '#a8a29e' }}>({emails.length})</span>}
           </div>
@@ -169,7 +169,7 @@ export default function AllMailPage() {
                   height: '36px',
                   borderRadius: '50%',
                   background: email.type === 'received' ? '#fef4ed' : '#eff6ff',
-                  color: email.type === 'received' ? '#ea580c' : '#2563eb',
+                  color: email.type === 'received' ? '#f97316' : '#2563eb',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -194,7 +194,7 @@ export default function AllMailPage() {
                         borderRadius: '4px',
                         flexShrink: 0,
                         background: email.type === 'received' ? '#fef4ed' : '#eff6ff',
-                        color: email.type === 'received' ? '#ea580c' : '#2563eb',
+                        color: email.type === 'received' ? '#f97316' : '#2563eb',
                       }}>
                         {email.type === 'received' ? '받음' : '보냄'}
                       </span>
@@ -254,7 +254,7 @@ export default function AllMailPage() {
                     padding: '2px 8px',
                     borderRadius: '4px',
                     background: selected.type === 'received' ? '#fef4ed' : '#eff6ff',
-                    color: selected.type === 'received' ? '#ea580c' : '#2563eb',
+                    color: selected.type === 'received' ? '#f97316' : '#2563eb',
                   }}>
                     {selected.type === 'received' ? '받은 메일' : '보낸 메일'}
                   </span>

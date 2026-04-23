@@ -50,7 +50,7 @@ function UpdateCard({ entry, isLatest, index, id }: { entry: UpdateEntry; isLate
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.06, ease: 'easeOut' }}
       className={`bg-white border rounded-2xl px-6 py-5 relative transition-shadow hover:shadow-md ${
-        isLatest ? 'border-orange-200 shadow-sm' : 'border-[#ede9e6]'
+        isLatest ? 'border-orange-200 shadow-sm' : 'border-divider'
       }`}
     >
       {isLatest && (
@@ -133,11 +133,11 @@ export default function UpdatesPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">업데이트</h1>
+        <h1 className="text-page">업데이트</h1>
         <p className="text-gray-500 mt-1 text-sm">ERP와 비봇의 최신 변경 사항을 확인하세요</p>
       </div>
 
-      <div className="inline-flex gap-1 p-1 bg-white border border-[#ede9e6] rounded-xl">
+      <div className="inline-flex gap-1 p-1 bg-white border border-divider rounded-xl">
         {tabs.map(t => (
           <button
             key={t.key}
@@ -193,7 +193,7 @@ export default function UpdatesPage() {
             {/* 우측 사이드바 */}
             <div className="hidden lg:block w-[250px] flex-shrink-0 sticky top-6 space-y-4">
               {latest && (
-                <div className="bg-white border border-[#ede9e6] rounded-2xl p-4">
+                <div className="bg-white border border-divider rounded-2xl p-4">
                   <div className="text-[10px] font-bold text-[#a8a29e] tracking-wider uppercase mb-3">현재 버전</div>
                   <div className="flex items-center gap-3 bg-[#fff7ed] rounded-xl p-3">
                     <div className="w-9 h-9 rounded-full bg-orange-500 flex items-center justify-center text-[11px] font-extrabold text-white flex-shrink-0">
@@ -208,7 +208,7 @@ export default function UpdatesPage() {
               )}
 
               {updates.length > 0 && (
-                <div className="bg-white border border-[#ede9e6] rounded-2xl p-4">
+                <div className="bg-white border border-divider rounded-2xl p-4">
                   <div className="text-[10px] font-bold text-[#a8a29e] tracking-wider uppercase mb-3">버전 히스토리</div>
                   <div className="space-y-0.5">
                     {updates.map((u, i) => {
@@ -235,7 +235,7 @@ export default function UpdatesPage() {
               )}
 
               {totalChanges > 0 && (
-                <div className="bg-white border border-[#ede9e6] rounded-2xl p-4">
+                <div className="bg-white border border-divider rounded-2xl p-4">
                   <div className="text-[10px] font-bold text-[#a8a29e] tracking-wider uppercase mb-3">변경 유형 통계</div>
                   <div className="space-y-2">
                     {(Object.keys(CHANGE_ICON) as ChangeType[]).map(type => {

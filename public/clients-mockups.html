@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>클라이언트 페이지 디자인 시안</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --ink-50: #fafaf9;
+      --ink-100: #f5f5f4;
+      --ink-200: #ede9e6;
+      --ink-300: #d6d3d1;
+      --ink-400: #a8a29e;
+      --ink-500: #78716c;
+      --ink-600: #57534e;
+      --ink-700: #44403c;
+      --ink-900: #1c1917;
+      --brand-50: #fff7ed;
+      --brand-100: #ffedd5;
+      --brand-400: #fb923c;
+      --brand-500: #f97316;
+      --brand-600: #ea580c;
+      --ok-50: #f0fdf4;
+      --ok-500: #22c55e;
+      --ok-600: #16a34a;
+      --warn-50: #fef3c7;
+      --warn-500: #f59e0b;
+      --bad-50: #fef2f2;
+      --bad-500: #ef4444;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: var(--ink-50);
+      color: var(--ink-900);
+    }
+    .text-meta    { font-size: 10px; color: var(--ink-400); font-weight: 500; }
+    .text-caption { font-size: 11px; color: var(--ink-500); }
+    .text-body    { font-size: 13px; color: var(--ink-700); }
+    .text-section { font-size: 13px; font-weight: 700; color: var(--ink-900); }
+    .text-page    { font-size: 20px; font-weight: 700; color: var(--ink-900); }
+
+    .shot {
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.06), 0 2px 6px rgba(0,0,0,.03);
+      padding: 28px;
+      margin-bottom: 48px;
+    }
+    .shot-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .letter {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--brand-500); color: white;
+      font-weight: 900; font-size: 18px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .mockup-frame {
+      border: 1px solid var(--ink-200);
+      border-radius: 14px;
+      background: var(--ink-50);
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .pros { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: #15803d; line-height: 1.6; }
+    .cons { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: #991b1b; line-height: 1.6; }
+    .note { background: #fef9c3; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: #854d0e; line-height: 1.6; }
+
+    /* icon helper */
+    .icon { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; }
+
+    /* --- Common cards --- */
+    .kpi {
+      background: white; border: 1px solid var(--ink-200); border-radius: 14px;
+      padding: 16px;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 600;
+    }
+    .chip-ok { background: var(--ok-50); color: var(--ok-600); }
+    .chip-warn { background: var(--warn-50); color: #b45309; }
+    .chip-bad { background: var(--bad-50); color: #b91c1c; }
+    .chip-brand { background: var(--brand-50); color: var(--brand-600); }
+    .chip-muted { background: var(--ink-100); color: var(--ink-600); }
+
+    .avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--brand-400), var(--brand-600));
+      color: white; font-weight: 700; font-size: 13px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .avatar.sm { width: 28px; height: 28px; font-size: 11px; border-radius: 8px; }
+
+    /* --- D: sparkline --- */
+    .spark { display: block; width: 100%; height: 40px; }
+
+    /* --- B: kanban columns --- */
+    .kanban { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .kanban-col {
+      background: white; border: 1px solid var(--ink-200); border-radius: 12px;
+      padding: 12px;
+    }
+    .kanban-card {
+      background: white; border: 1px solid var(--ink-200); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 8px;
+      cursor: grab;
+    }
+    .kanban-card:hover { border-color: var(--brand-400); box-shadow: 0 4px 12px rgba(0,0,0,.04); }
+
+    /* --- C: master-detail --- */
+    .split { display: grid; grid-template-columns: 320px 1fr; gap: 16px; min-height: 520px; }
+    .master {
+      background: white; border: 1px solid var(--ink-200); border-radius: 12px;
+      padding: 8px; overflow: hidden;
+    }
+    .master-row { padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    .master-row:hover { background: var(--ink-100); }
+    .master-row.active { background: var(--brand-50); border: 1px solid var(--brand-400); }
+    .detail { background: white; border: 1px solid var(--ink-200); border-radius: 12px; padding: 20px; }
+    .detail-section { border-top: 1px solid var(--ink-200); padding-top: 14px; margin-top: 14px; }
+
+    /* --- A: focus card --- */
+    .focus {
+      background: linear-gradient(135deg, #fff7ed, #fef3c7);
+      border: 1px solid #fde68a;
+      border-radius: 16px; padding: 18px 20px;
+    }
+
+    /* --- D: insight card --- */
+    .insight {
+      background: white; border: 1px solid var(--ink-200); border-radius: 14px;
+      padding: 18px; transition: all .2s;
+    }
+    .insight:hover { border-color: var(--brand-400); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,.06); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-[1200px] mx-auto px-6 py-10">
+    <header class="mb-10">
+      <h1 class="text-3xl font-extrabold mb-2">클라이언트 페이지 디자인 시안</h1>
+      <p class="text-[14px]" style="color: var(--ink-600);">
+        현재는 단순 테이블 CRUD. 영상 제작 ERP 맥락에서 관계·파이프라인·인사이트까지 드러나는 4가지 방향을 제안합니다.
+      </p>
+    </header>
+
+    <!-- ====================================================== -->
+    <!--  A. CRM 대시보드 (Focus + Grid)                        -->
+    <!-- ====================================================== -->
+    <section class="shot">
+      <div class="shot-head">
+        <span class="letter">A</span>
+        <h2 class="text-xl font-extrabold">CRM 대시보드 — 오늘의 포커스 + 카드 그리드</h2>
+      </div>
+      <p class="text-body" style="color: var(--ink-600);">
+        상단에 "오늘 뭐해야 하는지" 바로 알려주는 <b>포커스 카드</b> + 중간 KPI + 하단에 <b>정보 밀도가 높은 카드 그리드</b>.
+        기존 테이블보다 "관계 상태"가 시각적으로 즉시 읽힘.
+      </p>
+
+      <div class="mockup-frame">
+        <!-- 헤더 + 액션 -->
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-page">클라이언트</div>
+            <div class="text-caption mt-0.5">전체 <b>24개사</b> · 활성 16 · 신규 문의 3</div>
+          </div>
+          <div class="flex gap-2">
+            <button class="px-3 py-2 rounded-lg border border-[var(--ink-300)] text-[12.5px]">📋 CSV 내보내기</button>
+            <button class="px-3.5 py-2 rounded-lg bg-[var(--brand-500)] text-white text-[12.5px] font-semibold">+ 새 클라이언트</button>
+          </div>
+        </div>
+
+        <!-- 포커스 카드 -->
+        <div class="focus mb-4">
+          <div class="flex items-start gap-3">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--brand-500); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: 800;">📌</div>
+            <div class="flex-1">
+              <div class="text-section mb-1">오늘의 포커스</div>
+              <ul class="space-y-1 text-[13px]" style="color: var(--ink-700);">
+                <li>• <b>라이프트렌드</b> — 지난 연락 32일 경과, 진행 중 프로젝트 1건 <button class="underline text-[var(--brand-600)]">메일 쓰기</button></li>
+                <li>• <b>홈쇼핑코리아</b> — 2분기 정산 미처리 (3건) <button class="underline text-[var(--brand-600)]">정산 가기</button></li>
+                <li>• <b>스튜디오비블리</b> — 새 문의 접수 2일 전 <button class="underline text-[var(--brand-600)]">회신</button></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI row -->
+        <div class="grid grid-cols-4 gap-3 mb-4">
+          <div class="kpi">
+            <div class="text-caption">전체 클라이언트</div>
+            <div class="text-[22px] font-bold mt-1">24</div>
+            <div class="text-meta mt-1" style="color: var(--ok-600);">▲ 3 이번 달</div>
+          </div>
+          <div class="kpi">
+            <div class="text-caption">활성 (진행 중)</div>
+            <div class="text-[22px] font-bold mt-1" style="color: var(--ok-600);">16</div>
+            <div class="text-meta mt-1">프로젝트 보유 중</div>
+          </div>
+          <div class="kpi">
+            <div class="text-caption">이번 분기 매출</div>
+            <div class="text-[22px] font-bold mt-1">₩84.2M</div>
+            <div class="text-meta mt-1" style="color: var(--ok-600);">▲ 12%</div>
+          </div>
+          <div class="kpi">
+            <div class="text-caption">연락 필요</div>
+            <div class="text-[22px] font-bold mt-1" style="color: #b45309;">5</div>
+            <div class="text-meta mt-1">60일 이상 소통 없음</div>
+          </div>
+        </div>
+
+        <!-- 필터 -->
+        <div class="flex items-center gap-2 mb-3">
+          <input class="px-3 py-2 rounded-lg border border-[var(--ink-300)] text-[12.5px] w-64" placeholder="클라이언트 검색..." />
+          <button class="chip chip-brand">전체 24</button>
+          <button class="chip chip-ok">활성 16</button>
+          <button class="chip chip-warn">연락 필요 5</button>
+          <button class="chip chip-muted">휴면 3</button>
+        </div>
+
+        <!-- 카드 그리드 -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="kpi" style="padding: 14px;">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex gap-2 items-center">
+                <div class="avatar">디</div>
+                <div>
+                  <div class="text-section">디지털원</div>
+                  <div class="text-meta">박민수 · 대기업</div>
+                </div>
+              </div>
+              <span class="chip chip-ok">VIP</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mb-3 pb-3" style="border-bottom: 1px solid var(--ink-200);">
+              <div><div class="text-meta">활성 PRJ</div><div class="text-[14px] font-bold">6</div></div>
+              <div><div class="text-meta">누적 매출</div><div class="text-[14px] font-bold">₩42M</div></div>
+              <div><div class="text-meta">최근 연락</div><div class="text-[14px] font-bold" style="color: var(--ok-600);">3일 전</div></div>
+            </div>
+            <div class="flex gap-2">
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded border border-[var(--ink-300)]">전화</button>
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded border border-[var(--ink-300)]">메일</button>
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded bg-[var(--brand-500)] text-white">+ 프로젝트</button>
+            </div>
+          </div>
+
+          <div class="kpi" style="padding: 14px;">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex gap-2 items-center">
+                <div class="avatar" style="background: linear-gradient(135deg, #60a5fa, #2563eb);">비</div>
+                <div>
+                  <div class="text-section">비젼컴퍼니</div>
+                  <div class="text-meta">김지연 · 중견기업</div>
+                </div>
+              </div>
+              <span class="chip chip-brand">정기</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mb-3 pb-3" style="border-bottom: 1px solid var(--ink-200);">
+              <div><div class="text-meta">활성 PRJ</div><div class="text-[14px] font-bold">4</div></div>
+              <div><div class="text-meta">누적 매출</div><div class="text-[14px] font-bold">₩28M</div></div>
+              <div><div class="text-meta">최근 연락</div><div class="text-[14px] font-bold" style="color: var(--ok-600);">어제</div></div>
+            </div>
+            <div class="flex gap-2">
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded border border-[var(--ink-300)]">전화</button>
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded border border-[var(--ink-300)]">메일</button>
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded bg-[var(--brand-500)] text-white">+ 프로젝트</button>
+            </div>
+          </div>
+
+          <div class="kpi" style="padding: 14px; opacity: 0.78;">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex gap-2 items-center">
+                <div class="avatar" style="background: var(--ink-300);">홈</div>
+                <div>
+                  <div class="text-section">홈쇼핑코리아</div>
+                  <div class="text-meta">이수진 · 유통</div>
+                </div>
+              </div>
+              <span class="chip chip-warn">60일+</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mb-3 pb-3" style="border-bottom: 1px solid var(--ink-200);">
+              <div><div class="text-meta">활성 PRJ</div><div class="text-[14px] font-bold">0</div></div>
+              <div><div class="text-meta">누적 매출</div><div class="text-[14px] font-bold">₩12M</div></div>
+              <div><div class="text-meta">최근 연락</div><div class="text-[14px] font-bold" style="color: #b45309;">67일 전</div></div>
+            </div>
+            <div class="flex gap-2">
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded border border-[var(--ink-300)]">전화</button>
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded border border-[var(--ink-300)]">메일</button>
+              <button class="text-[11px] font-semibold px-2.5 py-1 rounded border border-[var(--ink-300)] text-[var(--brand-600)]">재접촉</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mt-5">
+        <div class="pros">
+          <b>장점</b><br>
+          · "오늘 뭐 해야 하나"가 1초 안에 보임<br>
+          · 개별 카드에 핵심 지표 + 액션 버튼<br>
+          · 관계 경과(최근 연락) 가시화로 고객 이탈 방지
+        </div>
+        <div class="cons">
+          <b>단점</b><br>
+          · 카드 많으면 스크롤 부담<br>
+          · 한눈에 20개 이상은 비교 어려움
+        </div>
+        <div class="note">
+          <b>추천 상황</b><br>
+          "매일 클라이언트 관계를 챙기는" 1인 대표·PM. 활성 클라이언트 10~40개 규모에 최적.
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================== -->
+    <!--  B. 파이프라인 칸반                                    -->
+    <!-- ====================================================== -->
+    <section class="shot">
+      <div class="shot-head">
+        <span class="letter">B</span>
+        <h2 class="text-xl font-extrabold">파이프라인 칸반 — 거래 단계별 보드</h2>
+      </div>
+      <p class="text-body" style="color: var(--ink-600);">
+        클라이언트를 <b>거래 단계 5컬럼</b>(신규 문의 → 상담 중 → 진행 → 정산 대기 → 장기 휴면)으로 시각화.
+        드래그로 단계 변경 · 각 컬럼에 합계 표시. 영상 제작의 "프로젝트 라이프사이클"과 잘 맞음.
+      </p>
+
+      <div class="mockup-frame">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-page">클라이언트 파이프라인</div>
+          <div class="flex gap-2 text-[12.5px]">
+            <button class="px-3 py-1.5 rounded-md bg-[var(--brand-100)] text-[var(--brand-600)] font-semibold">보드</button>
+            <button class="px-3 py-1.5 rounded-md text-[var(--ink-500)]">목록</button>
+            <button class="px-3 py-1.5 rounded-md text-[var(--ink-500)]">표</button>
+          </div>
+        </div>
+
+        <div class="kanban">
+          <div class="kanban-col">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[12px] font-bold" style="color: var(--ink-600);">신규 문의</div>
+              <span class="chip chip-muted">3</span>
+            </div>
+            <div class="kanban-card">
+              <div class="text-[12.5px] font-semibold mb-0.5">새우깡테크</div>
+              <div class="text-meta mb-2">정용석 · SaaS</div>
+              <div class="text-caption">2일 전 문의</div>
+            </div>
+            <div class="kanban-card">
+              <div class="text-[12.5px] font-semibold mb-0.5">미소코리아</div>
+              <div class="text-meta mb-2">최유진 · 식품</div>
+              <div class="text-caption">5일 전 문의</div>
+            </div>
+            <button class="w-full py-2 text-[11px] text-[var(--ink-500)] border border-dashed border-[var(--ink-300)] rounded-md">+ 문의 추가</button>
+          </div>
+
+          <div class="kanban-col">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[12px] font-bold" style="color: var(--ink-600);">상담 중</div>
+              <span class="chip chip-brand">4</span>
+            </div>
+            <div class="kanban-card">
+              <div class="text-[12.5px] font-semibold mb-0.5">라이프트렌드</div>
+              <div class="text-meta mb-2">김지연 · 미디어</div>
+              <div class="text-caption">견적 발송 중</div>
+            </div>
+            <div class="kanban-card">
+              <div class="text-[12.5px] font-semibold mb-0.5">스튜디오비블리</div>
+              <div class="text-meta mb-2">이수진 · 광고</div>
+              <div class="text-caption">3차 미팅 예정</div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[12px] font-bold" style="color: var(--ink-600);">진행 중</div>
+              <span class="chip chip-ok">12</span>
+            </div>
+            <div class="kanban-card">
+              <div class="text-[12.5px] font-semibold mb-0.5">디지털원</div>
+              <div class="text-meta mb-2">박민수 · 프로젝트 6건</div>
+              <div class="flex items-center gap-1"><span class="chip chip-ok">VIP</span></div>
+            </div>
+            <div class="kanban-card">
+              <div class="text-[12.5px] font-semibold mb-0.5">비젼컴퍼니</div>
+              <div class="text-meta mb-2">김지연 · 프로젝트 4건</div>
+              <div class="text-caption">매월 1회 정기</div>
+            </div>
+            <div class="kanban-card">
+              <div class="text-[12.5px] font-semibold mb-0.5">JTBC</div>
+              <div class="text-meta mb-2">최현진 · 프로젝트 3건</div>
+              <div class="text-caption">분기별 단발</div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[12px] font-bold" style="color: var(--ink-600);">정산 대기</div>
+              <span class="chip chip-warn">2</span>
+            </div>
+            <div class="kanban-card" style="background: #fffbeb;">
+              <div class="text-[12.5px] font-semibold mb-0.5">홈쇼핑코리아</div>
+              <div class="text-meta mb-2">이수진 · 3건 미처리</div>
+              <div class="text-caption" style="color: #b45309;">⚠ 60일 지연</div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-[12px] font-bold" style="color: var(--ink-600);">휴면</div>
+              <span class="chip chip-muted">3</span>
+            </div>
+            <div class="kanban-card" style="opacity: 0.72;">
+              <div class="text-[12.5px] font-semibold mb-0.5">ABC기획</div>
+              <div class="text-meta mb-2">박한수</div>
+              <div class="text-caption">마지막 거래 11개월 전</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mt-5">
+        <div class="pros">
+          <b>장점</b><br>
+          · 거래 단계가 직관적<br>
+          · 드래그로 상태 전환 빠름<br>
+          · "어디에 시간을 써야 하나" 즉시 판단
+        </div>
+        <div class="cons">
+          <b>단점</b><br>
+          · 단계 기준을 팀이 합의해야 함<br>
+          · 많은 클라이언트 한 컬럼에 쌓이면 답답<br>
+          · 매출·통계 요약 보기엔 부적합
+        </div>
+        <div class="note">
+          <b>추천 상황</b><br>
+          "영업·제안·계약" 흐름이 명확한 조직. 영상 제작 수주 기반 프로세스에 적합.
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================== -->
+    <!--  C. 마스터-디테일 분할 뷰                              -->
+    <!-- ====================================================== -->
+    <section class="shot">
+      <div class="shot-head">
+        <span class="letter">C</span>
+        <h2 class="text-xl font-extrabold">마스터-디테일 분할 뷰 — 리스트 + 상세 한 화면</h2>
+      </div>
+      <p class="text-body" style="color: var(--ink-600);">
+        좌측 <b>컴팩트 리스트</b> + 우측 <b>선택된 클라이언트의 전체 프로필</b>(프로젝트·정산·커뮤니케이션 로그).
+        한 화면에서 전체 둘러보며 빠르게 깊게 보는 UX. 기업용 CRM의 정석.
+      </p>
+
+      <div class="mockup-frame">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-page">클라이언트</div>
+          <div class="flex gap-2">
+            <input class="px-3 py-2 rounded-lg border border-[var(--ink-300)] text-[12.5px] w-56" placeholder="검색..." />
+            <button class="px-3.5 py-2 rounded-lg bg-[var(--brand-500)] text-white text-[12.5px] font-semibold">+ 새 클라이언트</button>
+          </div>
+        </div>
+
+        <div class="split">
+          <!-- Master -->
+          <div class="master">
+            <div class="px-2 py-1.5 text-meta uppercase tracking-wider">활성 (16)</div>
+            <div class="master-row active">
+              <div class="avatar sm">디</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[12.5px] font-semibold truncate">디지털원</div>
+                <div class="text-meta truncate">6 프로젝트</div>
+              </div>
+              <span class="chip chip-ok" style="font-size: 9.5px; padding: 1px 6px;">VIP</span>
+            </div>
+            <div class="master-row">
+              <div class="avatar sm" style="background: linear-gradient(135deg, #60a5fa, #2563eb);">비</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[12.5px] font-semibold truncate">비젼컴퍼니</div>
+                <div class="text-meta truncate">4 프로젝트</div>
+              </div>
+            </div>
+            <div class="master-row">
+              <div class="avatar sm" style="background: linear-gradient(135deg, #a78bfa, #7c3aed);">라</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[12.5px] font-semibold truncate">라이프트렌드</div>
+                <div class="text-meta truncate">2 프로젝트</div>
+              </div>
+              <span class="chip chip-warn" style="font-size: 9.5px; padding: 1px 6px;">!</span>
+            </div>
+            <div class="master-row">
+              <div class="avatar sm" style="background: linear-gradient(135deg, #fb7185, #e11d48);">J</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[12.5px] font-semibold truncate">JTBC</div>
+                <div class="text-meta truncate">3 프로젝트</div>
+              </div>
+            </div>
+
+            <div class="px-2 py-1.5 text-meta uppercase tracking-wider mt-3">연락 필요 (5)</div>
+            <div class="master-row">
+              <div class="avatar sm" style="background: var(--ink-400);">홈</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[12.5px] font-semibold truncate">홈쇼핑코리아</div>
+                <div class="text-meta truncate">67일 경과</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detail -->
+          <div class="detail">
+            <!-- Header -->
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="avatar" style="width: 52px; height: 52px; font-size: 18px; border-radius: 14px;">디</div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-[20px] font-bold">디지털원</h3>
+                    <span class="chip chip-ok">VIP</span>
+                    <span class="chip chip-brand">정기 거래</span>
+                  </div>
+                  <div class="text-caption mt-1">담당 박민수 · 대기업 · 2023.03.12 부터 거래</div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button class="px-3 py-1.5 rounded-md border border-[var(--ink-300)] text-[12.5px]">편집</button>
+                <button class="px-3.5 py-1.5 rounded-md bg-[var(--brand-500)] text-white text-[12.5px] font-semibold">+ 프로젝트</button>
+              </div>
+            </div>
+
+            <!-- KPI row -->
+            <div class="grid grid-cols-4 gap-3 mb-4">
+              <div class="kpi" style="padding: 12px;">
+                <div class="text-meta">활성 프로젝트</div>
+                <div class="text-[18px] font-bold mt-1">6</div>
+              </div>
+              <div class="kpi" style="padding: 12px;">
+                <div class="text-meta">누적 매출</div>
+                <div class="text-[18px] font-bold mt-1">₩42M</div>
+              </div>
+              <div class="kpi" style="padding: 12px;">
+                <div class="text-meta">평균 단가</div>
+                <div class="text-[18px] font-bold mt-1">₩3.5M</div>
+              </div>
+              <div class="kpi" style="padding: 12px;">
+                <div class="text-meta">최근 연락</div>
+                <div class="text-[18px] font-bold mt-1" style="color: var(--ok-600);">3일 전</div>
+              </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-1 mb-3" style="border-bottom: 1px solid var(--ink-200);">
+              <button class="px-3 py-2 text-[12.5px] font-semibold" style="border-bottom: 2px solid var(--brand-500); color: var(--brand-600);">프로젝트 6</button>
+              <button class="px-3 py-2 text-[12.5px] font-semibold" style="color: var(--ink-500);">정산 12</button>
+              <button class="px-3 py-2 text-[12.5px] font-semibold" style="color: var(--ink-500);">활동 로그</button>
+              <button class="px-3 py-2 text-[12.5px] font-semibold" style="color: var(--ink-500);">메모</button>
+              <button class="px-3 py-2 text-[12.5px] font-semibold" style="color: var(--ink-500);">파일</button>
+            </div>
+
+            <!-- Project list -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between p-3 rounded-lg border border-[var(--ink-200)]">
+                <div>
+                  <div class="text-[12.5px] font-semibold">디지털원 2026 분기 브랜딩 영상</div>
+                  <div class="text-meta mt-0.5">진행 중 · 회차 8/12 · 담당 이수아</div>
+                </div>
+                <span class="chip chip-ok">진행</span>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-lg border border-[var(--ink-200)]">
+                <div>
+                  <div class="text-[12.5px] font-semibold">디지털원 유튜브 쇼츠 시리즈</div>
+                  <div class="text-meta mt-0.5">진행 중 · 회차 4/20 · 담당 박준형</div>
+                </div>
+                <span class="chip chip-ok">진행</span>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-lg border border-[var(--ink-200)]" style="opacity: 0.7;">
+                <div>
+                  <div class="text-[12.5px] font-semibold">디지털원 창립 기념 영상</div>
+                  <div class="text-meta mt-0.5">완료 · 2025.11 · 단가 ₩6.5M</div>
+                </div>
+                <span class="chip chip-muted">완료</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mt-5">
+        <div class="pros">
+          <b>장점</b><br>
+          · 전체 둘러봄 + 깊이 보기 동시<br>
+          · 탭 구조로 모든 히스토리 접근<br>
+          · "클라이언트 = 내 직장" 느낌
+        </div>
+        <div class="cons">
+          <b>단점</b><br>
+          · 구현 범위가 가장 큼 (탭·하위 뷰 각각)<br>
+          · 모바일에서 쪼개기 까다로움<br>
+          · 목록 시각성은 A·D보다 떨어짐
+        </div>
+        <div class="note">
+          <b>추천 상황</b><br>
+          "클라이언트 데이터가 자산"이라 관리 깊이가 중요한 조직. 장기적 관계 관리에 최적.
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================== -->
+    <!--  D. 관계 인사이트 카드                                 -->
+    <!-- ====================================================== -->
+    <section class="shot">
+      <div class="shot-head">
+        <span class="letter">D</span>
+        <h2 class="text-xl font-extrabold">관계 인사이트 카드 — 숫자가 말해주는 대시보드</h2>
+      </div>
+      <p class="text-body" style="color: var(--ink-600);">
+        클라이언트별 <b>큰 카드</b>에 미니 매출 차트 + 상태 인사이트 + 태그.
+        A보다 정보 밀도 높고, D는 "시각적 리포트" 톤. VIP·위험·신규 라벨링이 1뷰에 가능.
+      </p>
+
+      <div class="mockup-frame">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-page">클라이언트 인사이트</div>
+            <div class="text-caption mt-0.5">태그·등급 필터로 정렬</div>
+          </div>
+          <div class="flex gap-2">
+            <select class="px-3 py-2 rounded-lg border border-[var(--ink-300)] text-[12.5px]">
+              <option>정렬: 누적 매출 ↓</option>
+              <option>정렬: 최근 연락</option>
+              <option>정렬: 활성 PRJ</option>
+            </select>
+            <button class="px-3.5 py-2 rounded-lg bg-[var(--brand-500)] text-white text-[12.5px] font-semibold">+ 새 클라이언트</button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mb-4 flex-wrap">
+          <button class="chip chip-ok">VIP 3</button>
+          <button class="chip chip-brand">정기 7</button>
+          <button class="chip chip-muted">신규 4</button>
+          <button class="chip chip-warn">재접촉 5</button>
+          <button class="chip chip-bad">리스크 2</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <!-- VIP -->
+          <div class="insight" style="border-left: 4px solid var(--ok-500);">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="avatar" style="width: 44px; height: 44px; font-size: 16px;">디</div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <div class="text-section text-[15px]">디지털원</div>
+                    <span class="chip chip-ok">VIP</span>
+                  </div>
+                  <div class="text-meta">박민수 · 거래 3년차</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-meta">누적 매출</div>
+                <div class="text-[16px] font-bold" style="color: var(--brand-600);">₩42M</div>
+              </div>
+            </div>
+
+            <!-- mini sparkline -->
+            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <polyline fill="none" stroke="var(--brand-500)" stroke-width="2"
+                points="0,32 22,28 44,30 66,22 88,18 110,24 132,14 154,10 176,8 200,5" />
+              <polyline fill="var(--brand-100)" stroke="none"
+                points="0,40 0,32 22,28 44,30 66,22 88,18 110,24 132,14 154,10 176,8 200,5 200,40" opacity=".45" />
+            </svg>
+
+            <div class="grid grid-cols-3 gap-2 mt-2 pt-2" style="border-top: 1px solid var(--ink-200);">
+              <div><div class="text-meta">활성</div><div class="text-[13px] font-bold">6</div></div>
+              <div><div class="text-meta">완료</div><div class="text-[13px] font-bold">12</div></div>
+              <div><div class="text-meta">최근 연락</div><div class="text-[13px] font-bold" style="color: var(--ok-600);">3일</div></div>
+            </div>
+          </div>
+
+          <!-- 정기 -->
+          <div class="insight" style="border-left: 4px solid var(--brand-500);">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="avatar" style="width: 44px; height: 44px; font-size: 16px; background: linear-gradient(135deg, #60a5fa, #2563eb);">비</div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <div class="text-section text-[15px]">비젼컴퍼니</div>
+                    <span class="chip chip-brand">정기</span>
+                  </div>
+                  <div class="text-meta">김지연 · 월간 계약</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-meta">누적 매출</div>
+                <div class="text-[16px] font-bold" style="color: var(--brand-600);">₩28M</div>
+              </div>
+            </div>
+
+            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <polyline fill="none" stroke="#3b82f6" stroke-width="2"
+                points="0,20 22,18 44,22 66,16 88,18 110,14 132,20 154,12 176,16 200,10" />
+            </svg>
+
+            <div class="grid grid-cols-3 gap-2 mt-2 pt-2" style="border-top: 1px solid var(--ink-200);">
+              <div><div class="text-meta">활성</div><div class="text-[13px] font-bold">4</div></div>
+              <div><div class="text-meta">완료</div><div class="text-[13px] font-bold">26</div></div>
+              <div><div class="text-meta">최근 연락</div><div class="text-[13px] font-bold" style="color: var(--ok-600);">1일</div></div>
+            </div>
+          </div>
+
+          <!-- 재접촉 필요 -->
+          <div class="insight" style="border-left: 4px solid var(--warn-500);">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="avatar" style="width: 44px; height: 44px; font-size: 16px; background: linear-gradient(135deg, #a78bfa, #7c3aed);">라</div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <div class="text-section text-[15px]">라이프트렌드</div>
+                    <span class="chip chip-warn">재접촉</span>
+                  </div>
+                  <div class="text-meta">김지연 · 32일 경과</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-meta">누적 매출</div>
+                <div class="text-[16px] font-bold">₩18M</div>
+              </div>
+            </div>
+
+            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <polyline fill="none" stroke="#a78bfa" stroke-width="2"
+                points="0,14 22,16 44,20 66,24 88,22 110,28 132,30 154,32 176,34 200,36" />
+            </svg>
+
+            <div class="grid grid-cols-3 gap-2 mt-2 pt-2" style="border-top: 1px solid var(--ink-200);">
+              <div><div class="text-meta">활성</div><div class="text-[13px] font-bold">2</div></div>
+              <div><div class="text-meta">완료</div><div class="text-[13px] font-bold">8</div></div>
+              <div><div class="text-meta">최근 연락</div><div class="text-[13px] font-bold" style="color: #b45309;">32일</div></div>
+            </div>
+          </div>
+
+          <!-- 리스크 -->
+          <div class="insight" style="border-left: 4px solid var(--bad-500);">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="avatar" style="width: 44px; height: 44px; font-size: 16px; background: var(--ink-400);">홈</div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <div class="text-section text-[15px]">홈쇼핑코리아</div>
+                    <span class="chip chip-bad">리스크</span>
+                  </div>
+                  <div class="text-meta">정산 3건 미처리 · 60일+</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-meta">미수금</div>
+                <div class="text-[16px] font-bold" style="color: var(--bad-500);">₩8.2M</div>
+              </div>
+            </div>
+
+            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <polyline fill="none" stroke="#ef4444" stroke-width="2"
+                points="0,8 22,12 44,10 66,16 88,14 110,22 132,26 154,30 176,34 200,38" />
+            </svg>
+
+            <div class="grid grid-cols-3 gap-2 mt-2 pt-2" style="border-top: 1px solid var(--ink-200);">
+              <div><div class="text-meta">활성</div><div class="text-[13px] font-bold">0</div></div>
+              <div><div class="text-meta">완료</div><div class="text-[13px] font-bold">5</div></div>
+              <div><div class="text-meta">최근 연락</div><div class="text-[13px] font-bold" style="color: var(--bad-500);">67일</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mt-5">
+        <div class="pros">
+          <b>장점</b><br>
+          · 한 화면에 매출 추이·등급·리스크까지<br>
+          · "돈이 되는 관계"가 시각적으로 부각<br>
+          · 미니 차트로 트렌드 감각
+        </div>
+        <div class="cons">
+          <b>단점</b><br>
+          · 차트·수치 유지보수가 필요<br>
+          · 정보 많아 초기 인상이 무거움<br>
+          · 목록 탐색 속도는 B·C보다 느림
+        </div>
+        <div class="note">
+          <b>추천 상황</b><br>
+          "매출 데이터 + 관계 신호"를 동시에 보는 대표/영업. 데이터 기반 의사결정 중시 조직.
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================== -->
+    <footer class="mt-10 p-6 rounded-2xl" style="background: white; border: 1px solid var(--ink-200);">
+      <h3 class="text-lg font-extrabold mb-3">추천 및 다음 단계</h3>
+      <p class="text-body mb-3" style="color: var(--ink-700);">
+        현재 ERP 톤(프로젝트·정산 페이지 수준)과 1인 대표/소규모 팀 환경을 고려하면
+        <b style="color: var(--brand-600);">A (CRM 대시보드) 기반 + D의 인사이트 카드</b>를 부분 혼합하는 방향이 가장 자연스럽습니다.
+        순수 B는 영상 제작 워크플로우와 약간 결이 다르고, C는 구현 비용이 가장 큼.
+      </p>
+      <p class="text-body" style="color: var(--ink-700);">
+        마음에 드는 알파벳을 알려 주세요 (예: "A로 가자" / "A+D 혼합" / "C로 가되 탭 줄이자"). 선택 후 본격 구현 계획과 타입·API 설계를 이어가겠습니다.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

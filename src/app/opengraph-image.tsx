@@ -71,7 +71,7 @@ export default async function Image() {
               style={{
                 fontSize: '80px',
                 fontWeight: 900,
-                color: '#ea580c',
+                color: '#f97316',
                 letterSpacing: '-0.04em',
               }}
             >
@@ -84,7 +84,7 @@ export default async function Image() {
               style={{
                 fontSize: '80px',
                 fontWeight: 900,
-                color: '#ea580c',
+                color: '#f97316',
                 letterSpacing: '-0.04em',
               }}
             >

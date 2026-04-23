@@ -150,7 +150,7 @@ export default function MarketingPage() {
 
       {/* 포트폴리오 섹션 */}
       <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div className="p-6 border-b border-divider flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">포트폴리오</h2>
             <p className="text-sm text-gray-500 mt-1">등록된 포트폴리오 항목</p>
@@ -247,7 +247,7 @@ export default function MarketingPage() {
       {/* 클라이언트별 현황 */}
       {!loading && clientSummary.length > 0 && (
         <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-divider">
             <div className="flex items-center gap-2">
               <Users className="text-orange-500" size={20} />
               <h2 className="text-lg font-semibold text-gray-900">클라이언트별 현황</h2>

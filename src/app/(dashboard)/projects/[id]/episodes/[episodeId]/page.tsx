@@ -399,7 +399,7 @@ export default function EpisodeDetailPage() {
   if (!episode || !editedEpisode || !project) {
     return (
       <div className="min-h-screen bg-[#f5f4f2] flex items-center justify-center">
-        <div className="text-center bg-white rounded-xl border border-gray-100 px-8 py-6">
+        <div className="text-center bg-white rounded-xl border border-divider px-8 py-6">
           <p className="text-gray-500">로딩 중...</p>
         </div>
       </div>
@@ -776,7 +776,7 @@ export default function EpisodeDetailPage() {
     <div className="min-h-screen bg-[#f5f4f2]">
       <div className="max-w-5xl mx-auto py-4 sm:py-8 px-2 sm:px-4">
         {/* 헤더 + 기본 정보 통합 */}
-        <div data-tour="tour-episode-header" className="bg-white rounded-xl border border-gray-100 mb-6">
+        <div data-tour="tour-episode-header" className="bg-white rounded-xl border border-divider mb-6">
           <div className="px-4 sm:px-6 py-4">
             {/* 뒤로가기 버튼 */}
             <button
@@ -839,7 +839,7 @@ export default function EpisodeDetailPage() {
                     key={`title-display-${editedEpisode.title}`}
                     onClick={() => handleFieldClick('title')}
                     className="text-[17px] sm:text-[21px] font-extrabold cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 tracking-tight"
-                    initial={{ color: editedFields.has('title') ? '#ea580c' : '#1c1917' }}
+                    initial={{ color: editedFields.has('title') ? '#f97316' : '#1c1917' }}
                     animate={{ color: '#1c1917' }}
                     transition={{ duration: 0.6, delay: 1, ease: 'easeOut' }}
                   >
@@ -904,7 +904,7 @@ export default function EpisodeDetailPage() {
                 <span className="text-[#d6d3d1]">→</span>
                 <span
                   onClick={() => handleFieldClick('dueDate')}
-                  className="font-bold text-[#ea580c] cursor-pointer hover:text-orange-700 transition-colors"
+                  className="font-bold text-[#f97316] cursor-pointer hover:text-orange-700 transition-colors"
                 >
                   {editedEpisode.dueDate ? (() => { const [,m,d] = editedEpisode.dueDate.split('T')[0].split('-').map(Number); return `${m}.${d}`; })() : '미정'}
                 </span>
@@ -965,7 +965,7 @@ export default function EpisodeDetailPage() {
 
           {/* 비용 정보 */}
           {editedEpisode.budget && (
-            <div className="bg-white rounded-xl border border-gray-100">
+            <div className="bg-white rounded-xl border border-divider">
               <div
                 className={`flex items-center justify-between p-5 cursor-pointer hover:bg-gray-50 transition-colors ${collapsedSections.budget ? 'rounded-xl' : 'rounded-t-xl'}`}
                 onClick={() => toggleSection('budget')}
@@ -1041,7 +1041,7 @@ export default function EpisodeDetailPage() {
                           },
                         } : prev)}
                         placeholder="0"
-                        className="w-[160px] text-sm font-semibold px-3 py-2 border-[1.5px] border-[#ede9e6] rounded-[10px] bg-white text-right focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
+                        className="w-[160px] text-sm font-semibold px-3 py-2 border-[1.5px] border-divider rounded-[10px] bg-white text-right focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
                       />
                       <span className="text-xs text-[#a8a29e]">원</span>
                     </div>
@@ -1143,7 +1143,7 @@ export default function EpisodeDetailPage() {
                                     value={formatCurrency(partnerPay)}
                                     onChange={(e) => handleUpdateBudget(workType, 'partnerPayment', parseCurrency(e.target.value))}
                                     placeholder="0"
-                                    className="w-full text-sm font-semibold px-3 py-2.5 border-[1.5px] border-[#ede9e6] rounded-[10px] bg-white focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
+                                    className="w-full text-sm font-semibold px-3 py-2.5 border-[1.5px] border-divider rounded-[10px] bg-white focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
                                   />
                                   <span className="text-xs text-[#a8a29e]">원</span>
                                 </div>
@@ -1157,7 +1157,7 @@ export default function EpisodeDetailPage() {
                                     value={formatCurrency(mgmtFee)}
                                     onChange={(e) => handleUpdateBudget(workType, 'managementFee', parseCurrency(e.target.value))}
                                     placeholder="0"
-                                    className="w-full text-sm font-semibold px-3 py-2.5 border-[1.5px] border-[#ede9e6] rounded-[10px] bg-white focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
+                                    className="w-full text-sm font-semibold px-3 py-2.5 border-[1.5px] border-divider rounded-[10px] bg-white focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
                                   />
                                   <span className="text-xs text-[#a8a29e]">원</span>
                                 </div>
@@ -1223,7 +1223,7 @@ export default function EpisodeDetailPage() {
                                   value={formatCurrency(workBudgets[workType]?.partnerPayment || 0)}
                                   onChange={(e) => handleUpdateBudget(workType, 'partnerPayment', parseCurrency(e.target.value))}
                                   placeholder="0"
-                                  className="w-full text-sm font-semibold px-3 py-2 border-[1.5px] border-[#ede9e6] rounded-[10px] bg-white focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
+                                  className="w-full text-sm font-semibold px-3 py-2 border-[1.5px] border-divider rounded-[10px] bg-white focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
                                 />
                                 <span className="text-xs text-[#a8a29e]">원</span>
                               </div>
@@ -1237,7 +1237,7 @@ export default function EpisodeDetailPage() {
                                   value={formatCurrency(workBudgets[workType]?.managementFee || 0)}
                                   onChange={(e) => handleUpdateBudget(workType, 'managementFee', parseCurrency(e.target.value))}
                                   placeholder="0"
-                                  className="w-full text-sm font-semibold px-3 py-2 border-[1.5px] border-[#ede9e6] rounded-[10px] bg-white focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
+                                  className="w-full text-sm font-semibold px-3 py-2 border-[1.5px] border-divider rounded-[10px] bg-white focus:border-[#44403c] focus:outline-none focus:ring-[3px] focus:ring-black/[0.04] transition-all"
                                 />
                                 <span className="text-xs text-[#a8a29e]">원</span>
                               </div>
@@ -1261,7 +1261,7 @@ export default function EpisodeDetailPage() {
                   budget: { totalAmount: 0, partnerPayment: 0, managementFee: 0 }
                 } : prev);
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-white rounded-xl border border-dashed border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-gray-500 hover:text-gray-700"
+              className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-white rounded-xl border border-dashed border-divider hover:border-gray-300 hover:bg-gray-50 transition-colors text-gray-500 hover:text-gray-700"
               type="button"
             >
               <DollarSign size={16} />
@@ -1270,7 +1270,7 @@ export default function EpisodeDetailPage() {
           )}
 
           {/* 작업 체크리스트 */}
-          <div data-tour="tour-episode-checklist" className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
+          <div data-tour="tour-episode-checklist" className="bg-white rounded-xl border border-divider p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900">작업 체크리스트</h3>
             </div>
@@ -1340,7 +1340,7 @@ export default function EpisodeDetailPage() {
               const pipelineItems = activeWorkTypes.length > 0 ? activeWorkTypes : [];
 
               return (
-                <div className="mb-6 flex items-stretch rounded-2xl bg-[#fafaf9] border border-gray-100 overflow-hidden">
+                <div className="mb-6 flex items-stretch rounded-2xl bg-[#fafaf9] border border-divider overflow-hidden">
                   {pipelineItems.length === 0 ? (
                     /* 작업 없을 때 */
                     <>
@@ -1351,7 +1351,7 @@ export default function EpisodeDetailPage() {
                         <span className="text-sm font-semibold text-gray-500">대기</span>
                         <span className="text-xs text-gray-400">작업을 추가하세요</span>
                       </div>
-                      <div style={{ flex: 0.7 }} className="flex flex-col items-center justify-center gap-2 py-5 border-l border-gray-100">
+                      <div style={{ flex: 0.7 }} className="flex flex-col items-center justify-center gap-2 py-5 border-l border-divider">
                         <div className="w-8 h-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
                           <Calendar size={14} className="text-gray-400" />
                         </div>
@@ -1384,7 +1384,7 @@ export default function EpisodeDetailPage() {
                             onClick={() => setSelectedWorkTypeModal(workType)}
                             style={{ flex: flexValue, transition: 'flex 0.6s cubic-bezier(0.4,0,0.2,1), background-color 0.5s ease' }}
                             className={`flex flex-col items-center justify-center gap-2 py-5 cursor-grab active:cursor-grabbing relative ${
-                              index > 0 ? 'border-l border-gray-100' : ''
+                              index > 0 ? 'border-l border-divider' : ''
                             } ${draggedWorkType === workType ? 'opacity-40' : ''
                             } ${dragOverWorkType === workType && draggedWorkType !== workType ? 'ring-2 ring-inset ring-orange-400' : ''
                             } ${status === 'completed'
@@ -1435,7 +1435,7 @@ export default function EpisodeDetailPage() {
                       {/* 마감 블록 */}
                       <div
                         style={{ flex: overallStatus === 'completed' ? 1 : 0.7, transition: 'flex 0.6s cubic-bezier(0.4,0,0.2,1), background-color 0.5s ease' }}
-                        className={`flex flex-col items-center justify-center gap-2 py-5 border-l border-gray-100 ${
+                        className={`flex flex-col items-center justify-center gap-2 py-5 border-l border-divider ${
                           overallStatus === 'completed' ? 'bg-green-50/60' : ''
                         }`}
                       >
@@ -1504,11 +1504,11 @@ export default function EpisodeDetailPage() {
                       } ${
                         getWorkTypeStatus(workType) === 'completed'
                           ? allCompleted
-                            ? 'border border-gray-100'
-                            : 'border border-gray-100 opacity-50 hover:opacity-100'
+                            ? 'border border-divider'
+                            : 'border border-divider opacity-50 hover:opacity-100'
                           : getWorkTypeStatus(workType) === 'in_progress'
-                          ? 'border border-gray-200/50'
-                          : 'border border-gray-200/50'
+                          ? 'border border-divider/50'
+                          : 'border border-divider/50'
                       }`}
                     >
                       <div className="flex-1">
@@ -1636,7 +1636,7 @@ export default function EpisodeDetailPage() {
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                                                 transition={{ duration: 0.15 }}
-                                                className="absolute top-full left-0 mt-1 z-10 w-[90px] bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
+                                                className="absolute top-full left-0 mt-1 z-10 w-[90px] bg-white border border-divider rounded-lg shadow-xl overflow-hidden"
                                               >
                                                 {([
                                                   { value: 'waiting', label: '대기', color: 'bg-gray-100 text-gray-800' },
@@ -1723,7 +1723,7 @@ export default function EpisodeDetailPage() {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -6, scale: 0.97 }}
                                                     transition={{ duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                                    className="absolute top-full left-0 mt-1 z-10 w-[120px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+                                                    className="absolute top-full left-0 mt-1 z-10 w-[120px] bg-white/95 backdrop-blur-xl border border-divider rounded-xl shadow-2xl overflow-hidden"
                                                   >
                                                     {['가편', '종편'].map(cat => {
                                                       const catStyle = cat === '가편'
@@ -1759,7 +1759,7 @@ export default function EpisodeDetailPage() {
                                           value={step.label}
                                           onChange={(e) => handleUpdateWorkStep(workType, step.id, 'label', e.target.value)}
                                           placeholder="작업 단계"
-                                          className={`w-full text-[13px] font-semibold px-2 py-1 rounded-lg border border-transparent bg-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-gray-300 focus:outline-none transition-all ${
+                                          className={`w-full text-[13px] font-semibold px-2 py-1 rounded-lg border border-transparent bg-transparent hover:bg-white hover:border-divider focus:bg-white focus:border-gray-300 focus:outline-none transition-all ${
                                             step.status === 'completed' ? 'text-[#a8a29e] line-through font-normal' : 'text-[#1c1917]'
                                           }`}
                                         />
@@ -1792,15 +1792,15 @@ export default function EpisodeDetailPage() {
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                                                 transition={{ duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                                className="absolute top-full left-0 mt-1 z-10 w-[220px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-hidden"
+                                                className="absolute top-full left-0 mt-1 z-10 w-[220px] bg-white/95 backdrop-blur-xl border border-divider rounded-xl shadow-2xl max-h-80 overflow-hidden"
                                               >
-                                                <div className="sticky top-0 p-2 border-b border-gray-100 bg-white/95">
+                                                <div className="sticky top-0 p-2 border-b border-divider bg-white/95">
                                                   <input
                                                     type="text"
                                                     value={partnerSearch}
                                                     onChange={(e) => setPartnerSearch(e.target.value)}
                                                     placeholder="파트너 검색..."
-                                                    className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 bg-white"
+                                                    className="w-full text-sm px-3 py-2 border border-divider rounded-lg focus:outline-none focus:border-gray-400 bg-white"
                                                     autoFocus
                                                     onClick={(e) => e.stopPropagation()}
                                                   />
@@ -1812,7 +1812,7 @@ export default function EpisodeDetailPage() {
                                                       setEditingField(null);
                                                       setPartnerSearch('');
                                                     }}
-                                                    className="w-full flex items-center px-3 py-2.5 hover:bg-gray-50 transition-colors text-left border-b border-gray-100/60"
+                                                    className="w-full flex items-center px-3 py-2.5 hover:bg-gray-50 transition-colors text-left border-b border-divider/60"
                                                     type="button"
                                                   >
                                                     <span className="text-sm text-gray-500">선택 안함</span>
@@ -1859,7 +1859,7 @@ export default function EpisodeDetailPage() {
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                                                 transition={{ duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 w-[110px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+                                                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 w-[110px] bg-white/95 backdrop-blur-xl border border-divider rounded-xl shadow-2xl overflow-hidden"
                                               >
                                                 {([
                                                   { value: 'waiting', label: '대기', color: 'bg-gray-100 text-gray-800' },
@@ -1917,7 +1917,7 @@ export default function EpisodeDetailPage() {
                               {/* 작업 단계 추가 버튼 */}
                               <button
                                 onClick={() => handleAddWorkStep(workType)}
-                                className="w-full flex items-center justify-center px-3 py-2 mt-2 border border-dashed border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors group text-sm"
+                                className="w-full flex items-center justify-center px-3 py-2 mt-2 border border-dashed border-divider rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors group text-sm"
                                 type="button"
                               >
                                 <Plus size={14} className="mr-1 text-gray-400 group-hover:text-gray-600" />
@@ -1941,7 +1941,7 @@ export default function EpisodeDetailPage() {
 
             {/* 비활성화된 작업 (작업 추가 영역) */}
             {inactiveWorkTypes.length > 0 && (
-              <div className="border-t border-gray-200 pt-4">
+              <div className="border-t border-divider pt-4">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm text-gray-400">콘텐츠 추가</span>
                   <AnimatePresence mode="popLayout">
@@ -1954,7 +1954,7 @@ export default function EpisodeDetailPage() {
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
                         onClick={() => handleAddWorkType(workType)}
-                        className="flex items-center gap-2 px-5 py-3.5 text-base font-medium text-gray-500 border border-dashed border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 hover:shadow-sm transition-all"
+                        className="flex items-center gap-2 px-5 py-3.5 text-base font-medium text-gray-500 border border-dashed border-divider rounded-xl hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 hover:shadow-sm transition-all"
                         type="button"
                       >
                         <Plus size={16} />
@@ -2052,7 +2052,7 @@ export default function EpisodeDetailPage() {
                       value={mStep.label}
                       onChange={(e) => handleUpdateWorkStep(mwt, msid, 'label', e.target.value)}
                       placeholder="작업 단계 이름"
-                      className="w-full px-3 py-2.5 border-[1.5px] border-[#ede9e6] rounded-xl text-[14px] font-medium focus:border-orange-400 focus:outline-none"
+                      className="w-full px-3 py-2.5 border-[1.5px] border-divider rounded-xl text-[14px] font-medium focus:border-orange-400 focus:outline-none"
                     />
                   </div>
 
@@ -2062,7 +2062,7 @@ export default function EpisodeDetailPage() {
                     <div className="relative">
                       <div
                         onClick={() => setEditingField(editingField === `mobile-step-assignee` ? null : `mobile-step-assignee`)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 border-[1.5px] border-[#ede9e6] rounded-xl cursor-pointer hover:border-gray-300 transition-colors"
+                        className="w-full flex items-center justify-between px-3 py-2.5 border-[1.5px] border-divider rounded-xl cursor-pointer hover:border-gray-300 transition-colors"
                       >
                         {mStep.assigneeId ? (
                           <div className="flex items-center gap-2">
@@ -2083,11 +2083,11 @@ export default function EpisodeDetailPage() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute left-0 right-0 top-full mt-1 z-10 bg-white border border-gray-200 rounded-xl shadow-xl max-h-52 overflow-y-auto"
+                            className="absolute left-0 right-0 top-full mt-1 z-10 bg-white border border-divider rounded-xl shadow-xl max-h-52 overflow-y-auto"
                           >
                             <button
                               onClick={() => { handleUpdateWorkStep(mwt, msid, 'assigneeId', ''); setEditingField(null); }}
-                              className={`w-full flex items-center px-3 py-2.5 hover:bg-gray-50 text-left border-b border-gray-100 ${!mStep.assigneeId ? 'bg-orange-50' : ''}`}
+                              className={`w-full flex items-center px-3 py-2.5 hover:bg-gray-50 text-left border-b border-divider ${!mStep.assigneeId ? 'bg-orange-50' : ''}`}
                               type="button"
                             >
                               <span className="text-[13px] text-gray-500">선택 안함</span>
@@ -2153,7 +2153,7 @@ export default function EpisodeDetailPage() {
               onClick={() => setConfirmRemove(null)}
             />
             <motion.div
-              className="fixed z-[10001] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 w-[360px] max-w-[90vw]"
+              className="fixed z-[10001] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-divider p-6 w-[360px] max-w-[90vw]"
               initial={{ opacity: 0, scale: 0.93, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.93, y: 12 }}
@@ -2201,7 +2201,7 @@ export default function EpisodeDetailPage() {
               onClick={() => setShortformModal(null)}
             />
             <motion.div
-              className="fixed z-[10001] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 w-[360px] max-w-[90vw]"
+              className="fixed z-[10001] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-divider p-6 w-[360px] max-w-[90vw]"
               initial={{ opacity: 0, scale: 0.93, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.93, y: 12 }}
@@ -2215,7 +2215,7 @@ export default function EpisodeDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShortformModal(prev => prev && prev.count > 1 ? { ...prev, count: prev.count - 1 } : prev)}
-                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors text-lg font-medium"
+                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-divider text-gray-500 hover:bg-gray-50 transition-colors text-lg font-medium"
                 >
                   −
                 </button>
@@ -2228,12 +2228,12 @@ export default function EpisodeDetailPage() {
                     const v = Math.max(1, Math.min(50, parseInt(e.target.value) || 1));
                     setShortformModal(prev => prev ? { ...prev, count: v } : prev);
                   }}
-                  className="w-16 text-center text-lg font-semibold text-gray-900 border border-gray-200 rounded-xl py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                  className="w-16 text-center text-lg font-semibold text-gray-900 border border-divider rounded-xl py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
                 />
                 <button
                   type="button"
                   onClick={() => setShortformModal(prev => prev && prev.count < 50 ? { ...prev, count: prev.count + 1 } : prev)}
-                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors text-lg font-medium"
+                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-divider text-gray-500 hover:bg-gray-50 transition-colors text-lg font-medium"
                 >
                   +
                 </button>
@@ -2286,7 +2286,7 @@ export default function EpisodeDetailPage() {
               }}
             >
               {/* 헤더 */}
-              <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 z-10">
+              <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-divider/50 z-10">
                 {/* 상단 헤더 바 */}
                 <div className="px-6 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -2332,7 +2332,7 @@ export default function EpisodeDetailPage() {
                       animation: tabPulse 2s ease-in-out infinite;
                     }
                   `}</style>
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 overflow-x-auto">
+                  <div className="p-4 bg-gray-50 rounded-xl border border-divider overflow-x-auto">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         {/* 작업들 */}
@@ -2359,7 +2359,7 @@ export default function EpisodeDetailPage() {
                                   ? 'bg-green-100/40 border-green-300/50 px-3 py-1.5 min-w-[120px] opacity-70 hover:opacity-100 hover:shadow-lg'
                                   : (status === 'in_progress' || (status === 'waiting' && hasPreviousCompleted))
                                   ? 'bg-yellow-100/50 border-yellow-300/60 px-4 py-2 min-w-[140px] shadow-md hover:shadow-xl scale-105'
-                                  : 'bg-white/50 border-gray-200/60 px-3 py-1.5 min-w-[120px] hover:border-gray-300 hover:bg-gray-50 hover:shadow-md'
+                                  : 'bg-white/50 border-divider/60 px-3 py-1.5 min-w-[120px] hover:border-gray-300 hover:bg-gray-50 hover:shadow-md'
                               }`}>
                                 <span className={`font-semibold text-sm ${
                                   isSelected
@@ -2562,7 +2562,7 @@ export default function EpisodeDetailPage() {
                                 ? 'bg-green-50/60 border-green-200/60'
                                 : step.status === 'in_progress'
                                 ? 'bg-yellow-50/60 border-yellow-200/60'
-                                : 'bg-white/60 border-gray-200/60'
+                                : 'bg-white/60 border-divider/60'
                             }`}
                             style={{
                               animationDelay: `${index * 60}ms`

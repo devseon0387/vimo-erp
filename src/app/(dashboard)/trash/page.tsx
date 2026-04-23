@@ -228,7 +228,7 @@ export default function TrashPage() {
       {/* 휴지통 비우기 확인 모달 */}
       {confirmEmptyTrash && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setConfirmEmptyTrash(false)} />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmEmptyTrash(false)} />
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-gray-900 mb-2">휴지통 비우기</h3>
@@ -249,7 +249,7 @@ export default function TrashPage() {
       {/* 영구 삭제 확인 모달 */}
       {permanentDeleteId && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setPermanentDeleteId(null)} />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPermanentDeleteId(null)} />
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-gray-900 mb-2">영구 삭제</h3>

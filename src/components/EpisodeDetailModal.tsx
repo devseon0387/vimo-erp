@@ -365,7 +365,7 @@ export default function EpisodeDetailModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* 헤더 */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-20">
+          <div className="sticky top-0 bg-white border-b border-divider px-6 py-4 z-20">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-3">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -445,7 +445,7 @@ export default function EpisodeDetailModal({
                     return (
                       <div
                         key={workType}
-                        className="border border-gray-200 rounded-lg bg-white"
+                        className="border border-divider rounded-lg bg-white"
                       >
                         <div className="flex-1">
                           {/* 제목 & 상태 배지 & 비용 & 접기/펼치기 & 제거 버튼 */}
@@ -550,7 +550,7 @@ export default function EpisodeDetailModal({
                               <div className="space-y-2">
                             {workSteps[workType]?.length > 0 ? (
                               workSteps[workType].map((step) => (
-                                <div key={step.id} className="relative border border-gray-200 rounded-lg p-3 bg-gray-50">
+                                <div key={step.id} className="relative border border-divider rounded-lg p-3 bg-gray-50">
                                   {/* 1줄: 작업 단계 + 담당 파트너 */}
                                   <div className="grid grid-cols-2 gap-3 mb-3">
                                     {/* 작업 단계/메모 */}
@@ -561,7 +561,7 @@ export default function EpisodeDetailModal({
                                         value={step.label}
                                         onChange={(e) => handleUpdateWorkStep(workType, step.id, 'label', e.target.value)}
                                         placeholder="예: 1차 종편"
-                                        className="w-full text-sm px-3 py-2 border border-gray-200 rounded focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
+                                        className="w-full text-sm px-3 py-2 border border-divider rounded focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
                                       />
                                     </div>
 
@@ -576,7 +576,7 @@ export default function EpisodeDetailModal({
                                                 handleUpdateWorkStep(workType, step.id, 'assigneeId', '');
                                                 setEditingField(null);
                                               }}
-                                              className="w-full flex items-center px-3 py-2 hover:bg-gray-50 transition-colors text-left border-b border-gray-100"
+                                              className="w-full flex items-center px-3 py-2 hover:bg-gray-50 transition-colors text-left border-b border-divider"
                                             >
                                               <span className="text-sm text-gray-500">선택 안함</span>
                                             </button>
@@ -604,7 +604,7 @@ export default function EpisodeDetailModal({
                                       ) : (
                                         <div
                                           onClick={() => setEditingField(`${workType}-${step.id}-assignee`)}
-                                          className="w-full flex items-center px-3 py-2 border border-gray-200 rounded cursor-pointer hover:border-orange-300 transition-colors bg-white"
+                                          className="w-full flex items-center px-3 py-2 border border-divider rounded cursor-pointer hover:border-orange-300 transition-colors bg-white"
                                         >
                                           {step.assigneeId ? (
                                             <>
@@ -646,7 +646,7 @@ export default function EpisodeDetailModal({
                                         type="date"
                                         value={step.startDate}
                                         onChange={(e) => handleUpdateWorkStep(workType, step.id, 'startDate', e.target.value)}
-                                        className="w-full text-sm px-3 py-2 border border-gray-200 rounded focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
+                                        className="w-full text-sm px-3 py-2 border border-divider rounded focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
                                       />
                                     </div>
 
@@ -657,7 +657,7 @@ export default function EpisodeDetailModal({
                                         type="date"
                                         value={step.dueDate}
                                         onChange={(e) => handleUpdateWorkStep(workType, step.id, 'dueDate', e.target.value)}
-                                        className="w-full text-sm px-3 py-2 border border-gray-200 rounded focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
+                                        className="w-full text-sm px-3 py-2 border border-divider rounded focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white"
                                       />
                                     </div>
                                   </div>
@@ -665,7 +665,7 @@ export default function EpisodeDetailModal({
                                   {/* 작업 단계 제거 버튼 */}
                                   <button
                                     onClick={() => handleRemoveWorkStep(workType, step.id)}
-                                    className="absolute right-2 top-2 p-1.5 bg-white hover:bg-red-50 rounded-full transition-colors group border border-gray-200 shadow-sm"
+                                    className="absolute right-2 top-2 p-1.5 bg-white hover:bg-red-50 rounded-full transition-colors group border border-divider shadow-sm"
                                     title="작업 단계 제거"
                                   >
                                     <X size={14} className="text-gray-400 group-hover:text-red-500" />
@@ -673,7 +673,7 @@ export default function EpisodeDetailModal({
                                 </div>
                               ))
                             ) : (
-                              <div className="text-center py-4 text-gray-400 text-xs border border-dashed border-gray-200 rounded">
+                              <div className="text-center py-4 text-gray-400 text-xs border border-dashed border-divider rounded">
                                 작업 단계를 추가해보세요
                               </div>
                             )}
@@ -703,7 +703,7 @@ export default function EpisodeDetailModal({
 
               {/* 비활성화된 작업 (작업 추가 영역) */}
               {inactiveWorkTypes.length > 0 && (
-                <div className="border-t border-gray-200 pt-4">
+                <div className="border-t border-divider pt-4">
                   <h4 className="text-sm font-medium text-gray-500 mb-3">추가 가능한 작업</h4>
                   <div className="space-y-2">
                     {inactiveWorkTypes.map((workType) => (
@@ -834,7 +834,7 @@ export default function EpisodeDetailModal({
                       </p>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="mt-3 pt-3 border-t border-divider">
                     <div className="flex justify-between items-center">
                       <p className="text-sm text-gray-500">유보금</p>
                       <p className="text-lg font-bold text-green-600">
@@ -848,7 +848,7 @@ export default function EpisodeDetailModal({
           </div>
 
           {/* 푸터 */}
-          <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+          <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-divider flex justify-between items-center">
             <p className="text-sm text-gray-500">
               <Edit2 size={14} className="inline mr-1" />
               항목을 클릭하여 수정할 수 있습니다

@@ -280,7 +280,7 @@ export default function ProjectsPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">프로젝트</h1>
+          <h1 className="text-page">프로젝트</h1>
           <p className="text-gray-500 mt-1 text-sm">진행 중인 프로젝트를 한눈에 관리하세요</p>
         </div>
         <button
@@ -294,7 +294,7 @@ export default function ProjectsPage() {
 
       {/* 필터 탭 + 정렬 */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div data-tour="tour-proj-filters" className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-2 shadow-sm border border-gray-200 flex gap-0.5 sm:gap-2 w-full sm:w-fit">
+        <div data-tour="tour-proj-filters" className="flex sm:inline-flex gap-1 p-1 bg-white border border-divider rounded-xl w-full sm:w-fit">
           {(isMobile ? [
             { key: 'all' as const,              label: '전체',       count: projects.length },
             { key: 'active' as const,           label: '진행 중',    count: projects.filter(p => projectStatusMap.get(p.id) === 'active').length },
@@ -312,21 +312,21 @@ export default function ProjectsPage() {
             <button
               key={key}
               onClick={() => setActiveFilter(key)}
-              className="relative flex-1 sm:flex-initial px-1.5 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold"
+              className="relative flex-1 sm:flex-initial px-2 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[12px] sm:text-[14px] font-semibold"
             >
               {activeFilter === key && (
                 <motion.div
                   layoutId="project-filter-pill"
-                  className="absolute inset-0 bg-orange-500 rounded-lg sm:rounded-xl shadow-lg shadow-orange-500/30"
+                  className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
-              <div className={`relative flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-base transition-colors duration-200 ${
-                activeFilter === key ? 'text-white' : 'text-gray-600 hover:text-gray-900'
+              <div className={`relative flex items-center justify-center gap-1 sm:gap-1.5 transition-colors duration-200 ${
+                activeFilter === key ? 'text-white' : 'text-[#78716c]'
               }`}>
                 <span>{label}</span>
-                <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full font-bold transition-colors duration-200 ${
-                  activeFilter === key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors duration-200 ${
+                  activeFilter === key ? 'bg-white/22 text-white' : 'bg-gray-100 text-[#78716c]'
                 }`}>
                   {count}
                 </span>
@@ -337,7 +337,7 @@ export default function ProjectsPage() {
 
         {/* 검색 + 정렬 */}
         <div data-tour="tour-proj-search" className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex-1 sm:flex-initial flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5">
+          <div className="flex-1 sm:flex-initial flex items-center gap-2 bg-white border border-divider rounded-xl px-3 py-2.5">
             <Search size={15} className="text-gray-400 flex-shrink-0" />
             <input
               type="text"
@@ -355,7 +355,7 @@ export default function ProjectsPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'recent' | 'amount' | 'name')}
-            className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none text-xs text-gray-600"
+            className="px-3 py-2.5 bg-white border border-divider rounded-xl focus:outline-none text-xs text-gray-600"
           >
             <option value="recent">일정순</option>
             <option value="amount">금액순</option>
@@ -400,7 +400,7 @@ export default function ProjectsPage() {
               >
                 <Link
                   href={`/projects/${project.id}`}
-                  className="group block bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all duration-200 p-4"
+                  className="group block bg-white rounded-xl border border-divider hover:border-divider hover:shadow-sm transition-all duration-200 p-4"
                 >
                   {/* 클라이언트 + 상태 */}
                   <div className="flex items-center justify-between mb-1">
@@ -501,7 +501,7 @@ export default function ProjectsPage() {
         return (
           <div className={`fixed inset-0 z-50 overflow-y-auto ${isModalClosing ? 'animate-modal-overlay-out' : 'animate-modal-overlay'}`}>
             <div
-              className="fixed inset-0 bg-gray-900/50"
+              className="fixed inset-0 bg-black/40"
               onClick={closeModal}
             />
 
@@ -511,7 +511,7 @@ export default function ProjectsPage() {
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* 헤더 */}
-                <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between z-10">
+                <div className="sticky top-0 bg-white px-6 py-4 border-b border-divider flex items-center justify-between z-10">
                   <div className="flex items-center gap-3">
                     <h2 className="text-xl font-bold text-gray-900">{workType} 작업 목록</h2>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -554,7 +554,7 @@ export default function ProjectsPage() {
                                 ? 'bg-green-50 border-green-200'
                                 : step.status === 'in_progress'
                                 ? 'bg-yellow-50 border-yellow-200'
-                                : 'bg-gray-50 border-gray-200'
+                                : 'bg-gray-50 border-divider'
                             }`}
                           >
                             <div className="flex items-center justify-between">
@@ -685,7 +685,7 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* 푸터 */}
-                <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-gray-200 flex justify-end">
+                <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-divider flex justify-end">
                   <button
                     onClick={closeModal}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
@@ -731,7 +731,7 @@ function TabButton({
 function StatusBadge({ status }: { status: string }) {
   const statusMap: Record<string, { label: string; color: string }> = {
     active: { label: '진행 중', color: 'bg-green-50 text-green-600' },
-    standby: { label: '대기', color: 'bg-blue-50 text-blue-600' },
+    standby: { label: '대기', color: 'bg-blue-50 text-blue-700' },
     dormant: { label: '휴면', color: 'bg-orange-50 text-orange-600' },
     inactive: { label: '비활성', color: 'bg-gray-100 text-gray-500' },
   };

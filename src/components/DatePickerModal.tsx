@@ -115,7 +115,7 @@ export default function DatePickerModal({ value, onChange, placeholder, classNam
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 20 }}
                 transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[320px]"
+                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-white rounded-2xl shadow-2xl border border-divider p-5 w-[320px]"
               >
                 {/* 헤더 */}
                 <div className="flex items-center justify-between mb-5">
@@ -192,7 +192,7 @@ export default function DatePickerModal({ value, onChange, placeholder, classNam
                 </div>
 
                 {/* 하단 */}
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+                <div className="mt-4 pt-3 border-t border-divider flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => { onChange(''); setIsOpen(false); }}

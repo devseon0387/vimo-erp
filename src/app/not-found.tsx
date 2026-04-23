@@ -11,14 +11,14 @@ export default function NotFound() {
       background: '#f5f4f2',
       fontFamily: 'sans-serif',
     }}>
-      <h1 style={{ fontSize: '72px', fontWeight: 800, color: '#ea580c', margin: 0 }}>404</h1>
+      <h1 style={{ fontSize: '72px', fontWeight: 800, color: '#f97316', margin: 0 }}>404</h1>
       <p style={{ fontSize: '18px', color: '#78716c', marginTop: '8px' }}>페이지를 찾을 수 없습니다</p>
       <Link
         href="/management"
         style={{
           marginTop: '24px',
           padding: '10px 24px',
-          background: '#ea580c',
+          background: '#f97316',
           color: '#fff',
           borderRadius: '12px',
           textDecoration: 'none',

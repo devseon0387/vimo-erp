@@ -292,16 +292,16 @@ export default function PortfolioPage() {
 
   const handleAddItem = async () => {
     if (!newItem.title || !newItem.client) {
-      alert('제목과 클라이언트는 필수 입력 항목입니다.');
+      toast.warning('제목과 클라이언트는 필수 입력 항목입니다.');
       return;
     }
     if (!newItem.youtubeUrl) {
-      alert('유튜브 URL을 입력해주세요.');
+      toast.warning('유튜브 URL을 입력해주세요.');
       return;
     }
     const videoId = extractYouTubeId(newItem.youtubeUrl);
     if (!videoId) {
-      alert('올바른 유튜브 URL을 입력해주세요.\n예: https://www.youtube.com/watch?v=VIDEO_ID');
+      toast.warning('올바른 유튜브 URL을 입력해주세요. (예: https://www.youtube.com/watch?v=VIDEO_ID)');
       return;
     }
 
@@ -319,7 +319,7 @@ export default function PortfolioPage() {
 
     const inserted = await insertPortfolioItem(itemToInsert);
     if (!inserted) {
-      alert('포트폴리오 추가에 실패했습니다. 다시 시도해주세요.');
+      toast.error('포트폴리오 추가에 실패했습니다. 다시 시도해주세요.');
       return;
     }
     setPortfolioItems(prev => [inserted, ...prev]);
@@ -657,7 +657,7 @@ export default function PortfolioPage() {
                       className={`p-2 rounded-lg backdrop-blur-sm transition-colors ${
                         item.isPublished
                           ? 'bg-green-500/90 text-white'
-                          : 'bg-gray-900/50 text-white hover:bg-gray-900/70'
+                          : 'bg-black/40 text-white hover:bg-gray-900/70'
                       }`}
                       title={item.isPublished ? '공개됨' : '비공개'}
                     >
@@ -829,7 +829,7 @@ export default function PortfolioPage() {
                             {item.category || '기타'} <ChevronDown size={10} className="inline" />
                           </button>
                           {inlineCatItemId === item.id && (
-                            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+                            <div className="absolute top-full left-0 mt-1 bg-white border border-divider rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
                               {allCategories.map(cat => (
                                 <button
                                   key={cat}
@@ -924,10 +924,10 @@ export default function PortfolioPage() {
       {/* 포트폴리오 수정 모달 */}
       {isEditModalOpen && editingItem && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full animate-portfolio-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-divider flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">포트폴리오 수정</h2>
                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <X size={20} />
@@ -983,7 +983,7 @@ export default function PortfolioPage() {
                   <label htmlFor="edit-publish" className="text-sm text-gray-700">공개 상태</label>
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <div className="px-6 py-4 border-t border-divider flex justify-end space-x-3">
                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">취소</button>
                 <button type="button" onClick={handleSaveEdit} className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">저장</button>
               </div>
@@ -996,7 +996,7 @@ export default function PortfolioPage() {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto animate-modal-overlay">
           <div
-            className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsAddModalOpen(false)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
@@ -1004,7 +1004,7 @@ export default function PortfolioPage() {
               className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full animate-portfolio-modal"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-divider flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">새 포트폴리오 추가</h2>
                 <button
                   type="button"
@@ -1155,7 +1155,7 @@ export default function PortfolioPage() {
                     유튜브 영상 URL을 입력하거나 붙여넣기 하세요 (Ctrl+V 또는 Cmd+V)
                   </p>
                   {newItem.youtubeUrl && getYouTubeThumbnail(newItem.youtubeUrl) && (
-                    <div className="mt-3 p-2 border border-gray-200 rounded-lg">
+                    <div className="mt-3 p-2 border border-divider rounded-lg">
                       <p className="text-xs text-gray-600 mb-2">썸네일 미리보기:</p>
                       <img
                         src={getYouTubeThumbnail(newItem.youtubeUrl)!}
@@ -1180,7 +1180,7 @@ export default function PortfolioPage() {
                   <label htmlFor="publish" className="ml-2 text-sm text-gray-700">바로 공개하기</label>
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <div className="px-6 py-4 border-t border-divider flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
@@ -1204,10 +1204,10 @@ export default function PortfolioPage() {
       {/* 일괄 추가 모달 */}
       {isBulkModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => !isBulkSubmitting && setIsBulkModalOpen(false)} />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isBulkSubmitting && setIsBulkModalOpen(false)} />
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="relative bg-white rounded-lg shadow-xl max-w-5xl w-full animate-portfolio-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-divider flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">포트폴리오 일괄 추가</h2>
                   <p className="text-sm text-gray-500 mt-0.5">여러 포트폴리오를 한 번에 등록합니다. 빈 행은 자동으로 제외됩니다.</p>
@@ -1282,7 +1282,7 @@ export default function PortfolioPage() {
                   행 추가
                 </button>
               </div>
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="px-6 py-4 border-t border-divider flex items-center justify-between">
                 <span className="text-sm text-gray-500">
                   유효한 항목: {bulkItems.filter(item => item.title.trim() && item.client.trim() && item.youtubeUrl.trim() && extractYouTubeId(item.youtubeUrl)).length}건
                 </span>
@@ -1318,10 +1318,10 @@ export default function PortfolioPage() {
       {/* 카테고리 관리 모달 */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setIsCategoryModalOpen(false)} />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsCategoryModalOpen(false)} />
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full animate-portfolio-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-divider flex items-center justify-between">
                 <h2 className="text-lg font-bold text-gray-900">카테고리 관리</h2>
                 <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <X size={20} />

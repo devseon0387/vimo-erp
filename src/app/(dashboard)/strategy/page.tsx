@@ -36,7 +36,7 @@ const ICON_OPTIONS = [
 
 // ── 색상 팔레트
 const COLOR_OPTIONS = [
-  { color: '#ea580c', bg: '#fff7f3', border: '#fde8d8' },
+  { color: '#f97316', bg: '#fff7f3', border: '#fde8d8' },
   { color: '#3b82f6', bg: '#f3f8ff', border: '#dbeafe' },
   { color: '#10b981', bg: '#f3fff6', border: '#d1fae5' },
   { color: '#8b5cf6', bg: '#fdf3ff', border: '#e9d5ff' },
@@ -54,7 +54,7 @@ function parseGroupIcon(emoji: string): { iconName: string; color: string } {
   const [iconName, color] = emoji?.split(':') ?? [];
   return {
     iconName: iconName || 'Folder',
-    color:    color    || '#ea580c',
+    color:    color    || '#f97316',
   };
 }
 function serializeGroupIcon(iconName: string, color: string) {
@@ -155,7 +155,7 @@ export default function StrategyPage() {
   const [isAdding,  setIsAdding ] = useState(false);
   const [newName,   setNewName  ] = useState('');
   const [newIcon,   setNewIcon  ] = useState('Folder');
-  const [newColor,  setNewColor ] = useState('#ea580c');
+  const [newColor,  setNewColor ] = useState('#f97316');
   const [pickerOpen, setPickerOpen] = useState(false);        // 새 그룹 피커
   const [editPicker, setEditPicker] = useState<string | null>(null); // 기존 그룹 피커 (group.id)
   const [loading,   setLoading  ] = useState(true);
@@ -182,7 +182,7 @@ export default function StrategyPage() {
     router.push(`/strategy/${g.id}`);
   };
 
-  const cancel = () => { setIsAdding(false); setNewName(''); setNewIcon('Folder'); setNewColor('#ea580c'); setPickerOpen(false); };
+  const cancel = () => { setIsAdding(false); setNewName(''); setNewIcon('Folder'); setNewColor('#f97316'); setPickerOpen(false); };
 
   const deleteGroup = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -198,7 +198,7 @@ export default function StrategyPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '240px' }}>
-      <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #ede9e6', borderTopColor: '#ea580c', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #ede9e6', borderTopColor: '#f97316', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -220,13 +220,13 @@ export default function StrategyPage() {
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             padding: '9px 16px', borderRadius: '9px',
-            background: '#ea580c', color: '#fff',
+            background: '#f97316', color: '#fff',
             border: 'none', cursor: 'pointer',
             fontSize: '13px', fontWeight: 600,
             transition: 'background 0.12s', flexShrink: 0,
           }}
           onMouseEnter={e => { e.currentTarget.style.background = '#c2410c'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#ea580c'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#f97316'; }}
         >
           <Plus size={14} /> 새 그룹
         </button>
@@ -291,7 +291,7 @@ export default function StrategyPage() {
                   outline: 'none', background: '#faf9f8',
                   transition: 'border-color 0.12s',
                 }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#ea580c'; e.currentTarget.style.background = '#fff'; }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#f97316'; e.currentTarget.style.background = '#fff'; }}
                 onBlur={e => { e.currentTarget.style.borderColor = '#ede9e6'; e.currentTarget.style.background = '#faf9f8'; }}
               />
             </div>
@@ -314,14 +314,14 @@ export default function StrategyPage() {
                 disabled={!newName.trim()}
                 style={{
                   padding: '7px 16px', borderRadius: '8px',
-                  background: newName.trim() ? '#ea580c' : '#e8e3df',
+                  background: newName.trim() ? '#f97316' : '#e8e3df',
                   color: newName.trim() ? '#fff' : '#b8afa8',
                   border: 'none', fontSize: '13px', fontWeight: 600,
                   cursor: newName.trim() ? 'pointer' : 'not-allowed',
                   transition: 'background 0.12s',
                 }}
                 onMouseEnter={e => { if (newName.trim()) e.currentTarget.style.background = '#c2410c'; }}
-                onMouseLeave={e => { if (newName.trim()) e.currentTarget.style.background = '#ea580c'; }}
+                onMouseLeave={e => { if (newName.trim()) e.currentTarget.style.background = '#f97316'; }}
               >
                 만들기
               </button>
@@ -342,12 +342,12 @@ export default function StrategyPage() {
             onClick={() => setIsAdding(true)}
             style={{
               padding: '9px 18px', borderRadius: '9px',
-              background: '#ea580c', color: '#fff',
+              background: '#f97316', color: '#fff',
               border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
               transition: 'background 0.12s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#c2410c'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#ea580c'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#f97316'; }}
           >
             첫 번째 그룹 만들기
           </button>

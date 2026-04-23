@@ -128,8 +128,8 @@ export default function ClientDetailPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-8 px-4">
         {/* 헤더 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="bg-white rounded-lg shadow-sm border border-divider mb-6">
+          <div className="px-6 py-4 border-b border-divider">
             {/* 뒤로가기 버튼 */}
             <button
               onClick={() => router.push('/clients')}
@@ -212,7 +212,7 @@ export default function ClientDetailPage() {
               )}
             </div>
             {client.notes && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-divider">
                 <p className="text-sm text-gray-500">메모</p>
                 <p className="text-base text-gray-700 mt-1">{client.notes}</p>
               </div>
@@ -257,7 +257,7 @@ export default function ClientDetailPage() {
           </div>
 
           {/* 필터 탭 */}
-          <div className="bg-white rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-sm border border-gray-200 inline-flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide mb-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-sm border border-divider inline-flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide mb-4">
             {([
               { key: 'all',         label: '전체',   count: clientProjects.length },
               { key: 'planning',    label: '시작 전', count: clientProjects.filter(p => p.status === 'planning').length },
@@ -325,7 +325,7 @@ export default function ClientDetailPage() {
                   >
                     <Link
                       href={`/projects/${project.id}`}
-                      className="group block bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all duration-200 p-4"
+                      className="group block bg-white rounded-xl border border-divider hover:border-divider hover:shadow-sm transition-all duration-200 p-4"
                     >
                       {/* 클라이언트 + 상태 */}
                       <div className="flex items-center justify-between mb-2">

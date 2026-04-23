@@ -228,7 +228,7 @@ export default function DateRangePicker({
           {/* 달력 패널 */}
           <motion.div
             className="fixed z-[10001] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                       bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 w-[580px] max-w-[95vw]"
+                       bg-white rounded-2xl shadow-2xl border border-divider p-6 w-[580px] max-w-[95vw]"
             initial={{ opacity: 0, scale: 0.93, y: 12 }}
             animate={{ opacity: 1, scale: 1,    y: 0  }}
             exit={{    opacity: 0, scale: 0.93, y: 12 }}
@@ -359,7 +359,7 @@ export default function DateRangePicker({
             </div>
 
             {/* 하단 */}
-            <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+            <div className="mt-4 pt-3 border-t border-divider flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => { onStartChange(''); onEndChange(''); setSelecting('start'); }}
@@ -402,7 +402,7 @@ export default function DateRangePicker({
             className={`px-2 py-2 border rounded-md text-left flex items-center gap-1 transition-all text-xs ${
               isOpen && selecting === 'start'
                 ? 'border-gray-400 ring-1 ring-gray-200 bg-gray-50'
-                : 'border-gray-200 hover:border-gray-300 bg-white'
+                : 'border-divider hover:border-gray-300 bg-white'
             }`}
           >
             <Calendar size={12} className={`flex-shrink-0 ${formatShort(startDate) ? 'text-orange-500' : 'text-gray-400'}`} />
@@ -417,7 +417,7 @@ export default function DateRangePicker({
             className={`px-2 py-2 border rounded-md text-left flex items-center gap-1 transition-all text-xs ${
               isOpen && selecting === 'end'
                 ? 'border-gray-400 ring-1 ring-gray-200 bg-gray-50'
-                : 'border-gray-200 hover:border-gray-300 bg-white'
+                : 'border-divider hover:border-gray-300 bg-white'
             }`}
           >
             <Calendar size={12} className={`flex-shrink-0 ${endDate === 'tbd' ? 'text-orange-400' : endDate ? 'text-orange-500' : 'text-gray-400'}`} />
@@ -441,7 +441,7 @@ export default function DateRangePicker({
           className={`h-12 px-4 border-2 rounded-xl text-left flex items-center gap-2 transition-all ${
             isOpen && selecting === 'start'
               ? 'border-gray-400 ring-2 ring-gray-100'
-              : 'border-gray-200 hover:border-gray-300'
+              : 'border-divider hover:border-gray-300'
           }`}
         >
           <Calendar size={16} className={startDate ? 'text-orange-500' : 'text-gray-400'} />
@@ -456,7 +456,7 @@ export default function DateRangePicker({
           className={`h-12 px-4 border-2 rounded-xl text-left flex items-center gap-2 transition-all ${
             isOpen && selecting === 'end'
               ? 'border-gray-400 ring-2 ring-gray-100'
-              : 'border-gray-200 hover:border-gray-300'
+              : 'border-divider hover:border-gray-300'
           }`}
         >
           <Calendar size={16} className={endDate === 'tbd' ? 'text-orange-400' : endDate ? 'text-orange-500' : 'text-gray-400'} />

@@ -313,7 +313,7 @@ export default function BatchSettlementPage() {
     const filled = edited && getVal({ episode: { id: epId } } as BatchRow, field) !== '';
     if (edited && filled) return 'border-green-400 bg-green-50/50 text-green-700';
     if (isMissing) return 'border-dashed border-orange-300 bg-orange-50/30';
-    return 'border-[#ede9e6] bg-[#fafaf9]';
+    return 'border-divider bg-[#fafaf9]';
   };
 
   // ── 상태 뱃지
@@ -376,8 +376,8 @@ export default function BatchSettlementPage() {
               ? 'border-green-400 bg-green-50/50'
               : isMissing
                 ? 'border-dashed border-orange-300 bg-orange-50/30'
-                : 'border-[#ede9e6] bg-[#fafaf9]'
-          } ${isOpen ? 'border-orange-500 bg-white shadow-[0_0_0_3px_rgba(234,88,12,0.08)]' : 'hover:border-[#d6cec8]'}`}
+                : 'border-divider bg-[#fafaf9]'
+          } ${isOpen ? 'border-orange-500 bg-white shadow-[0_0_0_3px_rgba(249,115,22,0.08)]' : 'hover:border-[#d6cec8]'}`}
         >
           {selectedPartner ? (
             <>
@@ -403,10 +403,10 @@ export default function BatchSettlementPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.97 }}
               transition={{ duration: 0.12 }}
-              className="absolute top-full left-0 mt-1 z-20 w-[200px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-xl shadow-2xl max-h-72 overflow-hidden"
+              className="absolute top-full left-0 mt-1 z-20 w-[200px] bg-white/95 backdrop-blur-xl border border-divider rounded-xl shadow-2xl max-h-72 overflow-hidden"
             >
-              <div className="sticky top-0 p-2 border-b border-gray-100 bg-white/95">
-                <div className="flex items-center gap-1.5 px-2 py-1.5 border border-gray-200 rounded-lg bg-white">
+              <div className="sticky top-0 p-2 border-b border-divider bg-white/95">
+                <div className="flex items-center gap-1.5 px-2 py-1.5 border border-divider rounded-lg bg-white">
                   <Search size={12} className="text-gray-400 flex-shrink-0" />
                   <input
                     type="text"
@@ -466,12 +466,12 @@ export default function BatchSettlementPage() {
     <div className="space-y-5">
       {/* 헤더 */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">미입력 일괄 처리</h1>
+        <h1 className="text-page">미입력 일괄 처리</h1>
         <p className="text-gray-500 mt-1 text-sm">비용, 정산일, 담당자, 일정이 비어있는 에피소드를 한눈에 확인하고 처리합니다</p>
       </div>
 
       {/* 통합 카드 */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-divider">
         {/* 툴바 */}
         <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-[#f0ece9] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
@@ -519,7 +519,7 @@ export default function BatchSettlementPage() {
                   {showBulkDate ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 </button>
                 {showBulkDate && (
-                  <div className="absolute right-0 top-full mt-2 bg-white border border-[#ede9e6] rounded-xl shadow-lg p-3 z-30 flex items-center gap-2">
+                  <div className="absolute right-0 top-full mt-2 bg-white border border-divider rounded-xl shadow-lg p-3 z-30 flex items-center gap-2">
                     <DatePickerModal
                       value={bulkDate}
                       onChange={v => setBulkDate(v)}
@@ -644,7 +644,7 @@ export default function BatchSettlementPage() {
                             updateEdit(epId, 'cost', raw ? parseInt(raw) : 0);
                           }}
                           placeholder="0원"
-                          className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'cost', row.missing.cost)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
+                          className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'cost', row.missing.cost)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
                         />
                       </div>
                     </div>
@@ -664,7 +664,7 @@ export default function BatchSettlementPage() {
                           updateEdit(epId, 'mgmt', raw ? parseInt(raw) : 0);
                         }}
                         placeholder="0원"
-                        className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'mgmt', row.missing.mgmt)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,88,12,0.08)]`}
+                        className={`w-[100px] px-2 py-1.5 text-right text-[12px] font-medium rounded-lg border outline-none transition-all ${inputCls(epId, 'mgmt', row.missing.mgmt)} focus:border-orange-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(249,115,22,0.08)]`}
                       />
                     </div>
 
@@ -686,10 +686,10 @@ export default function BatchSettlementPage() {
                               editedField && hasVal
                                 ? 'border-green-400 bg-green-50/50 text-green-700'
                                 : hasVal
-                                  ? 'border-[#ede9e6] bg-[#fafaf9] text-gray-700'
+                                  ? 'border-divider bg-[#fafaf9] text-gray-700'
                                   : missing
                                     ? 'border-dashed border-orange-300 bg-orange-50/30 text-[#a8a29e]'
-                                    : 'border-[#ede9e6] bg-[#fafaf9] text-[#a8a29e]'
+                                    : 'border-divider bg-[#fafaf9] text-[#a8a29e]'
                             } hover:border-[#d6cec8]`}
                           >
                             {hasVal ? `${val.slice(2, 4)}.${val.slice(5, 7)}.${val.slice(8, 10)}` : '-'}
