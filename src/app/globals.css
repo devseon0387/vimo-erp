@@ -23,6 +23,9 @@
   --color-ink-50: #fafaf9;
   --color-ink-100: #f5f5f4;
   --color-ink-200: #ede9e6;
+
+  /* 테두리 기본 — Tailwind 4가 기본값을 currentColor로 바꿔버려서 명시 필요 */
+  --color-divider: #ede9e6;
   --color-ink-300: #d6d3d1;
   --color-ink-400: #a8a29e;
   --color-ink-500: #78716c;
