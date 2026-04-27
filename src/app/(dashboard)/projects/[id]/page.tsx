@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Project, Client, Episode, Partner, WorkContentType, WorkStep, WorkTypeBudget } from '@/types';
 import { ArrowLeft, Calendar, User, DollarSign, Tag, Edit, Trash2, TrendingUp, ChevronRight, X, UserCircle, FileText, Users, Video, Palette, Image, CheckCircle2, Clock, Pause, Target, ChevronDown, ClipboardCheck, Building2, Tv, Youtube, Monitor, Camera } from 'lucide-react';
 import { addToTrash } from '@/lib/trash';
@@ -12,6 +12,7 @@ import { getComputedProjectStatus } from '@/lib/utils';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
 import ProjectChecklistModal from '@/components/ProjectChecklistModal';
 import EpisodeDetailModal from '@/components/EpisodeDetailModal';
+import EpisodeDetailPanel from '@/components/EpisodeDetailPanel';
 import DateRangePicker from '@/components/DateRangePicker';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTutorial } from '@/components/tutorial/useTutorial';
@@ -93,6 +94,23 @@ export default function ProjectDetailPage() {
   // 체크리스트 모달
   const [isChecklistModalOpen, setIsChecklistModalOpen] = useState(false);
   const [selectedEpisodeForDetail, setSelectedEpisodeForDetail] = useState<Episode | null>(null);
+
+  // 마스터-디테일: 우측 패널에 표시할 회차 ID (URL ?ep=<id> 로도 동기화)
+  const searchParams = useSearchParams();
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
+  // URL 쿼리 초기 반영 (최초 1회)
+  useEffect(() => {
+    const ep = searchParams.get('ep');
+    if (ep) setSelectedEpisodeId(ep);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 선택 변경 시 URL 동기화 (리로드 방지, history.replaceState)
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (selectedEpisodeId) url.searchParams.set('ep', selectedEpisodeId);
+    else url.searchParams.delete('ep');
+    window.history.replaceState({}, '', url.toString());
+  }, [selectedEpisodeId]);
+
   const [isEpisodeEditMode, setIsEpisodeEditMode] = useState(false);
   const [editingEpisodes, setEditingEpisodes] = useState<{ id: string; episodeNumber: number; title: string; assignee: string; manager: string; startDate: string; dueDate: string }[]>([]);
   const [editDropdown, setEditDropdown] = useState<{ episodeId: string; field: 'assignee' | 'manager' } | null>(null);
@@ -1245,7 +1263,8 @@ export default function ProjectDetailPage() {
 
       {/* 진행 중인 회차 탭 */}
       {activeTab === 'in-progress' && (
-      <div data-tour="tour-detail-inprogress" className="bg-white rounded-xl border border-divider">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(420px,480px)_1fr] gap-4 xl:h-[calc(100vh-220px)] xl:min-h-[620px]">
+      <div data-tour="tour-detail-inprogress" className="bg-white rounded-xl border border-divider xl:overflow-y-auto">
         <div className="px-4 sm:px-6 py-4 border-b border-divider flex items-center justify-between gap-2">
           <div>
             <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
@@ -1310,12 +1329,17 @@ export default function ProjectDetailPage() {
                 const assignee = allPartners.find(p => p.id === episode.assignee);
                 const manager = allPartners.find(p => p.id === episode.manager);
 
+                const isSelected = selectedEpisodeId === episode.id;
                 return (
                   <div key={episode.id} className="relative group">
                     <div
-                      onClick={() => { if (!isEpisodeEditMode) router.push(`/projects/${projectId}/episodes/${episode.id}`); }}
-                      className={`w-full text-left bg-white rounded-xl border border-divider p-3 sm:p-4 transition-all ${
-                        isEpisodeEditMode ? 'cursor-default' : 'cursor-pointer hover:border-divider hover:shadow-sm'
+                      onClick={() => { if (!isEpisodeEditMode) setSelectedEpisodeId(episode.id); }}
+                      className={`w-full text-left bg-white rounded-xl p-3 sm:p-4 transition-all ${
+                        isSelected
+                          ? 'border-2 border-orange-400 shadow-sm shadow-orange-500/10'
+                          : 'border border-divider'
+                      } ${
+                        isEpisodeEditMode ? 'cursor-default' : 'cursor-pointer hover:border-[#d6d3d1] hover:shadow-sm'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1">
@@ -1545,11 +1569,30 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </div>
+      {/* 디테일 패널 (회차 선택 시) */}
+      <aside className="hidden xl:block xl:overflow-y-auto">
+        {selectedEpisodeId ? (
+          <EpisodeDetailPanel
+            key={selectedEpisodeId}
+            projectId={projectId}
+            episodeId={selectedEpisodeId}
+            embedded
+            onBack={() => setSelectedEpisodeId(null)}
+          />
+        ) : (
+          <div className="bg-white rounded-xl border border-divider p-12 text-center text-gray-400 h-full flex flex-col items-center justify-center">
+            <p className="text-sm font-medium">회차를 선택하면 상세 정보가 여기에 표시됩니다</p>
+            <p className="text-xs mt-2">좌측 회차 카드를 클릭하세요</p>
+          </div>
+        )}
+      </aside>
+      </div>
       )}
 
       {/* 회차 탭 */}
       {activeTab === 'episodes' && (
-      <div className="bg-white rounded-xl border border-divider">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(420px,480px)_1fr] gap-4 xl:h-[calc(100vh-220px)] xl:min-h-[620px]">
+      <div className="bg-white rounded-xl border border-divider xl:overflow-y-auto">
         <div className="px-4 sm:px-6 py-4 border-b border-divider flex items-center justify-between gap-2">
           <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 flex-shrink-0">
             회차 관리
@@ -1615,11 +1658,16 @@ export default function ProjectDetailPage() {
                 ? episode.budget.totalAmount
                 : 0;
 
+              const isSelected = selectedEpisodeId === episode.id;
               return (
                 <div key={episode.id} className="relative group">
                   <div
-                    onClick={() => { if (!isEpisodeEditMode) router.push(`/projects/${projectId}/episodes/${episode.id}`); }}
-                    className={`w-full text-left bg-white rounded-xl border border-[#f0ece9] p-3 sm:p-4 transition-all ${
+                    onClick={() => { if (!isEpisodeEditMode) setSelectedEpisodeId(episode.id); }}
+                    className={`w-full text-left bg-white rounded-xl p-3 sm:p-4 transition-all ${
+                      isSelected
+                        ? 'border-2 border-orange-400 shadow-sm shadow-orange-500/10'
+                        : 'border border-[#f0ece9]'
+                    } ${
                       isEpisodeEditMode ? 'cursor-default' : 'cursor-pointer hover:border-[#d6d3d1] hover:shadow-sm'
                     }`}
                   >
@@ -1851,6 +1899,24 @@ export default function ProjectDetailPage() {
             })}
           </div>
         )}
+      </div>
+      {/* 디테일 패널 (회차 선택 시) */}
+      <aside className="hidden xl:block xl:overflow-y-auto">
+        {selectedEpisodeId ? (
+          <EpisodeDetailPanel
+            key={selectedEpisodeId}
+            projectId={projectId}
+            episodeId={selectedEpisodeId}
+            embedded
+            onBack={() => setSelectedEpisodeId(null)}
+          />
+        ) : (
+          <div className="bg-white rounded-xl border border-divider p-12 text-center text-gray-400 h-full flex flex-col items-center justify-center">
+            <p className="text-sm font-medium">회차를 선택하면 상세 정보가 여기에 표시됩니다</p>
+            <p className="text-xs mt-2">좌측 회차 카드를 클릭하세요</p>
+          </div>
+        )}
+      </aside>
       </div>
       )}
       </motion.div>

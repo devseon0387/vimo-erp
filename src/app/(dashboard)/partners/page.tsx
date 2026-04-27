@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, UserPlus, ChevronRight, Send, Copy, Check } from 'lucide-react';
 import { Partner, Project, Episode } from '@/types';
 import { addToTrash } from '@/lib/trash';
 import { formatPhoneNumber } from '@/lib/utils';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
 import { useToast } from '@/contexts/ToastContext';
 import { getPartners, insertPartner, updatePartner, deletePartner, getProjects, getAllEpisodes } from '@/lib/supabase/db';
+import { getPendingPartnerSignups, createPartnerInvite } from '@/lib/supabase/db/partner_signups';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import PartnerEditModal from './PartnerEditModal';
 import { PartnerMasterList, type EnrichedPartner, type PartnerGroupStatus } from './PartnerMasterList';
@@ -76,7 +78,14 @@ export default function PartnersPage() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [allEpisodes, setAllEpisodes] = useState<(Episode & { projectId: string })[]>([]);
+  const [pendingSignupsCount, setPendingSignupsCount] = useState(0);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // 신규 가입 신청 카운트
+  useEffect(() => {
+    getPendingPartnerSignups().then((s) => setPendingSignupsCount(s.length));
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('selected'));
 
@@ -301,7 +310,7 @@ export default function PartnersPage() {
   return (
     <div className="space-y-5">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-page">파트너</h1>
           <p className="text-caption mt-0.5">
@@ -312,7 +321,46 @@ export default function PartnersPage() {
             {needsContactCount > 0 && ` · 연락 필요 ${needsContactCount}`}
           </p>
         </div>
+        <button
+          onClick={() => setInviteModalOpen(true)}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-[13px] font-semibold transition-colors"
+        >
+          <Send size={14} />
+          파트너 초대
+        </button>
       </div>
+
+      {inviteModalOpen && (
+        <InvitePartnerModal
+          partners={partners}
+          onClose={() => setInviteModalOpen(false)}
+        />
+      )}
+
+      {/* 신규 가입 신청 배너 */}
+      {pendingSignupsCount > 0 && (
+        <Link
+          href="/partners/signups"
+          className="flex items-center justify-between gap-3 px-5 py-3.5 rounded-2xl border border-orange-200 bg-orange-50 hover:bg-orange-100/70 hover:border-orange-300 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center flex-shrink-0">
+              <UserPlus size={18} />
+            </div>
+            <div>
+              <div className="text-[13.5px] font-bold text-orange-900">
+                신규 파트너 가입 신청 {pendingSignupsCount}명
+              </div>
+              <div className="text-[11.5px] text-orange-700 mt-0.5">
+                파트너 ERP에 가입한 신규 사용자가 검토를 기다리고 있어요
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-[12px] font-semibold text-orange-700 group-hover:text-orange-900 transition-colors">
+            검토하기 <ChevronRight size={14} />
+          </div>
+        </Link>
+      )}
 
       {/* 마스터-디테일 — 뷰포트 고정, 양쪽 독립 스크롤 */}
       <div
@@ -540,6 +588,238 @@ export default function PartnersPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────
+// 파트너 초대 모달
+// ─────────────────────────────────────
+const PARTNER_ERP_BASE = process.env.NEXT_PUBLIC_PARTNER_ERP_URL ?? 'http://localhost:3010';
+
+function InvitePartnerModal({ partners, onClose }: { partners: Partner[]; onClose: () => void }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [legacyHintId, setLegacyHintId] = useState<string>('');
+  const [partnerSearch, setPartnerSearch] = useState('');
+  const [showPartnerList, setShowPartnerList] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [result, setResult] = useState<{ url: string; expiresAt: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const filteredPartners = useMemo(() => {
+    const q = partnerSearch.trim().toLowerCase();
+    let list = partners.filter((p) => p.status === 'active');
+    if (q) list = list.filter((p) => p.name.toLowerCase().includes(q));
+    return list.slice(0, 8);
+  }, [partners, partnerSearch]);
+
+  const selectedLegacy = partners.find((p) => p.id === legacyHintId);
+
+  const handleCreate = async () => {
+    setError(null);
+    if (!name.trim()) {
+      setError('이름은 필수입니다.');
+      return;
+    }
+    setCreating(true);
+    const res = await createPartnerInvite({
+      invitedName: name.trim(),
+      invitedEmail: email.trim() || undefined,
+      legacyHintId: legacyHintId || undefined,
+    });
+    setCreating(false);
+    if (!res) {
+      setError('초대 링크 생성에 실패했어요. 다시 시도해 주세요.');
+      return;
+    }
+    setResult({
+      url: `${PARTNER_ERP_BASE}/onboard?token=${res.token}`,
+      expiresAt: res.expiresAt,
+    });
+  };
+
+  const handleCopy = async () => {
+    if (!result) return;
+    await navigator.clipboard.writeText(result.url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className="relative bg-gray-50 rounded-lg shadow-xl max-w-md w-full p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[16px] font-bold">파트너 초대</h3>
+            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500">
+              <X size={16} />
+            </button>
+          </div>
+
+          {result ? (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-green-700 mb-1">
+                  <Check size={14} /> 초대 링크가 생성됐어요
+                </div>
+                <p className="text-[12px] text-green-600">
+                  이 링크를 카카오톡·이메일로 보내주세요. 7일 후 만료됩니다.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#78716c] mb-1.5">
+                  초대 링크
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={result.url}
+                    onClick={(e) => e.currentTarget.select()}
+                    className="flex-1 px-3 py-2.5 bg-white rounded-lg border border-[#ede9e6] text-[12px] text-[#44403c] font-mono"
+                  />
+                  <button
+                    onClick={handleCopy}
+                    className="inline-flex items-center gap-1 px-3 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[12px] font-semibold transition-colors"
+                  >
+                    {copied ? <Check size={14} /> : <Copy size={14} />}
+                    {copied ? '복사됨' : '복사'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-[#78716c]">
+                만료: {new Date(result.expiresAt).toLocaleString('ko-KR')}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => { setResult(null); setName(''); setEmail(''); setLegacyHintId(''); }}
+                  className="px-4 py-2 bg-white border border-divider hover:border-[#d6d3d1] text-[#44403c] rounded-lg text-[13px] font-semibold transition-colors"
+                >
+                  새 초대
+                </button>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[13px] font-semibold transition-colors"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-[12.5px] text-[#78716c]">
+                파트너에게 보낼 초대 링크를 만들어요. 가입 시 자동으로 매핑할 기존 파트너도 선택할 수 있어요.
+              </p>
+
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#78716c] mb-1.5">
+                  이름 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="홍길동"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#ede9e6] bg-white text-[13px] outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#78716c] mb-1.5">
+                  이메일 (선택)
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="입력 시 해당 이메일로만 가입 허용"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#ede9e6] bg-white text-[13px] outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                />
+              </div>
+
+              <div className="relative">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#78716c] mb-1.5">
+                  기존 파트너로 자동 매핑 (선택)
+                </label>
+                <input
+                  type="text"
+                  value={selectedLegacy ? selectedLegacy.name : partnerSearch}
+                  onChange={(e) => {
+                    setLegacyHintId('');
+                    setPartnerSearch(e.target.value);
+                    setShowPartnerList(true);
+                  }}
+                  onFocus={() => setShowPartnerList(true)}
+                  placeholder="파트너 이름 검색..."
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#ede9e6] bg-white text-[13px] outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                />
+                {showPartnerList && filteredPartners.length > 0 && !selectedLegacy && (
+                  <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-[#ede9e6] rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredPartners.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setLegacyHintId(p.id);
+                          setPartnerSearch('');
+                          setShowPartnerList(false);
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-orange-50 text-[13px]"
+                      >
+                        <span className="font-semibold">{p.name}</span>
+                        {p.email && <span className="text-[11px] text-[#78716c] ml-2">{p.email}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedLegacy && (
+                  <div className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-orange-600 font-semibold">
+                    ✓ {selectedLegacy.name}와 자동 매핑
+                    <button
+                      type="button"
+                      onClick={() => { setLegacyHintId(''); setPartnerSearch(''); }}
+                      className="text-[#a8a29e] hover:text-red-500"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {error && (
+                <div className="text-[12px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-[13px] text-gray-700 hover:bg-gray-100 rounded-lg"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={creating || !name.trim()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[13px] font-semibold transition-colors disabled:opacity-50"
+                >
+                  <Send size={14} />
+                  {creating ? '생성 중...' : '초대 링크 만들기'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

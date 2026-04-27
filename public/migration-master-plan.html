@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>비모 유니버스 — Supabase 마이그레이션 마스터 플랜</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif;
+    background: #f5f4f2; color: #1c1917;
+    padding: 40px 24px 80px; line-height: 1.55;
+  }
+  .container { max-width: 1320px; margin: 0 auto; }
+
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+  h1 .sub { font-size: 13px; font-weight: 500; color: #78716c; margin-left: 8px; display: block; margin-top: 6px; }
+  h2 { font-size: 20px; font-weight: 800; margin-top: 56px; margin-bottom: 18px; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 10px; }
+  h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 8px;
+    background: #1c1917; color: #f97316;
+    font-size: 13px; font-weight: 800;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  h3 { font-size: 15px; font-weight: 700; margin-bottom: 10px; color: #44403c; }
+  h4 { font-size: 12px; font-weight: 700; color: #78716c; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+
+  p, li { font-size: 13px; color: #44403c; line-height: 1.7; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 4px; }
+
+  .lede {
+    margin-top: 14px; font-size: 14px; color: #57534e; line-height: 1.7;
+    max-width: 880px;
+  }
+
+  .card {
+    background: white; border: 1px solid #ede9e6; border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  code {
+    background: #f5f5f4; padding: 2px 7px; border-radius: 4px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 12px; color: #44403c;
+  }
+
+  pre.sql {
+    background: #1c1917; color: #e7e5e4;
+    padding: 18px 20px; border-radius: 12px;
+    font-size: 12px; line-height: 1.65;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+  pre.sql .kw   { color: #fbbf24; font-weight: 600; }
+  pre.sql .str  { color: #86efac; }
+  pre.sql .com  { color: #78716c; font-style: italic; }
+  pre.sql .fn   { color: #93c5fd; }
+
+  /* 핵심 원칙 카드들 */
+  .principles {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .principle {
+    background: white;
+    border-left: 4px solid #f97316;
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .principle .num {
+    display: inline-block;
+    font-size: 11px; font-weight: 800;
+    color: #f97316; letter-spacing: 0.2em;
+    margin-bottom: 4px;
+  }
+  .principle .title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .principle .desc { font-size: 12px; color: #78716c; line-height: 1.55; }
+
+  /* Phase 카드 */
+  .phase {
+    background: white;
+    border: 1px solid #ede9e6;
+    border-radius: 14px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .phase-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #f0ece9;
+    background: linear-gradient(135deg, #fff7ed 0%, transparent 80%);
+  }
+  .phase-num {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: #1c1917; color: #f97316;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    flex-shrink: 0;
+  }
+  .phase-title-block { flex: 1; }
+  .phase-title-block h3 {
+    font-size: 17px; font-weight: 800; margin-bottom: 3px;
+    color: #1c1917;
+  }
+  .phase-title-block .sub {
+    font-size: 12px; color: #78716c;
+  }
+  .phase-meta { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .pill.risk-low    { background: #dcfce7; color: #15803d; }
+  .pill.risk-med    { background: #fef3c7; color: #a16207; }
+  .pill.risk-high   { background: #fee2e2; color: #b91c1c; }
+  .pill.time { background: #e0e7ff; color: #3730a3; }
+  .pill.rollback { background: #f5f5f4; color: #44403c; }
+
+  .phase-body {
+    padding: 20px 24px 22px;
+  }
+  .phase-section {
+    margin-bottom: 18px;
+  }
+  .phase-section:last-child { margin-bottom: 0; }
+  .phase-section .head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700;
+    color: #f97316;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    margin-bottom: 8px;
+  }
+  .phase-section .head::before {
+    content: ''; width: 4px; height: 14px; background: #f97316; border-radius: 2px;
+  }
+
+  /* 영향 범위 표 */
+  .impact-table {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 6px 12px;
+    font-size: 12px;
+  }
+  .impact-table .lb { color: #78716c; font-weight: 600; }
+  .impact-table .vl { color: #44403c; }
+  .impact-table .vl b { color: #1c1917; }
+
+  /* 위험 매트릭스 표 */
+  table.matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    background: white;
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid #ede9e6;
+  }
+  table.matrix th {
+    text-align: left; padding: 12px 14px;
+    background: #fafaf9;
+    font-size: 11px; font-weight: 700;
+    color: #78716c;
+    text-transform: uppercase; letter-spacing: 0.3px;
+    border-bottom: 1px solid #ede9e6;
+  }
+  table.matrix td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f5f4f2;
+    vertical-align: top;
+  }
+  table.matrix tr:last-child td { border-bottom: none; }
+  table.matrix tr:hover { background: #fafaf9; }
+
+  /* 결정 사항 카드 */
+  .decision {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .decision .q {
+    font-size: 13px; font-weight: 700;
+    color: #c2410c;
+    margin-bottom: 8px;
+  }
+  .decision .options {
+    display: grid; gap: 8px;
+  }
+  .decision .option {
+    background: white;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+  .decision .option b { color: #c2410c; }
+  .decision .recommend {
+    margin-top: 10px;
+    font-size: 11.5px; color: #57534e;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 8px;
+  }
+  .decision .recommend b { color: #1c1917; }
+
+  /* 체크리스트 */
+  .checklist {
+    background: white;
+    border: 1px solid #ede9e6;
+    border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .checklist .group {
+    margin-bottom: 18px;
+  }
+  .checklist .group:last-child { margin-bottom: 0; }
+  .checklist .group-title {
+    font-size: 12px; font-weight: 800;
+    color: #1c1917;
+    text-transform: uppercase; letter-spacing: 0.3px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f0ece9;
+  }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #44403c;
+  }
+  .check-item input[type=checkbox] {
+    margin-top: 4px;
+    width: 14px; height: 14px;
+    accent-color: #f97316;
+    cursor: pointer;
+  }
+  .check-item label {
+    flex: 1; cursor: pointer;
+    line-height: 1.5;
+  }
+  .check-item code { font-size: 11px; }
+
+  /* 비교 표 (Before/After) */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .compare-col {
+    border: 1px solid #ede9e6;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .compare-col .head {
+    padding: 12px 16px;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .compare-col.before .head {
+    background: #f5f5f4; color: #57534e;
+  }
+  .compare-col.after .head {
+    background: #fff7ed; color: #c2410c;
+  }
+  .compare-col .body { padding: 14px 16px; }
+  .compare-col .table-name {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 12px;
+    padding: 5px 10px;
+    background: #fafaf9;
+    border: 1px solid #ede9e6;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    color: #44403c;
+  }
+  .compare-col .new {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+  }
+  .compare-col .legend {
+    margin-top: 10px;
+    font-size: 11px; color: #78716c;
+  }
+
+  /* Mermaid 박스 */
+  .mermaid-box {
+    background: white;
+    border: 1px solid #ede9e6;
+    border-radius: 14px;
+    padding: 24px;
+    overflow-x: auto;
+  }
+
+  /* TOC */
+  .toc {
+    background: white;
+    border: 1px solid #ede9e6;
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-top: 22px;
+    margin-bottom: 36px;
+  }
+  .toc h4 { margin-bottom: 10px; }
+  .toc ol {
+    columns: 2; column-gap: 28px;
+    padding-left: 18px;
+    list-style: decimal;
+  }
+  .toc li {
+    margin-bottom: 4px;
+    font-size: 12.5px;
+    color: #44403c;
+    break-inside: avoid;
+  }
+  .toc li a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .toc li a:hover {
+    color: #f97316;
+    border-bottom-color: #fed7aa;
+  }
+
+  /* FAQ */
+  .faq {
+    background: white;
+    border: 1px solid #ede9e6;
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 8px;
+  }
+  .faq .q {
+    font-size: 13px; font-weight: 700; color: #1c1917;
+    margin-bottom: 6px;
+  }
+  .faq .q::before {
+    content: 'Q. '; color: #f97316; font-weight: 800;
+  }
+  .faq .a {
+    font-size: 12.5px; color: #57534e; line-height: 1.7;
+  }
+  .faq .a::before {
+    content: 'A. '; color: #15803d; font-weight: 800;
+  }
+
+  /* 작은 인디케이터 */
+  .tag {
+    display: inline-block;
+    font-size: 10px; font-weight: 700;
+    padding: 1px 7px; border-radius: 4px;
+    background: #f5f5f4; color: #57534e;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .tag.new { background: #ffedd5; color: #c2410c; }
+  .tag.danger { background: #fee2e2; color: #b91c1c; }
+  .tag.safe { background: #dcfce7; color: #15803d; }
+
+  .anchor { scroll-margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <h1>
+    Supabase 마이그레이션 마스터 플랜
+    <span class="sub">비모 ERP · Partner ERP · Vibox 통합 — 단계별 무중단 전환 전략</span>
+  </h1>
+
+  <p class="lede">
+    운영 중인 비모 ERP를 멈추지 않고 비모 유니버스 인증 구조로 점진 전환하는 마스터 플랜.
+    단번에 갈아엎지 않고 <b>7개 단계</b>로 분리, 각 단계 후 검증·롤백이 가능한 안전 설계.
+    <b>데이터 손실 0%</b> 목표.
+  </p>
+
+  <!-- ═══ TOC ═══ -->
+  <div class="toc">
+    <h4>목차</h4>
+    <ol>
+      <li><a href="#principles">핵심 원칙 (4가지)</a></li>
+      <li><a href="#diagnosis">사전 진단 — 현재 vs 목표</a></li>
+      <li><a href="#dependency">단계 의존성 다이어그램</a></li>
+      <li><a href="#phase1">Phase 1 · 새 테이블 생성</a></li>
+      <li><a href="#phase2">Phase 2 · 제약·트리거·RLS</a></li>
+      <li><a href="#phase3">Phase 3 · 기존 사용자 백필</a></li>
+      <li><a href="#phase4">Phase 4 · 비모 ERP 이중 검증</a></li>
+      <li><a href="#phase5">Phase 5 · 파트너 데이터 정리</a></li>
+      <li><a href="#phase6">Phase 6 · 파트너 ERP 가동</a></li>
+      <li><a href="#phase7">Phase 7 · 정리 (수개월 후)</a></li>
+      <li><a href="#risk-matrix">위험 매트릭스</a></li>
+      <li><a href="#decisions">실행 전 결정 필요 사항</a></li>
+      <li><a href="#backup">백업 / 롤백 전략</a></li>
+      <li><a href="#checklist">실행 체크리스트</a></li>
+      <li><a href="#faq">FAQ / Edge Cases</a></li>
+    </ol>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       1. 핵심 원칙
+  ═══════════════════════════════════════════ -->
+  <h2 id="principles" class="anchor"><span class="num">1</span>핵심 원칙</h2>
+
+  <div class="principles">
+    <div class="principle">
+      <div class="num">PRINCIPLE 01</div>
+      <div class="title">단계 분리 (Phased)</div>
+      <div class="desc">한 마이그레이션은 <b>독립적으로 실행·검증·롤백</b> 가능해야 함. 한 단계 실패가 전체 시스템을 무너뜨리면 안 됨.</div>
+    </div>
+    <div class="principle">
+      <div class="num">PRINCIPLE 02</div>
+      <div class="title">기존 시스템 무중단</div>
+      <div class="desc">새 테이블만 추가, 기존 테이블은 <b>마지막 단계 전까지 건드리지 않음</b>. 비모 ERP는 마이그레이션 중에도 계속 동작.</div>
+    </div>
+    <div class="principle">
+      <div class="num">PRINCIPLE 03</div>
+      <div class="title">이중 검증 (Coexist)</div>
+      <div class="desc">기존 권한 체크 + 새 권한 체크 <b>둘 다 통과</b>해야 진입. 새 시스템 버그가 있어도 기존 시스템이 fallback 역할.</div>
+    </div>
+    <div class="principle">
+      <div class="num">PRINCIPLE 04</div>
+      <div class="title">멱등성 (Idempotent)</div>
+      <div class="desc">모든 SQL은 <code>IF NOT EXISTS</code>, <code>ON CONFLICT DO NOTHING</code> 등으로 <b>재실행해도 안전</b>해야 함.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       2. 사전 진단
+  ═══════════════════════════════════════════ -->
+  <h2 id="diagnosis" class="anchor"><span class="num">2</span>사전 진단 — 현재 vs 목표</h2>
+
+  <div class="compare">
+    <div class="compare-col before">
+      <div class="head">Before · 현재 비모 ERP</div>
+      <div class="body">
+        <div class="table-name"><b>auth.users</b> (Supabase 관리)</div>
+        <div class="table-name"><b>user_profiles</b> · id, role, approved, needs_password_change</div>
+        <div class="table-name">projects, episodes, episode_invoices, ...</div>
+        <div class="table-name">partners (외주 인력)</div>
+        <div class="table-name">clients, work_logs, checklists, ...</div>
+        <div class="legend">
+          ✓ 단일 앱(비모 ERP)에 최적화<br/>
+          ✗ 다중 앱 권한 분리 불가<br/>
+          ✗ 파트너용 별도 ERP 만들 구조 없음
+        </div>
+      </div>
+    </div>
+    <div class="compare-col after">
+      <div class="head">After · 비모 유니버스</div>
+      <div class="body">
+        <div class="table-name"><b>auth.users</b> (그대로)</div>
+        <div class="table-name new">+ apps · 앱 카탈로그</div>
+        <div class="table-name new">+ profiles · 공용 프로필 (user_type)</div>
+        <div class="table-name new">+ app_access · 권한 매핑 (상호 배제)</div>
+        <div class="table-name new">+ vimo_staff · 비모 팀원 메타</div>
+        <div class="table-name new">+ partner_meta · 파트너 ERP 사용자 메타</div>
+        <div class="table-name new">+ partner_invites · 일회용 초대 토큰</div>
+        <div class="table-name">user_profiles · 유지 (호환성, 점진 제거)</div>
+        <div class="table-name">기존 비즈니스 테이블 · 유지</div>
+        <div class="legend">
+          ✓ 다중 앱 단일 인증<br/>
+          ✓ 비모 팀 ↔ 파트너 상호 배제<br/>
+          ✓ Vibox 비회원 공유 가능 (Phase 8 별도)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       3. 의존성 다이어그램
+  ═══════════════════════════════════════════ -->
+  <h2 id="dependency" class="anchor"><span class="num">3</span>단계 의존성 다이어그램</h2>
+
+  <div class="mermaid-box">
+    <pre class="mermaid">
+flowchart LR
+    P1["Phase 1<br/>새 테이블 생성"] --> P2["Phase 2<br/>제약·트리거·RLS"]
+    P2 --> P3["Phase 3<br/>기존 사용자 백필"]
+    P3 --> P4["Phase 4<br/>비모 ERP 이중 검증"]
+    P4 --> P5["Phase 5<br/>파트너 데이터 정리"]
+    P5 --> P6["Phase 6<br/>파트너 ERP 가동"]
+    P6 --> P7["Phase 7<br/>구 컬럼 정리"]
+
+    P1 -.->|"DROP TABLE만"| R1["복구 즉시 가능"]
+    P2 -.->|"DROP CONSTRAINT/POLICY"| R2["복구 즉시 가능"]
+    P3 -.->|"DELETE FROM 백필"| R3["복구 즉시 가능"]
+    P4 -.->|"코드 revert"| R4["복구 즉시 가능"]
+    P5 -.->|"데이터 백업 복원"| R5["사전 백업 필수"]
+
+    style P1 fill:#dcfce7,stroke:#15803d
+    style P2 fill:#dcfce7,stroke:#15803d
+    style P3 fill:#fef3c7,stroke:#a16207
+    style P4 fill:#fef3c7,stroke:#a16207
+    style P5 fill:#fee2e2,stroke:#b91c1c
+    style P6 fill:#fef3c7,stroke:#a16207
+    style P7 fill:#dcfce7,stroke:#15803d
+    </pre>
+  </div>
+
+  <p style="margin-top: 14px; font-size: 12px; color: #78716c;">
+    <span class="pill risk-low">초록</span> 위험 낮음 (즉시 롤백) ·
+    <span class="pill risk-med">노랑</span> 중간 (영향 있음, 롤백 가능) ·
+    <span class="pill risk-high">빨강</span> 높음 (사전 백업 필수)
+  </p>
+
+  <!-- ═══════════════════════════════════════════
+       Phase 1
+  ═══════════════════════════════════════════ -->
+  <h2 id="phase1" class="anchor"><span class="num">4</span>Phase 1 · 새 테이블 생성</h2>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">P1</div>
+      <div class="phase-title-block">
+        <h3>인증 코어 + 파트너 메타 테이블 생성</h3>
+        <div class="sub">기존 시스템 영향 0% — 새 테이블만 추가하므로 안전한 첫 단계</div>
+      </div>
+      <div class="phase-meta">
+        <span class="pill risk-low">위험 낮음</span>
+        <span class="pill time">⏱ 약 5분</span>
+        <span class="pill rollback">↺ DROP만</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="head">목표</div>
+        <ul>
+          <li><code>apps</code> · <code>profiles</code> · <code>app_access</code> · <code>partner_meta</code> · <code>partner_invites</code> · <code>vimo_staff</code> 테이블 생성</li>
+          <li>모든 SQL은 <code>CREATE IF NOT EXISTS</code> — 재실행 안전</li>
+          <li>기존 <code>user_profiles</code>, <code>partners</code>(외주 인력) 테이블 그대로 유지</li>
+        </ul>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">SQL</div>
+<pre class="sql"><span class="com">-- 앱 카탈로그</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> public.apps (
+  code        text <span class="kw">PRIMARY KEY</span>,
+  name        text <span class="kw">NOT NULL</span>,
+  domain      text,
+  sso_enabled boolean <span class="kw">DEFAULT</span> true,
+  created_at  timestamptz <span class="kw">DEFAULT</span> now()
+);
+
+<span class="kw">INSERT INTO</span> public.apps (code, name, domain) <span class="kw">VALUES</span>
+  (<span class="str">'vimo_erp'</span>,    <span class="str">'비모 ERP'</span>,    <span class="str">'erp.vi-mo.kr'</span>),
+  (<span class="str">'partner_erp'</span>, <span class="str">'Partner ERP'</span>, <span class="str">'partner.vi-mo.kr'</span>),
+  (<span class="str">'vibox'</span>,       <span class="str">'Vibox'</span>,       <span class="str">'vibox.cloud'</span>)
+<span class="kw">ON CONFLICT</span> (code) <span class="kw">DO NOTHING</span>;
+
+<span class="com">-- 공용 프로필 (auth.users 1:1 확장)</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> public.profiles (
+  id          uuid <span class="kw">PRIMARY KEY REFERENCES</span> auth.users(id) <span class="kw">ON DELETE CASCADE</span>,
+  user_type   text <span class="kw">NOT NULL DEFAULT</span> <span class="str">'staff'</span>
+              <span class="kw">CHECK</span> (user_type <span class="kw">IN</span> (<span class="str">'staff'</span>, <span class="str">'partner'</span>, <span class="str">'external'</span>)),
+  name        text,
+  avatar_url  text,
+  phone       text,
+  created_at  timestamptz <span class="kw">DEFAULT</span> now(),
+  updated_at  timestamptz <span class="kw">DEFAULT</span> now()
+);
+
+<span class="com">-- 권한 매핑 (N:N user × app)</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> public.app_access (
+  id               uuid <span class="kw">PRIMARY KEY DEFAULT</span> <span class="fn">gen_random_uuid</span>(),
+  user_id          uuid <span class="kw">NOT NULL REFERENCES</span> public.profiles(id) <span class="kw">ON DELETE CASCADE</span>,
+  app_code         text <span class="kw">NOT NULL REFERENCES</span> public.apps(code),
+  role             text <span class="kw">NOT NULL DEFAULT</span> <span class="str">'member'</span>,
+  status           text <span class="kw">NOT NULL DEFAULT</span> <span class="str">'active'</span>
+                   <span class="kw">CHECK</span> (status <span class="kw">IN</span> (<span class="str">'active'</span>, <span class="str">'suspended'</span>)),
+  joined_at        timestamptz <span class="kw">DEFAULT</span> now(),
+  last_accessed_at timestamptz,
+  <span class="kw">UNIQUE</span> (user_id, app_code)
+);
+
+<span class="com">-- 비모 팀원 상세</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> public.vimo_staff (
+  profile_id uuid <span class="kw">PRIMARY KEY REFERENCES</span> public.profiles(id) <span class="kw">ON DELETE CASCADE</span>,
+  department text,
+  position   text,
+  hire_date  date,
+  created_at timestamptz <span class="kw">DEFAULT</span> now()
+);
+
+<span class="com">-- 파트너 ERP 사용자 상세 (이름 충돌 방지: 'partners' → 'partner_meta')</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> public.partner_meta (
+  profile_id    uuid <span class="kw">PRIMARY KEY REFERENCES</span> public.profiles(id) <span class="kw">ON DELETE CASCADE</span>,
+  type          text <span class="kw">NOT NULL CHECK</span> (type <span class="kw">IN</span> (<span class="str">'freelancer'</span>, <span class="str">'business'</span>)),
+  tier          text,
+  bank_info     jsonb,
+  work_formats  text[] <span class="kw">DEFAULT</span> <span class="str">'{}'</span>,
+  status        text <span class="kw">NOT NULL DEFAULT</span> <span class="str">'pending'</span>
+                <span class="kw">CHECK</span> (status <span class="kw">IN</span> (<span class="str">'pending'</span>, <span class="str">'active'</span>, <span class="str">'suspended'</span>)),
+  started_at    date,
+  legacy_partner_id uuid <span class="com">-- 기존 partners 테이블 매핑 (Phase 5에서 채움)</span>,
+  created_at    timestamptz <span class="kw">DEFAULT</span> now()
+);
+
+<span class="com">-- 일회용 초대 토큰</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> public.partner_invites (
+  id            uuid <span class="kw">PRIMARY KEY DEFAULT</span> <span class="fn">gen_random_uuid</span>(),
+  token         text <span class="kw">UNIQUE NOT NULL</span>,
+  profile_id    uuid <span class="kw">REFERENCES</span> public.profiles(id) <span class="kw">ON DELETE CASCADE</span>,
+  invited_email text,
+  invited_by    uuid <span class="kw">REFERENCES</span> public.profiles(id),
+  expires_at    timestamptz <span class="kw">NOT NULL DEFAULT</span> (now() + <span class="kw">INTERVAL</span> <span class="str">'7 days'</span>),
+  used_at       timestamptz,
+  status        text <span class="kw">NOT NULL DEFAULT</span> <span class="str">'pending'</span>
+                <span class="kw">CHECK</span> (status <span class="kw">IN</span> (<span class="str">'pending'</span>, <span class="str">'used'</span>, <span class="str">'expired'</span>, <span class="str">'revoked'</span>)),
+  created_at    timestamptz <span class="kw">DEFAULT</span> now()
+);
+
+<span class="com">-- 인덱스</span>
+<span class="kw">CREATE INDEX IF NOT EXISTS</span> idx_app_access_user      <span class="kw">ON</span> public.app_access(user_id);
+<span class="kw">CREATE INDEX IF NOT EXISTS</span> idx_app_access_app       <span class="kw">ON</span> public.app_access(app_code, status);
+<span class="kw">CREATE INDEX IF NOT EXISTS</span> idx_partner_invites_token <span class="kw">ON</span> public.partner_invites(token) <span class="kw">WHERE</span> status = <span class="str">'pending'</span>;</pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">영향 범위</div>
+        <div class="impact-table">
+          <div class="lb">기존 테이블</div><div class="vl"><b>변경 없음</b></div>
+          <div class="lb">기존 코드</div><div class="vl">변경 없음 (코드는 기존 user_profiles만 사용)</div>
+          <div class="lb">사용자</div><div class="vl">영향 없음 — 비모 ERP 정상 동작</div>
+          <div class="lb">데이터</div><div class="vl">새 테이블에 0 row (빈 상태)</div>
+        </div>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">검증</div>
+<pre class="sql"><span class="kw">SELECT</span> table_name <span class="kw">FROM</span> information_schema.tables
+<span class="kw">WHERE</span> table_schema = <span class="str">'public'</span>
+  <span class="kw">AND</span> table_name <span class="kw">IN</span> (<span class="str">'apps'</span>, <span class="str">'profiles'</span>, <span class="str">'app_access'</span>,
+                     <span class="str">'vimo_staff'</span>, <span class="str">'partner_meta'</span>, <span class="str">'partner_invites'</span>);
+<span class="com">-- 6개 row 반환되면 성공</span>
+
+<span class="kw">SELECT count</span>(*) <span class="kw">FROM</span> public.apps;  <span class="com">-- 3 (vimo_erp, partner_erp, vibox)</span></pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">롤백</div>
+<pre class="sql"><span class="kw">DROP TABLE IF EXISTS</span> public.partner_invites <span class="kw">CASCADE</span>;
+<span class="kw">DROP TABLE IF EXISTS</span> public.partner_meta <span class="kw">CASCADE</span>;
+<span class="kw">DROP TABLE IF EXISTS</span> public.vimo_staff <span class="kw">CASCADE</span>;
+<span class="kw">DROP TABLE IF EXISTS</span> public.app_access <span class="kw">CASCADE</span>;
+<span class="kw">DROP TABLE IF EXISTS</span> public.profiles <span class="kw">CASCADE</span>;
+<span class="kw">DROP TABLE IF EXISTS</span> public.apps <span class="kw">CASCADE</span>;</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       Phase 2
+  ═══════════════════════════════════════════ -->
+  <h2 id="phase2" class="anchor"><span class="num">5</span>Phase 2 · 제약·트리거·RLS</h2>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">P2</div>
+      <div class="phase-title-block">
+        <h3>상호 배제 + user_type 검증 + RLS 정책</h3>
+        <div class="sub">새 테이블에 보호막 — 잘못된 데이터 INSERT 원천 차단</div>
+      </div>
+      <div class="phase-meta">
+        <span class="pill risk-low">위험 낮음</span>
+        <span class="pill time">⏱ 약 5분</span>
+        <span class="pill rollback">↺ DROP만</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="head">SQL · 부분 유니크 인덱스 (상호 배제)</div>
+<pre class="sql"><span class="com">-- 한 user_id는 vimo_erp / partner_erp 중 단 하나만 가질 수 있음</span>
+<span class="kw">CREATE UNIQUE INDEX IF NOT EXISTS</span> app_access_erp_exclusive
+<span class="kw">ON</span> public.app_access (user_id)
+<span class="kw">WHERE</span> app_code <span class="kw">IN</span> (<span class="str">'vimo_erp'</span>, <span class="str">'partner_erp'</span>);</pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">SQL · 트리거 (user_type ↔ app_code 정합성)</div>
+<pre class="sql"><span class="kw">CREATE OR REPLACE FUNCTION</span> public.<span class="fn">check_app_access_type</span>()
+<span class="kw">RETURNS</span> trigger <span class="kw">AS</span> $$
+<span class="kw">DECLARE</span>
+  v_user_type text;
+<span class="kw">BEGIN</span>
+  <span class="kw">SELECT</span> user_type <span class="kw">INTO</span> v_user_type
+  <span class="kw">FROM</span> public.profiles <span class="kw">WHERE</span> id = NEW.user_id;
+
+  <span class="kw">IF</span> NEW.app_code = <span class="str">'vimo_erp'</span> <span class="kw">AND</span> v_user_type != <span class="str">'staff'</span> <span class="kw">THEN</span>
+    <span class="kw">RAISE EXCEPTION</span> <span class="str">'vimo_erp는 staff만 접근 가능 (현재: %)'</span>, v_user_type;
+  <span class="kw">END IF</span>;
+
+  <span class="kw">IF</span> NEW.app_code = <span class="str">'partner_erp'</span> <span class="kw">AND</span> v_user_type != <span class="str">'partner'</span> <span class="kw">THEN</span>
+    <span class="kw">RAISE EXCEPTION</span> <span class="str">'partner_erp는 partner만 접근 가능 (현재: %)'</span>, v_user_type;
+  <span class="kw">END IF</span>;
+
+  <span class="kw">RETURN</span> NEW;
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql;
+
+<span class="kw">DROP TRIGGER IF EXISTS</span> enforce_app_access_type <span class="kw">ON</span> public.app_access;
+<span class="kw">CREATE TRIGGER</span> enforce_app_access_type
+  <span class="kw">BEFORE INSERT OR UPDATE</span> <span class="kw">ON</span> public.app_access
+  <span class="kw">FOR EACH ROW EXECUTE FUNCTION</span> public.<span class="fn">check_app_access_type</span>();</pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">SQL · RLS 정책 (핵심만)</div>
+<pre class="sql"><span class="com">-- profiles: 본인만 SELECT/UPDATE, vimo_erp admin은 전체 SELECT</span>
+<span class="kw">ALTER TABLE</span> public.profiles <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="kw">CREATE POLICY</span> <span class="str">"본인 프로필 조회"</span> <span class="kw">ON</span> public.profiles
+  <span class="kw">FOR SELECT USING</span> (auth.<span class="fn">uid</span>() = id);
+
+<span class="kw">CREATE POLICY</span> <span class="str">"본인 프로필 수정"</span> <span class="kw">ON</span> public.profiles
+  <span class="kw">FOR UPDATE USING</span> (auth.<span class="fn">uid</span>() = id);
+
+<span class="kw">CREATE POLICY</span> <span class="str">"vimo_erp admin 전체 조회"</span> <span class="kw">ON</span> public.profiles
+  <span class="kw">FOR SELECT USING</span> (
+    <span class="kw">EXISTS</span> (<span class="kw">SELECT</span> 1 <span class="kw">FROM</span> public.app_access
+            <span class="kw">WHERE</span> user_id = auth.<span class="fn">uid</span>()
+              <span class="kw">AND</span> app_code = <span class="str">'vimo_erp'</span>
+              <span class="kw">AND</span> role = <span class="str">'admin'</span>
+              <span class="kw">AND</span> status = <span class="str">'active'</span>)
+  );
+
+<span class="com">-- app_access: 본인 권한 조회만, admin이 전체 관리</span>
+<span class="kw">ALTER TABLE</span> public.app_access <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="kw">CREATE POLICY</span> <span class="str">"본인 권한 조회"</span> <span class="kw">ON</span> public.app_access
+  <span class="kw">FOR SELECT USING</span> (auth.<span class="fn">uid</span>() = user_id);
+
+<span class="kw">CREATE POLICY</span> <span class="str">"vimo_erp admin 권한 관리"</span> <span class="kw">ON</span> public.app_access
+  <span class="kw">FOR ALL USING</span> (
+    <span class="kw">EXISTS</span> (<span class="kw">SELECT</span> 1 <span class="kw">FROM</span> public.app_access aa
+            <span class="kw">WHERE</span> aa.user_id = auth.<span class="fn">uid</span>()
+              <span class="kw">AND</span> aa.app_code = <span class="str">'vimo_erp'</span>
+              <span class="kw">AND</span> aa.role = <span class="str">'admin'</span>
+              <span class="kw">AND</span> aa.status = <span class="str">'active'</span>)
+  );
+
+<span class="com">-- partner_meta: 본인만 + admin</span>
+<span class="kw">ALTER TABLE</span> public.partner_meta <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">CREATE POLICY</span> <span class="str">"본인 메타 조회"</span> <span class="kw">ON</span> public.partner_meta
+  <span class="kw">FOR SELECT USING</span> (auth.<span class="fn">uid</span>() = profile_id);
+
+<span class="com">-- partner_invites: 토큰으로만 접근 (anonymous 허용)</span>
+<span class="kw">ALTER TABLE</span> public.partner_invites <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">CREATE POLICY</span> <span class="str">"토큰으로 조회"</span> <span class="kw">ON</span> public.partner_invites
+  <span class="kw">FOR SELECT USING</span> (status = <span class="str">'pending'</span> <span class="kw">AND</span> expires_at &gt; now());</pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">검증</div>
+<pre class="sql"><span class="com">-- 트리거 작동 확인 (실패해야 정상)</span>
+<span class="kw">INSERT INTO</span> public.profiles (id, user_type, name) <span class="kw">VALUES</span>
+  (<span class="fn">gen_random_uuid</span>(), <span class="str">'partner'</span>, <span class="str">'테스트'</span>);
+<span class="com">-- → 위 row.id로 INSERT INTO app_access (user_id, app_code) VALUES (..., 'vimo_erp')</span>
+<span class="com">-- → ERROR: vimo_erp는 staff만 접근 가능 (현재: partner)</span>
+
+<span class="com">-- RLS 활성화 확인</span>
+<span class="kw">SELECT</span> tablename, rowsecurity <span class="kw">FROM</span> pg_tables
+<span class="kw">WHERE</span> schemaname = <span class="str">'public'</span>
+  <span class="kw">AND</span> tablename <span class="kw">IN</span> (<span class="str">'profiles'</span>, <span class="str">'app_access'</span>, <span class="str">'partner_meta'</span>, <span class="str">'partner_invites'</span>);
+<span class="com">-- 모두 rowsecurity = true 여야 함</span></pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">롤백</div>
+<pre class="sql"><span class="kw">DROP TRIGGER IF EXISTS</span> enforce_app_access_type <span class="kw">ON</span> public.app_access;
+<span class="kw">DROP FUNCTION IF EXISTS</span> public.<span class="fn">check_app_access_type</span>();
+<span class="kw">DROP INDEX IF EXISTS</span> public.app_access_erp_exclusive;
+<span class="com">-- RLS 정책은 테이블 DROP 시 자동 제거</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       Phase 3
+  ═══════════════════════════════════════════ -->
+  <h2 id="phase3" class="anchor"><span class="num">6</span>Phase 3 · 기존 사용자 백필</h2>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">P3</div>
+      <div class="phase-title-block">
+        <h3>user_profiles → profiles + app_access(vimo_erp) 자동 생성</h3>
+        <div class="sub">기존 비모 ERP 사용자에게 새 권한 시스템 권한 부여</div>
+      </div>
+      <div class="phase-meta">
+        <span class="pill risk-med">위험 중간</span>
+        <span class="pill time">⏱ 약 10분</span>
+        <span class="pill rollback">↺ DELETE FROM</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="head">전략</div>
+        <ul>
+          <li>모든 <code>user_profiles</code> row를 <code>profiles</code>에 복사 (user_type='staff')</li>
+          <li>승인된 사용자 + admin → <code>app_access(vimo_erp, status='active')</code></li>
+          <li>미승인 사용자 → <code>app_access(vimo_erp, status='suspended')</code></li>
+          <li>비모 팀이 아닌 user (예: 테스트 계정)은 <b>수동 분류 후</b> 백필</li>
+        </ul>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">SQL · profiles 백필</div>
+<pre class="sql"><span class="com">-- 멱등 — 이미 있는 id는 INSERT 안 됨</span>
+<span class="kw">INSERT INTO</span> public.profiles (id, user_type, name, created_at)
+<span class="kw">SELECT</span>
+  up.id,
+  <span class="str">'staff'</span> <span class="kw">AS</span> user_type,                <span class="com">-- 모두 staff로 시작</span>
+  <span class="kw">COALESCE</span>(au.raw_user_meta_data->&gt;<span class="str">'name'</span>, au.email),
+  <span class="kw">COALESCE</span>(up.created_at, now())
+<span class="kw">FROM</span> public.user_profiles up
+<span class="kw">JOIN</span> auth.users au <span class="kw">ON</span> au.id = up.id
+<span class="kw">ON CONFLICT</span> (id) <span class="kw">DO NOTHING</span>;
+
+<span class="com">-- vimo_staff 메타 백필</span>
+<span class="kw">INSERT INTO</span> public.vimo_staff (profile_id, position)
+<span class="kw">SELECT</span> id, <span class="str">'manager'</span> <span class="kw">FROM</span> public.profiles
+<span class="kw">ON CONFLICT</span> (profile_id) <span class="kw">DO NOTHING</span>;</pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">SQL · app_access 백필</div>
+<pre class="sql"><span class="com">-- vimo_erp 권한 부여</span>
+<span class="kw">INSERT INTO</span> public.app_access (user_id, app_code, role, status)
+<span class="kw">SELECT</span>
+  up.id,
+  <span class="str">'vimo_erp'</span>,
+  <span class="kw">COALESCE</span>(up.role, <span class="str">'member'</span>),
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> up.approved = true <span class="kw">OR</span> up.role = <span class="str">'admin'</span> <span class="kw">THEN</span> <span class="str">'active'</span>
+    <span class="kw">ELSE</span> <span class="str">'suspended'</span>
+  <span class="kw">END</span>
+<span class="kw">FROM</span> public.user_profiles up
+<span class="kw">ON CONFLICT</span> (user_id, app_code) <span class="kw">DO NOTHING</span>;</pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">검증</div>
+<pre class="sql"><span class="com">-- 모든 user_profiles에 매칭되는 app_access가 있는지</span>
+<span class="kw">SELECT</span>
+  (<span class="kw">SELECT count</span>(*) <span class="kw">FROM</span> public.user_profiles) <span class="kw">AS</span> total_users,
+  (<span class="kw">SELECT count</span>(*) <span class="kw">FROM</span> public.profiles) <span class="kw">AS</span> profiles_count,
+  (<span class="kw">SELECT count</span>(*) <span class="kw">FROM</span> public.app_access <span class="kw">WHERE</span> app_code = <span class="str">'vimo_erp'</span>) <span class="kw">AS</span> vimo_access;
+<span class="com">-- 세 숫자가 같아야 함</span>
+
+<span class="com">-- 누락 확인</span>
+<span class="kw">SELECT</span> up.id <span class="kw">FROM</span> public.user_profiles up
+<span class="kw">LEFT JOIN</span> public.app_access aa
+  <span class="kw">ON</span> aa.user_id = up.id <span class="kw">AND</span> aa.app_code = <span class="str">'vimo_erp'</span>
+<span class="kw">WHERE</span> aa.id <span class="kw">IS NULL</span>;
+<span class="com">-- 0 row 반환되면 완료</span></pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">롤백</div>
+<pre class="sql"><span class="com">-- 백필한 row만 정확히 제거 (user_profiles에 있던 것만)</span>
+<span class="kw">DELETE FROM</span> public.app_access
+<span class="kw">WHERE</span> app_code = <span class="str">'vimo_erp'</span>
+  <span class="kw">AND</span> user_id <span class="kw">IN</span> (<span class="kw">SELECT</span> id <span class="kw">FROM</span> public.user_profiles);
+
+<span class="kw">DELETE FROM</span> public.vimo_staff
+<span class="kw">WHERE</span> profile_id <span class="kw">IN</span> (<span class="kw">SELECT</span> id <span class="kw">FROM</span> public.user_profiles);
+
+<span class="kw">DELETE FROM</span> public.profiles
+<span class="kw">WHERE</span> id <span class="kw">IN</span> (<span class="kw">SELECT</span> id <span class="kw">FROM</span> public.user_profiles);</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       Phase 4
+  ═══════════════════════════════════════════ -->
+  <h2 id="phase4" class="anchor"><span class="num">7</span>Phase 4 · 비모 ERP 이중 검증</h2>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">P4</div>
+      <div class="phase-title-block">
+        <h3>proxy.ts에 app_access 체크 추가 (기존 user_profiles 체크와 병행)</h3>
+        <div class="sub">코드 변경 — 두 검증 모두 통과해야 입장. 회귀 테스트 핵심.</div>
+      </div>
+      <div class="phase-meta">
+        <span class="pill risk-med">위험 중간</span>
+        <span class="pill time">⏱ 약 30분 (테스트 포함)</span>
+        <span class="pill rollback">↺ git revert</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="head">코드 변경 — <code>video-moment/src/proxy.ts</code></div>
+<pre class="sql"><span class="com">// 기존</span>
+const { data: profile } = await supabase
+  .from(<span class="str">'user_profiles'</span>)
+  .<span class="fn">select</span>(<span class="str">'approved, role, needs_password_change'</span>)
+  .<span class="fn">eq</span>(<span class="str">'id'</span>, user.id)
+  .<span class="fn">single</span>();
+
+if (!profile || (profile.role !== <span class="str">'admin'</span> && profile.approved !== true)) { ... }
+
+<span class="com">// 변경 — 이중 검증 추가</span>
+const [{ data: profile }, { data: access }] = await Promise.all([
+  supabase.from(<span class="str">'user_profiles'</span>)
+    .<span class="fn">select</span>(<span class="str">'approved, role, needs_password_change'</span>)
+    .<span class="fn">eq</span>(<span class="str">'id'</span>, user.id).<span class="fn">single</span>(),
+  supabase.from(<span class="str">'app_access'</span>)
+    .<span class="fn">select</span>(<span class="str">'status'</span>)
+    .<span class="fn">eq</span>(<span class="str">'user_id'</span>, user.id)
+    .<span class="fn">eq</span>(<span class="str">'app_code'</span>, <span class="str">'vimo_erp'</span>)
+    .<span class="fn">single</span>(),
+]);
+
+const profileOk = profile && (profile.role === <span class="str">'admin'</span> || profile.approved === true);
+const accessOk = access && access.status === <span class="str">'active'</span>;
+
+<span class="com">// 둘 다 통과해야 진입</span>
+if (!profileOk || !accessOk) {
+  await supabase.auth.<span class="fn">signOut</span>();
+  return NextResponse.<span class="fn">redirect</span>(loginUrl);
+}</pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">테스트 시나리오</div>
+        <ol>
+          <li><b>정상 비모 팀원</b> → 로그인 → 대시보드 진입 ✓</li>
+          <li><b>승인된 admin</b> → 로그인 → 대시보드 진입 ✓</li>
+          <li><b>app_access 없는 사용자</b> 임의 생성 → 로그인 → 거부 ✓</li>
+          <li><b>app_access.status='suspended'</b> 변경 → 즉시 로그아웃 ✓</li>
+          <li><b>주요 페이지 회귀</b>: 매니지먼트, 프로젝트, 정산, 클라이언트, 파트너, 메일</li>
+        </ol>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">롤백</div>
+        <p><code>git revert</code> 한 번이면 끝. 데이터에는 영향 없음.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       Phase 5
+  ═══════════════════════════════════════════ -->
+  <h2 id="phase5" class="anchor"><span class="num">8</span>Phase 5 · 파트너 데이터 정리</h2>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">P5</div>
+      <div class="phase-title-block">
+        <h3>기존 partners(외주) → partner_meta 매핑 + 초대 발송</h3>
+        <div class="sub">비즈니스 결정 + 데이터 백업 필수 단계</div>
+      </div>
+      <div class="phase-meta">
+        <span class="pill risk-high">위험 높음</span>
+        <span class="pill time">⏱ 약 1~2시간</span>
+        <span class="pill rollback">↺ 백업 복원</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="head">전제 조건</div>
+        <ul>
+          <li><b>사전 백업 필수</b>: <code>CREATE TABLE partners_backup_20260425 AS SELECT * FROM partners;</code></li>
+          <li>비모 팀과 협의 — 어떤 외주 인력을 파트너 ERP 사용자로 전환할지 명단 확정</li>
+          <li>전환 대상 파트너에게 초대 메일/카톡 발송 시점 합의</li>
+        </ul>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">SQL · 선별 매핑 (예시 — 활성 파트너만)</div>
+<pre class="sql"><span class="com">-- 백업 (필수!)</span>
+<span class="kw">CREATE TABLE</span> partners_backup_20260425 <span class="kw">AS SELECT</span> * <span class="kw">FROM</span> public.partners;
+
+<span class="com">-- profiles에 파트너 사전 등록 (auth.users 연결은 가입 시점)</span>
+<span class="com">-- 임시 placeholder uuid 발급, 가입 시 실제 auth.users.id로 교체</span>
+<span class="kw">INSERT INTO</span> public.profiles (id, user_type, name, phone)
+<span class="kw">SELECT</span>
+  <span class="fn">gen_random_uuid</span>(),  <span class="com">-- 임시 uuid</span>
+  <span class="str">'partner'</span>,
+  p.name,
+  p.phone
+<span class="kw">FROM</span> public.partners p
+<span class="kw">WHERE</span> p.status = <span class="str">'active'</span>;
+<span class="com">-- ⚠ 이 방식은 가입 후 id 교체 필요. 더 나은 방식은 가입 시점에 동적 생성</span>
+
+<span class="com">-- 권장 방식: 빈 profile 생성 안 하고, 가입(invite token 사용) 시</span>
+<span class="com">-- auth.users.id를 받아 profile + partner_meta 동시 생성</span>
+
+<span class="com">-- partner_meta 메타 데이터 일괄 등록</span>
+<span class="kw">INSERT INTO</span> public.partner_meta (profile_id, type, tier, started_at,
+                                  status, legacy_partner_id)
+<span class="kw">SELECT</span>
+  pr.id,
+  <span class="kw">CASE WHEN</span> p.is_business <span class="kw">THEN</span> <span class="str">'business'</span> <span class="kw">ELSE</span> <span class="str">'freelancer'</span> <span class="kw">END</span>,
+  p.tier,
+  p.started_at,
+  <span class="str">'pending'</span>,  <span class="com">-- 가입 완료 시 'active'로</span>
+  p.id  <span class="com">-- 기존 partners 테이블과 매핑 유지</span>
+<span class="kw">FROM</span> public.partners p
+<span class="kw">JOIN</span> public.profiles pr <span class="kw">ON</span> pr.name = p.name
+<span class="kw">WHERE</span> p.status = <span class="str">'active'</span>
+<span class="kw">ON CONFLICT</span> (profile_id) <span class="kw">DO NOTHING</span>;</pre>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">⚠ 중요: 식별자 매핑 전략 (3가지 옵션)</div>
+        <ul>
+          <li><b>옵션 A · 즉시 매핑</b>: 위 SQL처럼 임시 uuid로 profile 미리 생성. 초대 시 토큰을 그 profile에 연결. 가입 시 auth.users 생성 후 profile.id를 auth.users.id로 갱신.</li>
+          <li><b>옵션 B · 지연 매핑 (권장)</b>: 초대 토큰만 발급, profile은 빈 상태로 안 만듦. 가입 시점에 auth.users → profile → partner_meta 한 번에 생성. legacy_partner_id로 기존 데이터 매핑.</li>
+          <li><b>옵션 C · 매핑 안 함</b>: 새 파트너부터만 새 시스템 사용. 기존 partners는 비모 ERP 내부 관리용으로 그대로 두고 별도 운영.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       Phase 6
+  ═══════════════════════════════════════════ -->
+  <h2 id="phase6" class="anchor"><span class="num">9</span>Phase 6 · 파트너 ERP 가동</h2>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">P6</div>
+      <div class="phase-title-block">
+        <h3>vimo-partner-erp 백엔드 연결 + 첫 파트너 로그인</h3>
+        <div class="sub">mock.ts → 실제 Supabase, proxy.ts에 권한 체크 활성화</div>
+      </div>
+      <div class="phase-meta">
+        <span class="pill risk-med">위험 중간</span>
+        <span class="pill time">⏱ 약 4~6시간</span>
+        <span class="pill rollback">↺ git revert</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="head">작업 항목</div>
+        <ol>
+          <li><code>vimo-partner-erp/src/proxy.ts</code> — TODO 주석 제거, app_access 체크 활성화</li>
+          <li><code>src/lib/db.ts</code> 신설 — Supabase 쿼리 함수 (mock.ts 인터페이스 유지)</li>
+          <li>5개 페이지의 import를 <code>@/lib/mock</code> → <code>@/lib/db</code>로 교체</li>
+          <li>RLS 작동 확인 — 다른 파트너 데이터 안 보이는지</li>
+          <li>첫 파트너 invite token으로 가입 → 로그인 → 페이지 동작 확인</li>
+        </ol>
+      </div>
+
+      <div class="phase-section">
+        <div class="head">proxy.ts 활성화</div>
+<pre class="sql"><span class="com">// vimo-partner-erp/src/proxy.ts</span>
+const { data: access } = await supabase
+  .from(<span class="str">'app_access'</span>)
+  .<span class="fn">select</span>(<span class="str">'app_code, status'</span>)
+  .<span class="fn">eq</span>(<span class="str">'user_id'</span>, user.id)
+  .<span class="fn">eq</span>(<span class="str">'app_code'</span>, <span class="str">'partner_erp'</span>)
+  .<span class="fn">eq</span>(<span class="str">'status'</span>, <span class="str">'active'</span>)
+  .<span class="fn">single</span>();
+
+if (!access) {
+  await supabase.auth.<span class="fn">signOut</span>();
+  return NextResponse.<span class="fn">redirect</span>(<span class="str">'/login?error=no_access'</span>);
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       Phase 7
+  ═══════════════════════════════════════════ -->
+  <h2 id="phase7" class="anchor"><span class="num">10</span>Phase 7 · 정리 (수개월 후)</h2>
+
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">P7</div>
+      <div class="phase-title-block">
+        <h3>구 컬럼/테이블 정리 + Vibox 통합 시작점</h3>
+        <div class="sub">Phase 1~6 안정 운영 확인 후 — 서두를 필요 없음</div>
+      </div>
+      <div class="phase-meta">
+        <span class="pill risk-low">위험 낮음</span>
+        <span class="pill time">⏱ 가변</span>
+        <span class="pill rollback">↺ 컬럼 복원 가능</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="head">정리 후보</div>
+        <ul>
+          <li><code>user_profiles</code>의 <code>role</code>, <code>approved</code> 컬럼 제거 (이미 app_access로 이전됨)</li>
+          <li>비모 ERP 코드에서 <code>user_profiles</code> 의존성 점진 제거</li>
+          <li>Vibox 통합 — vibox_members, vibox_shares, vibox_visitor_log 추가 (Phase 8 시작점)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       위험 매트릭스
+  ═══════════════════════════════════════════ -->
+  <h2 id="risk-matrix" class="anchor"><span class="num">11</span>위험 매트릭스</h2>
+
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>단계</th>
+        <th>위험</th>
+        <th>발생 시 영향</th>
+        <th>완화 (Mitigation)</th>
+        <th>롤백 시간</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>P1</b> 테이블 생성</td>
+        <td><span class="pill risk-low">낮음</span></td>
+        <td>없음 (새 테이블만 추가)</td>
+        <td>—</td>
+        <td>&lt; 1분</td>
+      </tr>
+      <tr>
+        <td><b>P2</b> 제약·트리거</td>
+        <td><span class="pill risk-low">낮음</span></td>
+        <td>새 테이블 INSERT만 영향</td>
+        <td>SQL 미리 staging 환경 시뮬레이션</td>
+        <td>&lt; 1분</td>
+      </tr>
+      <tr>
+        <td><b>P3</b> 백필</td>
+        <td><span class="pill risk-med">중간</span></td>
+        <td>잘못된 데이터 백필 가능 — 일부 user 누락</td>
+        <td>검증 쿼리로 누락 확인 → 재실행 (멱등)</td>
+        <td>2~5분</td>
+      </tr>
+      <tr>
+        <td><b>P4</b> 이중 검증</td>
+        <td><span class="pill risk-med">중간</span></td>
+        <td>승인됐지만 app_access 누락 사용자 입장 불가</td>
+        <td>배포 전 모든 user에 대해 사전 SELECT 검증, 점진 배포(canary)</td>
+        <td><code>git revert</code> 즉시</td>
+      </tr>
+      <tr>
+        <td><b>P5</b> 파트너 매핑</td>
+        <td><span class="pill risk-high">높음</span></td>
+        <td>기존 partners 데이터 손상 → 비모 ERP 회차/정산 깨짐</td>
+        <td>백업 의무, 단계적 매핑(1명 → 5명 → 전체), 비즈니스 검증</td>
+        <td>10~30분 (백업 복원)</td>
+      </tr>
+      <tr>
+        <td><b>P6</b> 파트너 ERP 가동</td>
+        <td><span class="pill risk-med">중간</span></td>
+        <td>RLS 누락 → 타 파트너 데이터 노출 가능</td>
+        <td>RLS 정책 단위 테스트 (한 파트너로 다른 파트너 데이터 SELECT 시도)</td>
+        <td><code>git revert</code> 즉시</td>
+      </tr>
+      <tr>
+        <td><b>P7</b> 정리</td>
+        <td><span class="pill risk-low">낮음</span></td>
+        <td>관성 — 안 할수록 기술 부채</td>
+        <td>주기적 점검 (분기별)</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════
+       결정 필요 사항
+  ═══════════════════════════════════════════ -->
+  <h2 id="decisions" class="anchor"><span class="num">12</span>실행 전 결정 필요 사항</h2>
+
+  <div class="decision">
+    <div class="q">D1. 기존 <code>partners</code> 테이블 (외주 인력) 처리?</div>
+    <div class="options">
+      <div class="option"><b>A · 이름 충돌 회피</b> — 새 테이블을 <code>partner_meta</code>로 생성 (이 플랜의 기본값). 기존 partners 그대로 유지, 점진 매핑.</div>
+      <div class="option"><b>B · 기존 partners 리네임</b> — 기존 → <code>vimo_workers</code>로 변경, 새 테이블이 <code>partners</code>. 코드 수정량 많음.</div>
+      <div class="option"><b>C · 기존 partners 확장</b> — 기존 테이블에 partner_meta 컬럼 추가, 한 테이블이 두 역할. 의미 혼란.</div>
+    </div>
+    <div class="recommend"><b>추천: A</b> — 기존 시스템 영향 최소, 점진 매핑 가능</div>
+  </div>
+
+  <div class="decision">
+    <div class="q">D2. 기존 비모 ERP 사용자의 <code>user_type</code>?</div>
+    <div class="options">
+      <div class="option"><b>A · 전부 staff</b> — 모든 user_profiles를 staff로 백필. 외부 협력사 포함된 경우 일부 수정 필요.</div>
+      <div class="option"><b>B · 분류 후 백필</b> — 명단 검토 후 staff/external 분리. 시간 소요.</div>
+    </div>
+    <div class="recommend"><b>추천: A</b> 후 필요 시 수동 update — 모든 기존 사용자가 비모 팀원이라면 A로 충분</div>
+  </div>
+
+  <div class="decision">
+    <div class="q">D3. 파트너 식별자 매핑 (Phase 5)</div>
+    <div class="options">
+      <div class="option"><b>A · 즉시 매핑</b> — 임시 uuid로 profile 미리 만들고 가입 시 갱신. 복잡함.</div>
+      <div class="option"><b>B · 지연 매핑 (가입 시 생성)</b> — 토큰만 발급, profile은 가입 시 동적 생성. <code>legacy_partner_id</code>로 기존 데이터 매핑.</div>
+      <div class="option"><b>C · 매핑 안 함</b> — 새 파트너만 새 시스템. 기존 외주 인력은 비모 ERP 내부 관리.</div>
+    </div>
+    <div class="recommend"><b>추천: B</b> — 가장 깔끔, auth.users.id가 진짜 식별자가 되도록</div>
+  </div>
+
+  <div class="decision">
+    <div class="q">D4. 마이그레이션 적용 방식</div>
+    <div class="options">
+      <div class="option"><b>A · Supabase Dashboard SQL Editor</b> — 한 phase씩 직접 붙여넣기 실행. 단순.</div>
+      <div class="option"><b>B · supabase/migrations/ 파일</b> — 비모 ERP 레포에 timestamped SQL 파일 추가, <code>supabase db push</code>. 버전 관리 ✓.</div>
+    </div>
+    <div class="recommend"><b>추천: B</b> — 이미 비모 ERP가 migrations/ 사용 중. git에 남으면 추적 용이</div>
+  </div>
+
+  <div class="decision">
+    <div class="q">D5. Vibox 통합 시점</div>
+    <div class="options">
+      <div class="option"><b>A · 이번 마이그레이션에 포함</b> — vibox_members 등 Phase 1에서 같이 생성. 범위 확대.</div>
+      <div class="option"><b>B · 별도 Phase 8</b> — 비모/Partner ERP 안정 운영 확인 후 Vibox 분리 마이그레이션.</div>
+    </div>
+    <div class="recommend"><b>추천: B</b> — 한 번에 너무 많이 바꾸지 말고 단계 분리</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       백업 / 롤백
+  ═══════════════════════════════════════════ -->
+  <h2 id="backup" class="anchor"><span class="num">13</span>백업 / 롤백 전략</h2>
+
+  <div class="card">
+    <h3>각 Phase 시작 전 필수 액션</h3>
+<pre class="sql"><span class="com">-- 1. Supabase Dashboard에서 Database → Backups 메뉴 확인</span>
+<span class="com">--    Pro tier는 자동 PITR (point-in-time recovery), Free tier는 수동 백업</span>
+
+<span class="com">-- 2. 핵심 테이블 in-DB 스냅샷 (P3, P5 시작 전 필수)</span>
+<span class="kw">CREATE TABLE</span> user_profiles_snapshot_$(date) <span class="kw">AS</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> public.user_profiles;
+
+<span class="kw">CREATE TABLE</span> partners_snapshot_$(date) <span class="kw">AS</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> public.partners;
+
+<span class="com">-- 3. 새 테이블 일부 백필 후 row count 기록 (불일치 감지용)</span>
+<span class="kw">SELECT</span> <span class="str">'profiles'</span> <span class="kw">AS</span> tbl, <span class="kw">count</span>(*) <span class="kw">FROM</span> public.profiles
+<span class="kw">UNION ALL SELECT</span> <span class="str">'app_access'</span>, <span class="kw">count</span>(*) <span class="kw">FROM</span> public.app_access;</pre>
+    <h3 style="margin-top: 18px;">롤백 우선순위</h3>
+    <ol>
+      <li>최신 스냅샷에서 SELECT INTO 복원 — 즉시 가능</li>
+      <li>Supabase PITR — 마지막 백업 시점으로 복구 (Pro tier만)</li>
+      <li><code>pg_dump</code>로 받아둔 외부 백업 복원 — 가장 확실하지만 시간 오래 걸림</li>
+    </ol>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       체크리스트
+  ═══════════════════════════════════════════ -->
+  <h2 id="checklist" class="anchor"><span class="num">14</span>실행 체크리스트</h2>
+
+  <div class="checklist">
+    <div class="group">
+      <div class="group-title">사전 준비</div>
+      <div class="check-item"><input type="checkbox" id="c1" /><label for="c1">현재 비모 ERP 스키마 캡처 — <code>information_schema.tables</code> SELECT 후 저장</label></div>
+      <div class="check-item"><input type="checkbox" id="c2" /><label for="c2">user_profiles row count 기록 (Phase 3 검증용 baseline)</label></div>
+      <div class="check-item"><input type="checkbox" id="c3" /><label for="c3">결정사항 D1~D5 답변 확정</label></div>
+      <div class="check-item"><input type="checkbox" id="c4" /><label for="c4">Supabase Backups 메뉴에서 최신 백업 확인</label></div>
+      <div class="check-item"><input type="checkbox" id="c5" /><label for="c5">supabase/migrations/ 디렉토리 구조 확인 (D4 결정에 따라)</label></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Phase 1 — 새 테이블 생성</div>
+      <div class="check-item"><input type="checkbox" id="p1a" /><label for="p1a">SQL 파일 작성: <code>20260425000000_universe_core.sql</code></label></div>
+      <div class="check-item"><input type="checkbox" id="p1b" /><label for="p1b">실행 — apps, profiles, app_access, vimo_staff, partner_meta, partner_invites 6개 테이블</label></div>
+      <div class="check-item"><input type="checkbox" id="p1c" /><label for="p1c">검증: <code>SELECT count(*) FROM apps</code> = 3</label></div>
+      <div class="check-item"><input type="checkbox" id="p1d" /><label for="p1d">검증: 비모 ERP 정상 동작 확인 (로그인 → 페이지 이동)</label></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Phase 2 — 제약·트리거·RLS</div>
+      <div class="check-item"><input type="checkbox" id="p2a" /><label for="p2a">SQL 파일: <code>20260425000001_universe_constraints_rls.sql</code></label></div>
+      <div class="check-item"><input type="checkbox" id="p2b" /><label for="p2b">부분 유니크 인덱스 생성</label></div>
+      <div class="check-item"><input type="checkbox" id="p2c" /><label for="p2c">트리거 함수 + 트리거 생성</label></div>
+      <div class="check-item"><input type="checkbox" id="p2d" /><label for="p2d">RLS 정책 적용 (profiles, app_access, partner_meta, partner_invites)</label></div>
+      <div class="check-item"><input type="checkbox" id="p2e" /><label for="p2e">트리거 작동 테스트 (의도적으로 잘못된 INSERT → exception 확인)</label></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Phase 3 — 백필</div>
+      <div class="check-item"><input type="checkbox" id="p3a" /><label for="p3a"><b>스냅샷 생성</b>: <code>user_profiles_snapshot_20260425</code></label></div>
+      <div class="check-item"><input type="checkbox" id="p3b" /><label for="p3b">profiles 백필 SQL 실행</label></div>
+      <div class="check-item"><input type="checkbox" id="p3c" /><label for="p3c">app_access 백필 SQL 실행</label></div>
+      <div class="check-item"><input type="checkbox" id="p3d" /><label for="p3d">검증: row count 일치 확인</label></div>
+      <div class="check-item"><input type="checkbox" id="p3e" /><label for="p3e">검증: 누락된 user 0명 확인</label></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Phase 4 — 비모 ERP 코드 변경</div>
+      <div class="check-item"><input type="checkbox" id="p4a" /><label for="p4a">로컬에서 proxy.ts 수정 후 dev 서버 테스트</label></div>
+      <div class="check-item"><input type="checkbox" id="p4b" /><label for="p4b">Admin 계정 로그인 테스트</label></div>
+      <div class="check-item"><input type="checkbox" id="p4c" /><label for="p4c">Manager 계정 로그인 테스트</label></div>
+      <div class="check-item"><input type="checkbox" id="p4d" /><label for="p4d">app_access 인위적 제거 → 거부 확인</label></div>
+      <div class="check-item"><input type="checkbox" id="p4e" /><label for="p4e">5개 주요 페이지 회귀 테스트</label></div>
+      <div class="check-item"><input type="checkbox" id="p4f" /><label for="p4f">PR → 메인 머지 → 배포</label></div>
+      <div class="check-item"><input type="checkbox" id="p4g" /><label for="p4g">프로덕션에서 24시간 모니터링</label></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Phase 5~7</div>
+      <div class="check-item"><input type="checkbox" id="p5a" /><label for="p5a"><b>partners 백업</b>: <code>partners_snapshot_20260425</code></label></div>
+      <div class="check-item"><input type="checkbox" id="p5b" /><label for="p5b">파트너 1명으로 매핑·초대·가입 테스트</label></div>
+      <div class="check-item"><input type="checkbox" id="p5c" /><label for="p5c">성공 시 5명 → 전체 점진 매핑</label></div>
+      <div class="check-item"><input type="checkbox" id="p6a" /><label for="p6a">vimo-partner-erp proxy.ts 활성화 + db.ts 작성</label></div>
+      <div class="check-item"><input type="checkbox" id="p6b" /><label for="p6b">RLS 격리 테스트 (한 파트너로 타 파트너 데이터 SELECT)</label></div>
+      <div class="check-item"><input type="checkbox" id="p6c" /><label for="p6c">5개 페이지 mock → real 전환 + 회귀</label></div>
+      <div class="check-item"><input type="checkbox" id="p7a" /><label for="p7a">3개월 안정 운영 후 user_profiles 컬럼 정리 검토</label></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       FAQ
+  ═══════════════════════════════════════════ -->
+  <h2 id="faq" class="anchor"><span class="num">15</span>FAQ / Edge Cases</h2>
+
+  <div class="faq">
+    <div class="q">중간에 실패하면 비모 ERP가 멈추지 않을까?</div>
+    <div class="a">Phase 1~3은 새 테이블만 추가/백필이라 기존 시스템과 격리. Phase 4 (코드 변경)은 git revert 한 번이면 즉시 되돌아감. 가장 위험한 건 Phase 5인데, partners 백업 의무화로 최악의 경우 30분 내 복구 가능.</div>
+  </div>
+
+  <div class="faq">
+    <div class="q">기존 user_profiles는 언제 지우나?</div>
+    <div class="a">바로 안 지움. Phase 7 (수개월 후 안정 운영 확인)에서 점진 제거. role/approved 컬럼만 먼저 deprecate하고 user_profiles 자체는 남겨두는 것도 방법.</div>
+  </div>
+
+  <div class="faq">
+    <div class="q">한 사람이 비모 팀 + 파트너 둘 다 해야 하면?</div>
+    <div class="a">시스템 설계상 불가능. 그게 핵심 요구사항. 만약 정말 필요하면 별도 이메일로 두 계정을 분리 가입. 트리거가 강제로 막음.</div>
+  </div>
+
+  <div class="faq">
+    <div class="q">partner_invites 토큰을 잃어버리면?</div>
+    <div class="a">관리자가 기존 토큰을 <code>status='revoked'</code>로 만들고 새 토큰 발급. 일회용이지만 재발급은 자유.</div>
+  </div>
+
+  <div class="faq">
+    <div class="q">RLS 무한 루프 위험은?</div>
+    <div class="a">profiles RLS가 app_access를 참조하고 app_access RLS가 profiles를 참조하면 순환. 우리 정책은 <code>auth.uid()</code> 직접 비교 위주라 안전. 그래도 RLS 정책 작성 후 PostgreSQL 로그에서 stack overflow 에러 모니터링.</div>
+  </div>
+
+  <div class="faq">
+    <div class="q">왜 한 번에 다 안 하고 단계로 나누나?</div>
+    <div class="a">운영 중 시스템에 큰 변경을 한 번에 가하면 (1) 디버깅이 어렵고 (2) 롤백 단위가 너무 큼. 단계 분리는 "마지막으로 동작하던 안전 지점"을 매번 새로 만드는 것. 결국 더 빠름.</div>
+  </div>
+
+  <div class="faq">
+    <div class="q">supabase/migrations/ vs Dashboard SQL Editor — 진짜 차이?</div>
+    <div class="a">migrations 파일은 git에 남아 누가 언제 무엇을 바꿨는지 추적 가능. CI/CD에서 자동 적용도 가능. Dashboard는 빠른 일회성 작업에 좋지만 사람 기억에만 남음 — 위험. 비모 ERP는 이미 migrations 사용 중이라 일관성 위해 migrations 권장.</div>
+  </div>
+
+  <div class="faq">
+    <div class="q">Supabase 무료 티어에서 PITR이 안 되는데?</div>
+    <div class="a">in-DB 스냅샷(<code>CREATE TABLE foo_backup AS SELECT * FROM foo</code>)이 대안. Phase 5처럼 위험 단계 전에 무조건 스냅샷. 추가로 <code>pg_dump</code>로 외부 백업 받아두면 더 안전.</div>
+  </div>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#fff7ed',
+      primaryBorderColor: '#f97316',
+      primaryTextColor: '#1c1917',
+      lineColor: '#a8a29e',
+      fontFamily: '-apple-system, BlinkMacSystemFont, Pretendard, sans-serif',
+    },
+    flowchart: { fontSize: 13, padding: 16 },
+  });
+</script>
+
+</body>
+</html>

@@ -74,16 +74,29 @@ export default async function proxy(request: NextRequest) {
   }
 
   // 인증된 사용자가 대시보드에 접근할 때 승인 여부 및 비밀번호 변경 확인
+  // ── Phase 4 (universe): user_profiles 체크 + app_access 체크 이중 검증
   if (user && !isAuthPage && !isApiRoute) {
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('approved, role, needs_password_change')
-      .eq('id', user.id)
-      .single();
+    const [profileRes, accessRes] = await Promise.all([
+      supabase
+        .from('user_profiles')
+        .select('approved, role, needs_password_change')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('app_access')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('app_code', 'vimo_erp')
+        .maybeSingle(),
+    ]);
+    const profile = profileRes.data;
+    const access = accessRes.data;
 
-    // 프로필이 없거나 미승인 비관리자 → 로그인 페이지로
-    if (!profile || (profile.role !== 'admin' && profile.approved !== true)) {
-      // 세션 쿠키 제거
+    const profileOk = !!profile && (profile.role === 'admin' || profile.approved === true);
+    const accessOk = !!access && access.status === 'active';
+
+    // 둘 중 하나라도 통과 못하면 거부 (이중 검증)
+    if (!profileOk || !accessOk) {
       await supabase.auth.signOut();
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';
@@ -99,14 +112,28 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (user && isAuthPage) {
-    // 승인된 사용자만 대시보드로 리다이렉트
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('approved, role')
-      .eq('id', user.id)
-      .single();
+    // 로그인 페이지에 들어왔는데 이미 인증된 사용자라면 대시보드로
+    // ── Phase 4 (universe): user_profiles + app_access 둘 다 통과해야
+    const [profileRes, accessRes] = await Promise.all([
+      supabase
+        .from('user_profiles')
+        .select('approved, role')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('app_access')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('app_code', 'vimo_erp')
+        .maybeSingle(),
+    ]);
+    const profile = profileRes.data;
+    const access = accessRes.data;
 
-    if (profile && (profile.role === 'admin' || profile.approved === true)) {
+    const profileOk = !!profile && (profile.role === 'admin' || profile.approved === true);
+    const accessOk = !!access && access.status === 'active';
+
+    if (profileOk && accessOk) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/management';
       return NextResponse.redirect(dashboardUrl);

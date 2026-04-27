@@ -10,10 +10,20 @@ export interface UpdateEntry {
 
 export const erpUpdates: UpdateEntry[] = [
   {
+    version: 'v0.2.3',
+    date: '2026-04-24',
+    title: '회차 마스터-디테일 통합',
+    tag: 'latest',
+    changes: [
+      { type: 'feat', text: '프로젝트 상세 페이지 회차 리스트를 마스터-디테일 패턴으로 전환 — 회차를 클릭하면 우측 패널에 상세가 바로 열려 페이지 왕복 없이 편집 가능' },
+      { type: 'improve', text: '회차 간 빠른 전환 — 체크리스트/비용/상태 업데이트 시 맥락 유지' },
+      { type: 'improve', text: 'URL 쿼리(?ep=id)로 선택 회차 동기화 — 링크 공유 가능' },
+    ],
+  },
+  {
     version: 'v0.2.1',
     date: '2026-04-06',
     title: '미기입 일괄 처리 & 아카이브 기능',
-    tag: 'latest',
     changes: [
       { type: 'feat', text: '매니지먼트에 미기입 탭 추가 — 비용·정산일·담당자·일정 일괄 입력' },
       { type: 'feat', text: '프로젝트 아카이브 기능 — v1 노션 데이터 분리' },

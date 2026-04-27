@@ -9,7 +9,7 @@ import {
   MessageSquarePlus, CreditCard,
 } from 'lucide-react';
 import DashboardContent from '@/components/DashboardContent';
-import GlobalFAB from '@/components/GlobalFAB';
+import BibotWidget from '@/components/BibotWidget';
 import GlobalSearch from '@/components/GlobalSearch';
 import TutorialProvider from '@/components/tutorial/TutorialProvider';
 import TutorialOverlay from '@/components/tutorial/TutorialOverlay';
@@ -268,6 +268,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .vm-header { left: 0 !important; }
           .vm-main { margin-left: 0 !important; }
           .vm-hamburger { display: flex !important; }
+        }
+        /* 비봇 사이드바 모드일 때 메인 컨텐츠를 왼쪽으로 밀기 */
+        @media (min-width: 900px) {
+          .vm-main { margin-right: var(--bibot-pad, 0px); transition: margin-right 0.25s cubic-bezier(0.4,0,0.2,1), margin-left 0.2s cubic-bezier(0.4,0,0.2,1); }
+          .vm-header { right: var(--bibot-pad, 0px); transition: right 0.25s cubic-bezier(0.4,0,0.2,1); }
         }
       `}</style>
       {/* ══════════════════════════════════════════
@@ -656,8 +661,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           position:    'fixed',
           top:         0,
           left:        totalW,
-          right:       0,
+          right:       'var(--bibot-pad, 0px)',
           height:      '56px',
+          transition:  'right 0.25s cubic-bezier(0.4,0,0.2,1), left 0.2s cubic-bezier(0.4,0,0.2,1)',
           zIndex:      30,
           display:     'flex',
           alignItems:  'center',
@@ -917,17 +923,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main
         className="vm-main"
         style={{
-          marginLeft: totalW,
-          marginTop:  '56px',
-          minHeight:  'calc(100vh - 56px)',
-          transition: 'margin-left 0.2s cubic-bezier(0.4,0,0.2,1)',
+          marginLeft:  totalW,
+          marginRight: 'var(--bibot-pad, 0px)',
+          marginTop:   '56px',
+          minHeight:   'calc(100vh - 56px)',
+          transition:  'margin-left 0.2s cubic-bezier(0.4,0,0.2,1), margin-right 0.25s cubic-bezier(0.4,0,0.2,1)',
         }}
       >
         <div className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-6 lg:pb-8">
           <DashboardContent>{children}</DashboardContent>
         </div>
       </main>
-      <GlobalFAB />
+      <BibotWidget />
       <TutorialOverlay />
       <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <UpdateNoticeModal />

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>파트너 ERP 사이드바 — 비모 ERP 톤 유지 리파인먼트</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif;
+    background: #f5f4f2;
+    color: #1c1917;
+    padding: 40px 24px 80px;
+    min-height: 100vh;
+  }
+  .page-head { max-width: 1280px; margin: 0 auto 32px; }
+  .page-head h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .page-head p { font-size: 13px; color: #78716c; margin-top: 6px; }
+  .page-head .ref {
+    margin-top: 12px; font-size: 11px; color: #a8a29e;
+    padding: 8px 12px; background: #fff; border: 1px solid #ede9e6;
+    border-radius: 8px; display: inline-block;
+  }
+
+  .variants { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
+
+  .variant {
+    background: #fff; border: 1px solid #ede9e6; border-radius: 16px;
+    overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .variant-head {
+    padding: 20px 24px; border-bottom: 1px solid #f0ece9;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .variant-head h2 { font-size: 16px; font-weight: 700; }
+  .variant-head .tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #f97316;
+  }
+  .variant-head .desc { font-size: 12px; color: #78716c; margin-left: auto; }
+
+  .preview { display: flex; height: 560px; background: #fafaf9; }
+  .fake-main {
+    flex: 1; padding: 24px; background: #f5f4f2;
+    display: flex; flex-direction: column; gap: 16px; overflow: hidden;
+  }
+  .fake-header {
+    height: 40px; background: #fff; border: 1px solid #ede9e6; border-radius: 10px;
+    display: flex; align-items: center; padding: 0 16px; font-size: 12px; color: #a8a29e;
+  }
+  .fake-card {
+    background: #fff; border: 1px solid #ede9e6; border-radius: 12px;
+    flex: 1; padding: 16px; font-size: 11px; color: #d6d3d1;
+  }
+
+  .footnote {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+    padding: 20px 24px; background: #fafaf9; border-top: 1px solid #f0ece9; font-size: 12px;
+  }
+  .foot-block { display: flex; flex-direction: column; gap: 6px; }
+  .foot-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #a8a29e;
+  }
+  .foot-body { color: #57534e; line-height: 1.5; }
+  .foot-body b { color: #1c1917; }
+
+  /* ────────── 공통 사이드바 베이스 ────────── */
+  .rail {
+    width: 52px; background: #1c1917;
+    display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+  }
+  .rail-logo {
+    width: 100%; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .rail-logo-mark {
+    width: 28px; height: 28px; border-radius: 8px; background: #f97316;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #fff; letter-spacing: -0.02em;
+  }
+  .rail-icons {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 10px 0; gap: 2px;
+  }
+  .rail-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.35); cursor: pointer; position: relative;
+  }
+  .rail-btn.active { background: rgba(249,115,22,0.2); color: #f97316; }
+  .rail-btn svg { width: 19px; height: 19px; stroke-width: 1.8; }
+  .rail-bottom {
+    border-top: 1px solid rgba(255,255,255,0.07); width: 100%; padding: 10px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .rail-avatar {
+    width: 30px; height: 30px; border-radius: 9px; background: #f97316; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+
+  .panel {
+    width: 240px; background: #fff; border-right: 1px solid #ede9e6;
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .panel-head {
+    height: 56px; flex-shrink: 0;
+    display: flex; align-items: flex-end; padding: 0 18px 12px;
+    border-bottom: 1px solid #f0ece9;
+  }
+  .kicker {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #f97316; line-height: 1;
+  }
+  .panel-nav { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 1px; }
+  .divider-line { height: 1px; background: #f0ece9; margin: 8px 10px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 10px;
+    font-size: 14px; color: #44403c; cursor: pointer; position: relative;
+  }
+  .nav-item svg { width: 16px; height: 16px; stroke-width: 1.8; opacity: 0.55; flex-shrink: 0; }
+  .nav-item .label { font-weight: 400; white-space: nowrap; }
+  .panel-foot {
+    padding: 14px 18px; border-top: 1px solid #f0ece9;
+    font-size: 10px; font-weight: 700; color: #d6cec8; letter-spacing: 0.08em;
+  }
+  .panel-foot .faint { font-weight: 500; color: #e0d9d3; }
+
+  /* V1 — 기본 (현 비모 ERP) */
+  .v1 .nav-item.active { background: #f97316; color: #fff; }
+  .v1 .nav-item.active svg { opacity: 1; }
+  .v1 .nav-item.active .label { font-weight: 600; }
+
+  /* V2 — 좌측 바 + 틴트 */
+  .v2 .nav-item { padding-left: 14px; }
+  .v2 .nav-item.active { background: #fef4ed; color: #c2410c; }
+  .v2 .nav-item.active::before {
+    content: ''; position: absolute; left: 2px; top: 8px; bottom: 8px;
+    width: 2px; background: #f97316; border-radius: 2px;
+  }
+  .v2 .nav-item.active svg { opacity: 1; color: #f97316; }
+  .v2 .nav-item.active .label { font-weight: 600; }
+
+  /* V3 — 고스트 + 도트 */
+  .v3 .nav-item { padding-left: 20px; }
+  .v3 .nav-item.active { background: #f8f6f4; color: #1c1917; }
+  .v3 .nav-item.active::before {
+    content: ''; position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+    width: 5px; height: 5px; border-radius: 50%; background: #f97316;
+  }
+  .v3 .nav-item.active svg { opacity: 1; color: #1c1917; }
+  .v3 .nav-item.active .label { font-weight: 600; }
+
+  /* V4 — 섹션 그룹 + 레일 없음 */
+  .v4-nav { padding: 16px 12px; }
+  .v4-group { margin-bottom: 18px; }
+  .v4-group-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #a8a29e; padding: 0 12px 6px;
+  }
+  .v4 .nav-item { padding: 10px 12px; border-radius: 10px; }
+  .v4 .nav-item.active {
+    background: #f97316; color: #fff;
+    box-shadow: 0 4px 10px rgba(249,115,22,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .v4 .nav-item.active svg { opacity: 1; }
+  .v4 .nav-item.active .label { font-weight: 600; }
+  .v4 .panel { width: 256px; border-right: 1px solid #ede9e6; }
+  .v4 .panel-head { height: 72px; padding: 0 20px 16px; align-items: flex-end; }
+  .v4-brand { display: flex; align-items: center; gap: 10px; }
+  .v4-brand .mark {
+    width: 32px; height: 32px; border-radius: 9px; background: #1c1917;
+    display: flex; align-items: center; justify-content: center;
+    color: #f97316; font-size: 13px; font-weight: 800;
+  }
+  .v4-brand .text { line-height: 1.2; }
+  .v4-brand .text .a { font-size: 13px; font-weight: 700; color: #1c1917; }
+  .v4-brand .text .b {
+    font-size: 10px; font-weight: 600; color: #f97316;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>파트너 ERP 사이드바 — 비모 ERP 톤 유지 리파인먼트</h1>
+  <p>비모 ERP 디자인 언어(다크 레일 + 화이트 패널 + 오렌지 액센트)를 유지하면서 활성 상태만 다르게 다듬은 4가지 시안</p>
+  <div class="ref">기본 구조: 52px 다크 레일(#1c1917) · 240px 화이트 패널 · 오렌지(#f97316) 브랜드</div>
+</div>
+
+<div class="variants">
+
+  <!-- V1 -->
+  <div class="variant v1">
+    <div class="variant-head">
+      <span class="tag">V1 · Reference</span>
+      <h2>기본 (현 비모 ERP)</h2>
+      <span class="desc">활성: 솔리드 오렌지 블록 / 현재 적용된 스타일</span>
+    </div>
+    <div class="preview">
+      <div class="rail">
+        <div class="rail-logo"><div class="rail-logo-mark">VP</div></div>
+        <div class="rail-icons">
+          <div class="rail-btn active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/></svg></div>
+        </div>
+        <div class="rail-bottom"><div class="rail-avatar">박</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="kicker">메인</div></div>
+        <div class="panel-nav">
+          <div class="nav-item active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg><span class="label">내 할 일</span></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span class="label">내 프로젝트</span></div>
+          <div class="divider-line"></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg><span class="label">내 정산</span></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span class="label">내 거래처</span></div>
+        </div>
+        <div class="panel-foot">PARTNER ERP <span class="faint">v0.1 · beta</span></div>
+      </div>
+      <div class="fake-main">
+        <div class="fake-header">메인 / 내 할 일</div>
+        <div class="fake-card">컨텐츠 영역</div>
+      </div>
+    </div>
+    <div class="footnote">
+      <div class="foot-block"><span class="foot-label">Pros</span><span class="foot-body"><b>비모 ERP 완전 동일</b> — 파트너가 비모 팀과 같은 시각적 경험</span></div>
+      <div class="foot-block"><span class="foot-label">Cons</span><span class="foot-body">솔리드 오렌지 블록이 간결한 메뉴에서 다소 <b>무거워 보일 수</b> 있음</span></div>
+      <div class="foot-block"><span class="foot-label">Context</span><span class="foot-body">일관성이 최우선일 때 — 비모 팀이 같이 모니터링할 때 직관적</span></div>
+    </div>
+  </div>
+
+  <!-- V2 -->
+  <div class="variant v2">
+    <div class="variant-head">
+      <span class="tag">V2 · Editorial Accent</span>
+      <h2>좌측 바 + 틴트 (절제된 고급감)</h2>
+      <span class="desc">활성: 좌측 2px 오렌지 바 + 연한 크림 틴트 + 진한 오렌지 텍스트</span>
+    </div>
+    <div class="preview">
+      <div class="rail">
+        <div class="rail-logo"><div class="rail-logo-mark">VP</div></div>
+        <div class="rail-icons">
+          <div class="rail-btn active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/></svg></div>
+        </div>
+        <div class="rail-bottom"><div class="rail-avatar">박</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="kicker">메인</div></div>
+        <div class="panel-nav">
+          <div class="nav-item active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg><span class="label">내 할 일</span></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span class="label">내 프로젝트</span></div>
+          <div class="divider-line"></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg><span class="label">내 정산</span></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span class="label">내 거래처</span></div>
+        </div>
+        <div class="panel-foot">PARTNER ERP <span class="faint">v0.1 · beta</span></div>
+      </div>
+      <div class="fake-main">
+        <div class="fake-header">메인 / 내 할 일</div>
+        <div class="fake-card">컨텐츠 영역</div>
+      </div>
+    </div>
+    <div class="footnote">
+      <div class="foot-block"><span class="foot-label">Pros</span><span class="foot-body"><b>에디토리얼 감성</b> — 절제된 액센트로 고급스러움, 오렌지 브랜드는 보존</span></div>
+      <div class="foot-block"><span class="foot-label">Cons</span><span class="foot-body">비모 내부와 <b>시각적 차이</b>가 생김 — 운영팀이 왕복할 때 미묘한 불일치</span></div>
+      <div class="foot-block"><span class="foot-label">Context</span><span class="foot-body">파트너용으로만 톤 차별화를 주고 싶을 때 — B2B 문서 느낌의 차분함</span></div>
+    </div>
+  </div>
+
+  <!-- V3 -->
+  <div class="variant v3">
+    <div class="variant-head">
+      <span class="tag">V3 · Ghost + Dot</span>
+      <h2>고스트 배경 + 오렌지 도트 (가장 차분)</h2>
+      <span class="desc">활성: 얕은 스톤 배경 + 좌측 5px 오렌지 도트 + 검정 텍스트</span>
+    </div>
+    <div class="preview">
+      <div class="rail">
+        <div class="rail-logo"><div class="rail-logo-mark">VP</div></div>
+        <div class="rail-icons">
+          <div class="rail-btn active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></div>
+          <div class="rail-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/></svg></div>
+        </div>
+        <div class="rail-bottom"><div class="rail-avatar">박</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="kicker">메인</div></div>
+        <div class="panel-nav">
+          <div class="nav-item active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg><span class="label">내 할 일</span></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span class="label">내 프로젝트</span></div>
+          <div class="divider-line"></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg><span class="label">내 정산</span></div>
+          <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span class="label">내 거래처</span></div>
+        </div>
+        <div class="panel-foot">PARTNER ERP <span class="faint">v0.1 · beta</span></div>
+      </div>
+      <div class="fake-main">
+        <div class="fake-header">메인 / 내 할 일</div>
+        <div class="fake-card">컨텐츠 영역</div>
+      </div>
+    </div>
+    <div class="footnote">
+      <div class="foot-block"><span class="foot-label">Pros</span><span class="foot-body">컬러 면적이 가장 적어 <b>가장 차분</b>하고 고급스러움, 장시간 사용감 좋음</span></div>
+      <div class="foot-block"><span class="foot-label">Cons</span><span class="foot-body">활성 상태가 <b>덜 단호함</b> — 초보 파트너가 현재 페이지를 놓칠 수 있음</span></div>
+      <div class="foot-block"><span class="foot-label">Context</span><span class="foot-body">파트너가 하루 종일 머무는 앱이라면 눈이 편한 이 방향이 장기 체류에 유리</span></div>
+    </div>
+  </div>
+
+  <!-- V4 -->
+  <div class="variant v4">
+    <div class="variant-head">
+      <span class="tag">V4 · Grouped · No Rail</span>
+      <h2>레일 제거 + 섹션 라벨 (MVP 특화)</h2>
+      <span class="desc">메뉴 4개에 최적 — 레일 제거, 섹션 라벨로 그룹핑, 활성은 깊이감 있는 솔리드</span>
+    </div>
+    <div class="preview">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="v4-brand">
+            <div class="mark">VP</div>
+            <div class="text">
+              <div class="a">비모 파트너</div>
+              <div class="b">Partner ERP</div>
+            </div>
+          </div>
+        </div>
+        <div class="v4-nav">
+          <div class="v4-group">
+            <div class="v4-group-label">워크스페이스</div>
+            <div class="nav-item active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg><span class="label">내 할 일</span></div>
+            <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><span class="label">내 프로젝트</span></div>
+          </div>
+          <div class="v4-group">
+            <div class="v4-group-label">재무</div>
+            <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg><span class="label">내 정산</span></div>
+            <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span class="label">내 거래처</span></div>
+          </div>
+          <div class="v4-group">
+            <div class="v4-group-label">계정</div>
+            <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg><span class="label">내 프로필</span></div>
+            <div class="nav-item"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span class="label">설정</span></div>
+          </div>
+        </div>
+        <div class="panel-foot">PARTNER ERP <span class="faint">v0.1 · beta</span></div>
+      </div>
+      <div class="fake-main">
+        <div class="fake-header">워크스페이스 / 내 할 일</div>
+        <div class="fake-card">컨텐츠 영역</div>
+      </div>
+    </div>
+    <div class="footnote">
+      <div class="foot-block"><span class="foot-label">Pros</span><span class="foot-body"><b>MVP 최적</b> — 4개 메뉴에 과한 레일을 제거, 섹션 라벨로 향후 확장성 확보</span></div>
+      <div class="foot-block"><span class="foot-label">Cons</span><span class="foot-body">비모 ERP와 <b>레일 유무</b>가 다름 — 내부 팀엔 "다른 앱"처럼 보임</span></div>
+      <div class="foot-block"><span class="foot-label">Context</span><span class="foot-body">파트너 ERP를 독립 브랜드로 밀 때 — 향후 메뉴 확장도 그룹 라벨로 대응</span></div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
