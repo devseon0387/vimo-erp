@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,9 @@ function unauthorized() {
   return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 }
 
-async function authorize(req: NextRequest): Promise<boolean> {
+// 읽기용 인가: 비봇 CLI 키 OR 로그인 세션. service_role로 데이터 노출되지만
+// 같은 데이터는 RLS 통과 시에도 vimo_team에게 보이는 범위라서 read는 키 OR 세션.
+async function authorizeRead(req: NextRequest): Promise<boolean> {
   const key = req.headers.get('x-bibot-key');
   if (process.env.BIBOT_API_KEY && key === process.env.BIBOT_API_KEY) return true;
   try {
@@ -29,8 +32,13 @@ async function authorize(req: NextRequest): Promise<boolean> {
   }
 }
 
+// ilike 패턴 인젝션 방지: %, _, \ 이스케이프
+function escapeIlike(s: string): string {
+  return s.replace(/[%_\\]/g, '\\$&');
+}
+
 export async function GET(req: NextRequest) {
-  if (!(await authorize(req))) return unauthorized();
+  if (!(await authorizeRead(req))) return unauthorized();
 
   const { searchParams } = new URL(req.url);
   const action = searchParams.get('action');
@@ -76,14 +84,16 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === 'search') {
-      const q = (searchParams.get('q') ?? '').trim();
-      if (!q) return NextResponse.json({ projects: [], episodes: [], clients: [], partners: [] });
+      const raw = (searchParams.get('q') ?? '').trim().slice(0, 100);
+      if (!raw) return NextResponse.json({ projects: [], episodes: [], clients: [], partners: [] });
+      const q = escapeIlike(raw);
 
       const [projects, episodes, clients, partners] = await Promise.all([
         db.from('projects').select('id, title, client, status').ilike('title', `%${q}%`).limit(10),
         db.from('episodes').select('id, project_id, episode_number, title, status').ilike('title', `%${q}%`).limit(10),
         db.from('clients').select('id, name, company').ilike('name', `%${q}%`).limit(10),
-        db.from('partners').select('id, name, email').ilike('name', `%${q}%`).limit(10),
+        // partner email은 민감 정보 — 검색 결과에서 제외
+        db.from('partners').select('id, name').ilike('name', `%${q}%`).limit(10),
       ]);
 
       return NextResponse.json({
@@ -256,7 +266,10 @@ const camelToSnake: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  if (!(await authorize(req))) return unauthorized();
+  // 쓰기 액션은 service_role로 episodes를 직접 변조 → admin 세션만 허용 (키 우회 차단)
+  const guard = await requireAdmin();
+  if (!guard.ok) return guard.response;
+  const db = guard.admin;
 
   let body: WriteBody;
   try {
@@ -264,8 +277,6 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'invalid JSON' }, { status: 400 });
   }
-
-  const db = adminClient();
 
   try {
     if (body.action === 'create-episode') {

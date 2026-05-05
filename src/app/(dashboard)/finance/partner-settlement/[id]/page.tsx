@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Partner, Episode } from '@/types';
 import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
+import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
 import DatePicker from '@/components/DatePicker';
 
@@ -44,6 +45,7 @@ function fmtDate(dateStr: string) {
 export default function PartnerSettlementDetailPage() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
+  const toast = useToast();
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [partner, setPartner] = useState<Partner | null>(null);
@@ -131,7 +133,7 @@ export default function PartnerSettlementDetailPage() {
     if (!editingEp) return;
     setSaving(true);
     const newAmount = parseInt(editAmount) || 0;
-    await updateEpisodeFields(editingEp.id, {
+    const ok = await updateEpisodeFields(editingEp.id, {
       paymentDueDate: editDate || undefined,
       paymentStatus: editStatus,
       budget: {
@@ -141,6 +143,10 @@ export default function PartnerSettlementDetailPage() {
       },
     });
     setSaving(false);
+    if (!ok) {
+      toast.error('저장 실패. 권한 또는 네트워크를 확인해주세요.');
+      return;
+    }
     setEditingEp(null);
     loadData();
   };
@@ -178,10 +184,16 @@ export default function PartnerSettlementDetailPage() {
     const unpaid = allItems.filter(i => i.episode.paymentStatus !== 'completed');
     if (unpaid.length === 0) return;
     setSaving(true);
+    let okCount = 0;
+    let failCount = 0;
     for (const { episode } of unpaid) {
-      await updateEpisodeFields(episode.id, { paymentStatus: 'completed' });
+      const ok = await updateEpisodeFields(episode.id, { paymentStatus: 'completed' });
+      if (ok) okCount += 1;
+      else failCount += 1;
     }
     setSaving(false);
+    if (failCount === 0) toast.success(`${okCount}건 정산 완료`);
+    else toast.warning(`${okCount}건 성공, ${failCount}건 실패`);
     loadData();
   };
 
