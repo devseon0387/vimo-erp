@@ -23,7 +23,18 @@ export async function POST(_req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'unauthorized' }, { status: 401 });
 
-  // vimo_staff 검증 — 비모 팀만 핸드오프 가능
+  // 1차 검증: profiles.user_type = 'staff' (universe 차원의 staff 표식)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name, user_type')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!profile || profile.user_type !== 'staff') {
+    return Response.json({ error: 'not a staff member' }, { status: 403 });
+  }
+
+  // 2차 검증: vimo_staff 메타 row 존재 (관리자 매핑 승인 표식)
   const { data: staff } = await supabase
     .from('vimo_staff')
     .select('role')
@@ -34,13 +45,11 @@ export async function POST(_req: NextRequest) {
     return Response.json({ error: 'not a vimo team member' }, { status: 403 });
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('name')
-    .eq('id', user.id)
-    .maybeSingle();
-
   const role: 'admin' | 'member' = staff.role === 'admin' ? 'admin' : 'member';
+
+  // audit — 운영 logs 에 핸드오프 발급 기록. P2 차원의 가벼운 추적, 정식 audit 테이블은 후속.
+  const ip = _req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  console.info(`[vibox-handoff] ${new Date().toISOString()} user=${user.id} role=${role} ip=${ip}`);
 
   const token = await new SignJWT({
     email: user.email ?? '',

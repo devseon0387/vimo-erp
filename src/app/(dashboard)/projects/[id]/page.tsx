@@ -249,22 +249,27 @@ export default function ProjectDetailPage() {
 
   const handleAddPartner = (partnerId: string) => {
     if (!partnerIds.includes(partnerId)) {
+      const prevIds = partnerIds;
       const newPartnerIds = [...partnerIds, partnerId];
       setPartnerIds(newPartnerIds);
-      updateProjectPartners(newPartnerIds);
+      updateProjectPartners(prevIds, newPartnerIds);
     }
     setIsPartnerDropdownOpen(false);
   };
 
   const handleRemovePartner = (partnerId: string) => {
+    const prevIds = partnerIds;
     const newPartnerIds = partnerIds.filter(id => id !== partnerId);
     setPartnerIds(newPartnerIds);
-    updateProjectPartners(newPartnerIds);
+    updateProjectPartners(prevIds, newPartnerIds);
   };
 
-  const updateProjectPartners = async (newPartnerIds: string[]) => {
+  const updateProjectPartners = async (prevIds: string[], newPartnerIds: string[]) => {
     const ok = await updateProject(projectId, { partnerIds: newPartnerIds });
-    if (!ok) showToastMessage('파트너 저장에 실패했습니다.');
+    if (!ok) {
+      setPartnerIds(prevIds);
+      showToastMessage('파트너 저장에 실패했습니다.');
+    }
   };
 
   const handleCategorySelect = (category: string) => {
@@ -295,22 +300,27 @@ export default function ProjectDetailPage() {
 
   const handleAddManager = (managerId: string) => {
     if (!managerIds.includes(managerId)) {
+      const prevIds = managerIds;
       const newManagerIds = [...managerIds, managerId];
       setManagerIds(newManagerIds);
-      updateProjectManagers(newManagerIds);
+      updateProjectManagers(prevIds, newManagerIds);
     }
     setIsManagerDropdownOpen(false);
   };
 
   const handleRemoveManager = (managerId: string) => {
+    const prevIds = managerIds;
     const newManagerIds = managerIds.filter(id => id !== managerId);
     setManagerIds(newManagerIds);
-    updateProjectManagers(newManagerIds);
+    updateProjectManagers(prevIds, newManagerIds);
   };
 
-  const updateProjectManagers = async (newManagerIds: string[]) => {
+  const updateProjectManagers = async (prevIds: string[], newManagerIds: string[]) => {
     const ok = await updateProject(projectId, { managerIds: newManagerIds });
-    if (!ok) showToastMessage('매니저 저장에 실패했습니다.');
+    if (!ok) {
+      setManagerIds(prevIds);
+      showToastMessage('매니저 저장에 실패했습니다.');
+    }
   };
 
   // 토스트 표시 함수

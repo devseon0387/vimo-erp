@@ -774,7 +774,7 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
     editingFieldRef.current = field;
   };
 
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = <K extends keyof Episode>(field: K, value: Episode[K]) => {
     editEpisode(prev => prev ? ({ ...prev, [field]: value }) : null);
     setEditedFields(prev => new Set(prev).add(field));
   };
