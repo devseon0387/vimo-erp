@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import DOMPurify from 'dompurify';
-import { Send, RefreshCw, Mail, X } from 'lucide-react';
-import { useToast } from '@/contexts/ToastContext';
+import { Send, RefreshCw, Mail, X, AlertCircle } from 'lucide-react';
 
 interface SentEmail {
   id: string;
@@ -18,36 +17,10 @@ interface SentEmail {
 }
 
 export default function SentMailPage() {
-  const toast = useToast();
-
-  const [emails, setEmails] = useState<SentEmail[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 메일 발송 기록 라우트(/api/mail/sent) 미구현 — 빈 상태 + 배너 안내로 고정
+  const [emails] = useState<SentEmail[]>([]);
+  const [loading] = useState(false);
   const [selected, setSelected] = useState<SentEmail | null>(null);
-
-  const fetchEmails = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const res = await fetch('/api/mail/sent');
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (!silent) toast.error(data.error || '보낸 메일을 불러올 수 없습니다.');
-        return;
-      }
-
-      setEmails(data.emails || []);
-    } catch {
-      if (!silent) toast.error('보낸 메일 조회 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchEmails();
-    const interval = setInterval(() => fetchEmails(true), 30000);
-    return () => clearInterval(interval);
-  }, [fetchEmails]);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -72,6 +45,17 @@ export default function SentMailPage() {
           <h1 className="text-3xl font-bold text-gray-900">보낸 메일함</h1>
         </div>
         <p className="text-gray-500 mt-2">발송한 메일 내역을 확인합니다.</p>
+      </div>
+
+      {/* 백엔드 미연결 안내 */}
+      <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
+        <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: '1px' }} />
+        <div>
+          <p style={{ fontWeight: 600, color: '#92400e', fontSize: '14px' }}>메일 백엔드 연결 준비 중</p>
+          <p style={{ color: '#a16207', fontSize: '13px', marginTop: '4px' }}>
+            발송 기록 조회 API가 아직 구현되지 않아 보낸 메일함을 일시 비활성화했습니다. 후속 릴리스에서 복원됩니다.
+          </p>
+        </div>
       </div>
 
       {/* 메일 목록 */}

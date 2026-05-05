@@ -245,8 +245,49 @@ async function handleTool(name: string, args: Args) {
   }
 }
 
+// ─── defense in depth: proxy 우회 시에도 라우트 자체에서 키 재검증 + IP rate limit + audit
+const RL_WINDOW_MS = 60_000;
+const RL_MAX_PER_WINDOW = 60;
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function takeRateToken(clientKey: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(clientKey);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(clientKey, { count: 1, resetAt: now + RL_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RL_MAX_PER_WINDOW) return false;
+  entry.count += 1;
+  return true;
+}
+
+type AuthOk = { ok: true; clientKey: string };
+type AuthFail = { ok: false; status: number; message: string };
+
+function authorizeMcp(req: NextRequest): AuthOk | AuthFail {
+  const apiKey = req.headers.get('x-api-key');
+  const expectedKey = process.env.API_SECRET_KEY;
+  if (!expectedKey || apiKey !== expectedKey) {
+    return { ok: false, status: 401, message: 'unauthorized' };
+  }
+  const clientKey = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!takeRateToken(clientKey)) {
+    return { ok: false, status: 429, message: 'rate limit exceeded (60 req/min)' };
+  }
+  return { ok: true, clientKey };
+}
+
 // ─── route handler ────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const auth = authorizeMcp(req);
+  if (!auth.ok) {
+    return NextResponse.json(
+      { jsonrpc: '2.0', id: null, error: { code: -32001, message: auth.message } },
+      { status: auth.status },
+    );
+  }
+
   let body;
   try {
     body = await req.json();
@@ -254,6 +295,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
   }
   const { method, params, id } = body;
+
+  // audit — 호출 출처·메서드 추적용. 운영 시 Supabase audit 테이블/Sentry 이관 권장.
+  console.info(`[mcp] ${new Date().toISOString()} from=${auth.clientKey} method=${method ?? 'unknown'} id=${id ?? 'notif'}`);
 
   // Notifications (no id) don't need a response
   if (id === undefined || id === null) {

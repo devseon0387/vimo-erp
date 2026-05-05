@@ -1,27 +1,17 @@
 // Widget(로그인한 사용자)이 호출하는 쓰기 엔드포인트.
 // 비봇 CLI는 이 라우트를 직접 호출하지 않음 (비봇은 [ACTION] 마커로 제안만).
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/auth/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function adminClient() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
-}
-
 export async function POST(req: NextRequest) {
-  // 세션 검증
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  }
+  // service_role 권한으로 episodes를 직접 변조하므로 admin 역할만 허용.
+  // 일반 staff/매니저가 bibot 위젯의 액션을 실행해야 한다면 별도 staff 가드 헬퍼 도입 검토.
+  const guard = await requireAdmin();
+  if (!guard.ok) return guard.response;
+  const db = guard.admin;
 
   let body: Record<string, unknown>;
   try {
@@ -31,7 +21,6 @@ export async function POST(req: NextRequest) {
   }
 
   const type = body.type as string;
-  const db = adminClient();
 
   try {
     if (type === 'create-episode') {

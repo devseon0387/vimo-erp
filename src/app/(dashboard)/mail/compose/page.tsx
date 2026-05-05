@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import { Mail, Send, AlertCircle, CheckCircle2, Plus, X, Eye } from 'lucide-react';
+import { Mail, Send, AlertCircle, Plus, X, Eye } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import RichTextEditor from './_components/RichTextEditor';
 
 export default function ComposeMailPage() {
   const toast = useToast();
 
-  const [configured, setConfigured] = useState<boolean | null>(null);
-  const [senderEmail, setSenderEmail] = useState<string | null>(null);
-  const [senderName, setSenderName] = useState<string | null>(null);
+  // 메일 발송 라우트(/api/hiworks/send-mail) 미구현 — 미연결로 고정해 발송 버튼 disabled
+  const [configured] = useState<boolean>(false);
+  const [senderEmail] = useState<string | null>(null);
+  const [senderName] = useState<string | null>(null);
   const [to, setTo] = useState<string[]>([]);
   const [toInput, setToInput] = useState('');
   const [cc, setCc] = useState<string[]>([]);
@@ -28,12 +29,6 @@ export default function ComposeMailPage() {
   const onContentChangeRef = useRef(onContentChange);
   onContentChangeRef.current = onContentChange;
 
-  useEffect(() => {
-    fetch('/api/hiworks/send-mail')
-      .then(res => res.json())
-      .then(data => { setConfigured(data.configured); setSenderEmail(data.senderEmail ?? null); setSenderName(data.senderName ?? null); })
-      .catch(() => setConfigured(false));
-  }, []);
 
   const addEmail = useCallback((list: string[], setList: (v: string[]) => void, input: string, setInput: (v: string) => void) => {
     const email = input.trim();
@@ -106,22 +101,16 @@ export default function ComposeMailPage() {
         <p className="text-gray-500 mt-2">하이웍스를 통해 이메일을 발송합니다.</p>
       </div>
 
-      {/* API 상태 배너 */}
+      {/* 메일 백엔드 미연결 배너 */}
       {configured === false && (
         <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
           <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: '1px' }} />
           <div>
-            <p style={{ fontWeight: 600, color: '#92400e', fontSize: '14px' }}>하이웍스 API 미연결</p>
+            <p style={{ fontWeight: 600, color: '#92400e', fontSize: '14px' }}>메일 백엔드 연결 준비 중</p>
             <p style={{ color: '#a16207', fontSize: '13px', marginTop: '4px' }}>
-              환경변수(HIWORKS_OFFICE_TOKEN, HIWORKS_USER_ID)가 설정되지 않았습니다. 하이웍스 관리자 페이지에서 API 키를 발급받은 후 .env.local에 설정해주세요.
+              메일 발송 API가 아직 구현되지 않아 발송 버튼을 일시 비활성화했습니다. 후속 릴리스에서 복원됩니다.
             </p>
           </div>
-        </div>
-      )}
-      {configured === true && (
-        <div className="flex items-center gap-2 p-3 rounded-lg" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-          <CheckCircle2 size={18} style={{ color: '#16a34a' }} />
-          <span style={{ color: '#166534', fontSize: '14px', fontWeight: 500 }}>하이웍스 API 연결됨</span>
         </div>
       )}
 

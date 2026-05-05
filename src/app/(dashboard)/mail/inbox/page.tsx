@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import { Inbox, RefreshCw, AlertCircle, Mail, X } from 'lucide-react';
-import { useToast } from '@/contexts/ToastContext';
 
 interface Email {
   id: string;
@@ -20,39 +19,11 @@ interface Email {
 }
 
 export default function InboxPage() {
-  const toast = useToast();
-
-  const [configured, setConfigured] = useState<boolean | null>(null);
-  const [emails, setEmails] = useState<Email[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 메일 수신 라우트(/api/hiworks/emails) 미구현 — 미연결 + 빈 상태로 고정
+  const [configured] = useState<boolean>(false);
+  const [emails] = useState<Email[]>([]);
+  const [loading] = useState(false);
   const [selected, setSelected] = useState<Email | null>(null);
-
-  const fetchEmails = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const res = await fetch('/api/hiworks/emails');
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (!silent) toast.error(data.error || '메일을 불러올 수 없습니다.');
-        return;
-      }
-
-      setConfigured(data.configured);
-      setEmails(data.emails || []);
-    } catch {
-      if (!silent) toast.error('메일 조회 중 오류가 발생했습니다.');
-      setConfigured(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchEmails();
-    const interval = setInterval(() => fetchEmails(true), 30000);
-    return () => clearInterval(interval);
-  }, [fetchEmails]);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -77,15 +48,14 @@ export default function InboxPage() {
         <p className="text-gray-500 mt-2">하이웍스 POP3를 통해 받은 메일을 조회합니다.</p>
       </div>
 
-      {/* POP3 미설정 배너 */}
+      {/* 메일 백엔드 미연결 배너 */}
       {configured === false && (
         <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
           <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: '1px' }} />
           <div>
-            <p style={{ fontWeight: 600, color: '#92400e', fontSize: '14px' }}>POP3 미연결</p>
+            <p style={{ fontWeight: 600, color: '#92400e', fontSize: '14px' }}>메일 백엔드 연결 준비 중</p>
             <p style={{ color: '#a16207', fontSize: '13px', marginTop: '4px' }}>
-              환경변수(HIWORKS_POP3_EMAIL, HIWORKS_POP3_PASSWORD)가 설정되지 않았습니다.
-              하이웍스에서 POP3/SMTP 사용을 활성화한 후 .env에 설정해주세요.
+              메일 수신 API가 아직 구현되지 않아 받은 메일함을 일시 비활성화했습니다. 후속 릴리스에서 복원됩니다.
             </p>
           </div>
         </div>
