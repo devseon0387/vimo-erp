@@ -65,7 +65,8 @@ export default function PartnerSignupsPage() {
         return;
       }
       toast.success(`${signup.name}으로 새 탭에서 열어요`);
-      window.open(data.url, '_blank', 'noopener');
+      // exchange 라우트가 http-only cookie에 담긴 magic link로 redirect (60초 TTL, 1회용)
+      window.open(data.exchangeUrl, '_blank', 'noopener');
     } catch (e) {
       toast.error('네트워크 오류');
       console.error(e);

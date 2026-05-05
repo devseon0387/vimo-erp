@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSbClient } from '@supabase/supabase-js';
 
 // 파트너 ERP 콜백 URL — 환경에 따라 변경
 const PARTNER_ERP_BASE = process.env.PARTNER_ERP_URL ?? 'http://localhost:3010';
+
+// 임퍼소네이션 magic link 를 담는 http-only cookie 이름·경로·TTL
+// path 를 좁혀서 다른 라우트에서 접근 차단, exchange 라우트만 매칭됨
+const IMP_COOKIE_NAME = 'vimo_imp_link';
+const IMP_COOKIE_PATH = '/api/admin/impersonate';
+const IMP_COOKIE_TTL = 60; // seconds
 
 export async function POST(request: NextRequest) {
   // 0. CSRF 방지 — same-origin 검증
@@ -96,9 +103,22 @@ export async function POST(request: NextRequest) {
     user_agent: userAgent,
   });
 
-  // 5. magic link URL 반환
+  // 5. magic link URL 은 응답 본문에 노출하지 않고 http-only cookie 에 저장.
+  //    클라는 exchangeUrl 을 새 탭으로 열고, exchange 라우트가 cookie 읽어 302 redirect 후 cookie 즉시 만료.
+  //    XSS·스크린레코더로 응답 캡처돼도 action_link 자체는 새지 않음.
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: IMP_COOKIE_NAME,
+    value: linkData.properties.action_link,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: IMP_COOKIE_TTL,
+    path: IMP_COOKIE_PATH,
+  });
+
   return NextResponse.json({
-    url: linkData.properties.action_link,
+    exchangeUrl: `${IMP_COOKIE_PATH}/exchange`,
     targetName: targetProfile.name ?? targetProfile.email,
   });
 }
