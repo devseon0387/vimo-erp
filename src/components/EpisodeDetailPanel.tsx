@@ -56,9 +56,10 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
   const [editedFields, setEditedFields] = useState<Set<string>>(new Set());
 
   // 자동 저장 상태
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const saveStatusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const echoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Realtime: 로컬 저장 직후 echo 무시용
   const isLocalSaveRef = useRef(false);
@@ -370,7 +371,9 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
     // 이전 디바운스 타이머 취소
     if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
 
-    saveDebounceRef.current = setTimeout(() => {
+    let cancelled = false;
+
+    saveDebounceRef.current = setTimeout(async () => {
       isDirtyRef.current = false;
       isLocalSaveRef.current = true;
 
@@ -390,16 +393,38 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
         },
       };
 
-      updateEpisodeFields(episodeId, { ...updatedEpisode, status, workSteps, workBudgets }).then(() => {
+      let ok = false;
+      try {
+        ok = await updateEpisodeFields(episodeId, { ...updatedEpisode, status, workSteps, workBudgets });
+      } catch {
+        ok = false;
+      }
+
+      // unmount(또는 다른 회차로 이동) 후 setState 호출 방지
+      if (cancelled) {
+        isLocalSaveRef.current = false;
+        return;
+      }
+
+      if (ok) {
         setSaveStatus('saved');
         if (saveStatusTimeoutRef.current) clearTimeout(saveStatusTimeoutRef.current);
         saveStatusTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
-        setTimeout(() => { isLocalSaveRef.current = false; }, 1000);
-      });
+        if (echoTimeoutRef.current) clearTimeout(echoTimeoutRef.current);
+        echoTimeoutRef.current = setTimeout(() => { isLocalSaveRef.current = false; }, 1000);
+      } else {
+        setSaveStatus('error');
+        // 실패 시 echo 무시 풀어서 외부 변경 다시 받게 + 사용자가 재시도하면 다시 저장 가능하도록 dirty 복구
+        isLocalSaveRef.current = false;
+        isDirtyRef.current = true;
+      }
     }, 500);
 
     return () => {
+      cancelled = true;
       if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+      if (saveStatusTimeoutRef.current) clearTimeout(saveStatusTimeoutRef.current);
+      if (echoTimeoutRef.current) clearTimeout(echoTimeoutRef.current);
     };
   }, [editedEpisode, workSteps, workBudgets, episodeId, projectId]);
 
@@ -908,6 +933,14 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     저장됨
+                  </span>
+                )}
+                {saveStatus === 'error' && (
+                  <span className="text-xs text-red-600 flex items-center gap-1 animate-fade-in" title="네트워크/권한 오류로 저장하지 못했습니다. 수정 시 자동으로 재시도됩니다.">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75l-7-12a2 2 0 00-3.68 0l-7 12A2 2 0 005 19z" />
+                    </svg>
+                    저장 실패
                   </span>
                 )}
               </div>
