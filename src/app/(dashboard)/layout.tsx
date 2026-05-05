@@ -671,7 +671,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           gap:         '12px',
           background:  '#ffffff',
           borderBottom:'1px solid #ede9e6',
-          transition:  'left 0.2s cubic-bezier(0.4,0,0.2,1)',
         }}
       >
         {/* 모바일 햄버거 */}

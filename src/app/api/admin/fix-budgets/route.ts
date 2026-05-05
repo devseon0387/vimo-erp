@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/auth/admin';
 
 /**
  * 기존 에피소드들의 budget_partner / budget_management를 올바르게 재계산합니다.
@@ -8,25 +7,9 @@ import { createClient } from '@supabase/supabase-js';
  */
 export async function POST() {
   try {
-    // admin 확인
-    const serverSupabase = await createServerClient();
-    const { data: { user } } = await serverSupabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: '인증 필요' }, { status: 401 });
-
-    const { data: profile } = await serverSupabase
-      .from('user_profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: '권한 없음' }, { status: 403 });
-    }
-
-    const adminSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
+    const { admin: adminSupabase } = guard;
 
     // 모든 에피소드 가져오기
     const { data: episodes, error } = await adminSupabase

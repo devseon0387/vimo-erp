@@ -109,6 +109,10 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // 보안: 풀권한 대신 Bash 만 허용 (curl로 내부 API 호출용).
+  // Read/Write/Edit/NotebookEdit 차단 — 파일 시스템 노출 방지.
+  // 쓰기는 [ACTION] 마커로 사용자 승인 후 /api/bibot/exec 가 처리.
+  // 만약 bibot 동작이 깨지면 docs/SECURITY_NOTES.md 참고하여 재조정.
   const args = [
     '-p', message,
     '--model', 'sonnet',
@@ -116,7 +120,8 @@ export async function POST(req: NextRequest) {
     '--include-partial-messages',
     '--verbose',
     '--append-system-prompt', SYSTEM_PROMPT,
-    '--dangerously-skip-permissions',
+    '--allowed-tools', 'Bash',
+    '--permission-mode', 'default',
   ];
 
   if (sessionId) {
@@ -127,12 +132,12 @@ export async function POST(req: NextRequest) {
   const host = req.headers.get('host') ?? 'localhost:3000';
   const bibotApiBase = `${protocol}://${host}/api/bibot/tools`;
 
-  const env = {
-    ...process.env,
-    BIBOT_API_KEY: process.env.BIBOT_API_KEY ?? '',
-    BIBOT_API_BASE: bibotApiBase,
-  };
+  // claude CLI 중첩 세션 방지: CLAUDECODE 환경변수 제거
+  // 그리고 BIBOT 키/URL 주입
+  const env = { ...process.env } as Record<string, string | undefined> & NodeJS.ProcessEnv;
   delete env.CLAUDECODE;
+  env.BIBOT_API_KEY = process.env.BIBOT_API_KEY ?? '';
+  env.BIBOT_API_BASE = bibotApiBase;
 
   const child = spawn('claude', args, { env });
 

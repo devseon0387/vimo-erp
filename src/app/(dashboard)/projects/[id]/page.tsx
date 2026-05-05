@@ -1074,9 +1074,9 @@ export default function ProjectDetailPage() {
                 <div className="pt-4 border-t border-divider">
                   <p className="text-sm font-medium text-gray-500 mb-2">태그</p>
                   <div className="flex flex-wrap gap-2">
-                    {project.tags.map((tag, index) => (
+                    {project.tags.map((tag) => (
                       <span
-                        key={index}
+                        key={tag}
                         className="px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-sm"
                       >
                         #{tag}
@@ -1393,10 +1393,10 @@ export default function ProjectDetailPage() {
 
                         {/* 프로그레스 미니바 */}
                         {episode.workSteps && (() => {
-                          const allSteps = Object.values(episode.workSteps).flat();
+                          const allSteps = Object.values(episode.workSteps).flat() as Array<{ status?: string }>;
                           const total = allSteps.length;
-                          const completed = allSteps.filter((s: any) => s.status === 'completed').length;
-                          const inProgress = allSteps.filter((s: any) => s.status === 'in_progress').length;
+                          const completed = allSteps.filter((s) => s.status === 'completed').length;
+                          const inProgress = allSteps.filter((s) => s.status === 'in_progress').length;
                           if (total === 0) return null;
                           const completedPct = (completed / total) * 100;
                           const inProgressPct = (inProgress / total) * 100;
@@ -1722,10 +1722,10 @@ export default function ProjectDetailPage() {
 
                       {/* 프로그레스 미니바 (완료가 아닐 때만) */}
                       {!isEpisodeEditMode && episode.status !== 'completed' && episode.workSteps && (() => {
-                        const allSteps = Object.values(episode.workSteps).flat();
+                        const allSteps = Object.values(episode.workSteps).flat() as Array<{ status?: string }>;
                         const total = allSteps.length;
-                        const completed = allSteps.filter((s: any) => s.status === 'completed').length;
-                        const inProgress = allSteps.filter((s: any) => s.status === 'in_progress').length;
+                        const completed = allSteps.filter((s) => s.status === 'completed').length;
+                        const inProgress = allSteps.filter((s) => s.status === 'in_progress').length;
                         if (total === 0) return null;
                         const completedPct = (completed / total) * 100;
                         const inProgressPct = (inProgress / total) * 100;

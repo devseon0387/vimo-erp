@@ -213,8 +213,8 @@ export default function MarketingPage() {
                     </div>
                     {item.tags && item.tags.length > 0 && (
                       <div className="flex gap-2 mt-3">
-                        {item.tags.slice(0, 4).map((tag, index) => (
-                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                        {item.tags.slice(0, 4).map((tag) => (
+                          <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
                             #{tag}
                           </span>
                         ))}
