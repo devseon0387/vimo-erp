@@ -284,16 +284,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'projectId와 title 필수' }, { status: 400 });
       }
 
-      let episodeNumber = body.episodeNumber;
-      if (episodeNumber == null) {
-        const { data: existing } = await db
-          .from('episodes')
-          .select('episode_number')
-          .eq('project_id', body.projectId)
-          .order('episode_number', { ascending: false })
-          .limit(1);
-        episodeNumber = (existing?.[0]?.episode_number ?? 0) + 1;
-      }
+      // episode_number는 클라가 명시 보내면 그 값, NULL 이면 DB 트리거(set_episode_number)가
+      // advisory_xact_lock 으로 atomic 할당 — 동시 INSERT race 차단.
+      const episodeNumber = body.episodeNumber ?? null;
 
       const { data, error } = await db
         .from('episodes')
