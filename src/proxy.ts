@@ -29,7 +29,31 @@ export default async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  // /signup 접근 시 /login으로 리다이렉트
+  const host = request.headers.get('host') ?? '';
+  const isPartnerHost = host.startsWith('partner.');
+
+  // partner.video-moment.com 은 별도 워크스페이스 — 비모 ERP 인증 로직 우회
+  // 페이지 경로만 /partner/* 로 rewrite. _next, api, public 자산은 그대로 통과.
+  if (isPartnerHost) {
+    const isAssetOrApi =
+      pathname.startsWith('/_next') ||
+      pathname.startsWith('/api') ||
+      pathname.startsWith('/partner') ||
+      /\.[a-zA-Z0-9]+$/.test(pathname); // .png, .ico, .json, .woff2 등
+    if (!isAssetOrApi) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/partner${pathname}`;
+      return NextResponse.rewrite(url);
+    }
+    return supabaseResponse;
+  }
+
+  // 메인 도메인에서 /partner/* 직접 접근 차단 (서브도메인 노출 방지)
+  if (pathname.startsWith('/partner')) {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  // /signup 접근 시 /login으로 리다이렉트 (staff 가입 차단)
   if (pathname.startsWith('/signup')) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
