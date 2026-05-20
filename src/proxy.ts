@@ -30,9 +30,10 @@ export default async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const host = request.headers.get('host') ?? '';
-  const isPartnerHost = host.startsWith('partner.');
+  // partner.vi-mo.kr (운영) · partner.localhost (로컬). www·user.partner 같은 오인식 방어.
+  const isPartnerHost = /^partner\.(vi-mo\.kr|localhost)(:\d+)?$/i.test(host);
 
-  // partner.video-moment.com 은 별도 워크스페이스 — 비모 ERP 인증 로직 우회
+  // 파트너 서브도메인은 별도 워크스페이스 — 비모 ERP 인증 로직 우회
   // 페이지 경로만 /partner/* 로 rewrite. _next, api, public 자산은 그대로 통과.
   if (isPartnerHost) {
     const isAssetOrApi =
