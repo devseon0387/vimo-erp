@@ -1,24 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AlertCircle, Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 export default function PartnerSignupPage() {
-  const [email,     setEmail    ] = useState('');
-  const [password,  setPassword ] = useState('');
-  const [name,      setName     ] = useState('');
-  const [showPw,    setShowPw   ] = useState(false);
-  const [error,     setError    ] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [agreed,    setAgreed   ] = useState(false);
-  const [mounted,   setMounted  ] = useState(false);
+  const router = useRouter();
+  const [email,        setEmail       ] = useState('');
+  const [password,     setPassword    ] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [name,         setName        ] = useState('');
+  const [showPw,       setShowPw      ] = useState(false);
+  const [error,        setError       ] = useState('');
+  const [isLoading,    setIsLoading   ] = useState(false);
+  const [agreed,       setAgreed      ] = useState(false);
+  const [mounted,      setMounted     ] = useState(false);
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
   }, []);
 
   const passwordOk = password.length >= 8;
-  const canSubmit = email && passwordOk && name.trim() && agreed && !isLoading;
+  const passwordMatch = passwordConfirm.length > 0 && password === passwordConfirm;
+  const canSubmit = email && passwordOk && passwordMatch && name.trim() && agreed && !isLoading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,14 +31,36 @@ export default function PartnerSignupPage() {
     if (!canSubmit) return;
     setIsLoading(true);
 
-    // TODO: 백엔드 연결
-    // supabase.auth.signUp({
-    //   email, password,
-    //   options: { data: { app_source: 'partner_erp', name } }
-    // })
-    await new Promise(r => setTimeout(r, 800));
-    setError('가입 처리는 아직 연결되지 않았습니다. (백엔드 대기)');
-    setIsLoading(false);
+    const supabase = createClient();
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          app_source: 'partner_erp',
+          name: name.trim(),
+        },
+      },
+    });
+
+    if (signUpError) {
+      // 메시지 한글화
+      const msg = signUpError.message.toLowerCase();
+      if (msg.includes('already registered') || msg.includes('user already')) {
+        setError('이미 가입된 이메일입니다. 로그인해주세요.');
+      } else if (msg.includes('password')) {
+        setError('비밀번호가 조건을 충족하지 않습니다. 8자 이상으로 다시 입력해주세요.');
+      } else if (msg.includes('email')) {
+        setError('이메일 형식이 올바르지 않습니다.');
+      } else {
+        setError(`가입에 실패했습니다. ${signUpError.message}`);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // 이메일 확인 OFF 설정이면 즉시 세션이 생성됨 → 환영 페이지로
+    router.push('/welcome');
   };
 
   return (
@@ -154,6 +181,8 @@ export default function PartnerSignupPage() {
         }
         .vm-hint.ok { color: #16a34a; }
         .vm-hint.ok .vm-hint-dot { background: #16a34a; }
+        .vm-hint.err { color: #dc2626; }
+        .vm-hint.err .vm-hint-dot { background: #fecaca; }
 
         .vm-agree {
           display: flex;
@@ -328,6 +357,29 @@ export default function PartnerSignupPage() {
                 </span>
                 <span>8자 이상</span>
               </div>
+            </div>
+
+            <div className="vm-field">
+              <label className="vm-field-label">비밀번호 확인</label>
+              <div className="vm-field-input-wrap">
+                <input
+                  className="vm-field-input"
+                  type={showPw ? 'text' : 'password'}
+                  value={passwordConfirm}
+                  onChange={e => setPasswordConfirm(e.target.value)}
+                  placeholder="비밀번호 다시 입력"
+                  required
+                  autoComplete="new-password"
+                />
+              </div>
+              {passwordConfirm.length > 0 && (
+                <div className={`vm-hint ${passwordMatch ? 'ok' : 'err'}`}>
+                  <span className="vm-hint-dot">
+                    {passwordMatch && <Check size={10} color="#fff" strokeWidth={3} />}
+                  </span>
+                  <span>{passwordMatch ? '일치' : '비밀번호가 일치하지 않습니다'}</span>
+                </div>
+              )}
             </div>
 
             <label className="vm-agree">
