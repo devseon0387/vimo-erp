@@ -14,6 +14,24 @@ export interface ChangelogItem {
 
 export const defaultChangelogs: ChangelogItem[] = [
   {
+    id: '9',
+    version: 'v0.2.3',
+    date: '2026-05-24',
+    title: '비봇 페이지 추가',
+    description: '사이드바에 비봇 섹션 추가, 비봇 매니지먼트 및 업데이트 페이지 신설',
+    type: 'feature',
+    details: [
+      '사이드바에 로봇 아이콘 비봇 섹션 추가',
+      '비봇 매니지먼트 — 오늘 작업 진행 현황, 다음 작업, 예약 작업 타임라인',
+      '비봇 업데이트 — 릴리즈 노트 및 변경 내역 조회',
+    ],
+    features: [
+      '비봇 매니지먼트 — 9개 예약 작업 타임라인 (완료/대기/다음 작업 시각화)',
+      '비봇 업데이트 — 버전별 변경사항 펼쳐보기',
+      '사이드바 비봇 섹션 (로봇 아이콘)',
+    ],
+  },
+  {
     id: '8',
     version: 'v0.2.1',
     date: '2026-04-06',

@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, FolderOpen, Settings, Briefcase, Trash2,
   Megaphone, LogOut, ClipboardCheck, Building2, Mail, Inbox, Send, MailPlus, Archive,
   Wallet, Receipt, FileText, Target, Shield, Layers, Menu, X, Calendar,
-  MessageSquarePlus, CreditCard,
+  MessageSquarePlus, CreditCard, Bot, RefreshCw,
 } from 'lucide-react';
 import DashboardContent from '@/components/DashboardContent';
 import GlobalFAB from '@/components/GlobalFAB';
@@ -78,6 +78,15 @@ const SECTIONS: Section[] = [
         { href: '/marketing/portfolio', label: '포트폴리오', icon: Megaphone },
         { href: '/marketing/inquiries', label: '문의', icon: MessageSquarePlus },
       ] },
+    ],
+  },
+  {
+    key: 'vbot',
+    icon: Bot,
+    label: '비봇',
+    items: [
+      { type: 'link', href: '/vbot', label: '비봇 매니지먼트', icon: Bot },
+      { type: 'link', href: '/vbot/updates', label: '비봇 업데이트', icon: RefreshCw },
     ],
   },
   {
