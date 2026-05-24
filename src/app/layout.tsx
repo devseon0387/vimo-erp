@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "VIMO ERP",
   description: "영상 제작 프로젝트 관리 시스템",
-  metadataBase: new URL('https://vi-mo.kr'),
+  metadataBase: new URL('https://erp.vi-mo.kr'),
   openGraph: {
     title: 'VIMO ERP',
     description: '영상 제작 프로젝트 관리 시스템',
