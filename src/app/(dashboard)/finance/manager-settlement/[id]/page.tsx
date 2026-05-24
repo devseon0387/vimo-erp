@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Partner, Episode } from '@/types';
 import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
+import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
 import DatePicker from '@/components/DatePicker';
 
@@ -55,6 +56,7 @@ interface SettlementRow {
 export default function ManagerSettlementDetailPage() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
+  const toast = useToast();
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [manager, setManager] = useState<Partner | null>(null);
@@ -154,12 +156,16 @@ export default function ManagerSettlementDetailPage() {
     const budget = editingRow.type === 'management'
       ? { totalAmount: editingRow.budgetTotal, partnerPayment: editingRow.budgetPartner, managementFee: newAmount }
       : { totalAmount: editingRow.budgetTotal, partnerPayment: newAmount, managementFee: editingRow.budgetManagement };
-    await updateEpisodeFields(editingRow.episodeId, {
+    const ok = await updateEpisodeFields(editingRow.episodeId, {
       paymentDueDate: editDate || undefined,
       paymentStatus: editStatus,
       budget,
     });
     setSaving(false);
+    if (!ok) {
+      toast.error('저장 실패. 권한 또는 네트워크를 확인해주세요.');
+      return;
+    }
     setEditingRow(null);
     loadData();
   };
@@ -199,12 +205,18 @@ export default function ManagerSettlementDetailPage() {
     if (unpaidRows.length === 0) return;
     setSaving(true);
     const seen = new Set<string>();
+    let okCount = 0;
+    let failCount = 0;
     for (const row of unpaidRows) {
       if (seen.has(row.episodeId)) continue;
       seen.add(row.episodeId);
-      await updateEpisodeFields(row.episodeId, { paymentStatus: 'completed' });
+      const ok = await updateEpisodeFields(row.episodeId, { paymentStatus: 'completed' });
+      if (ok) okCount += 1;
+      else failCount += 1;
     }
     setSaving(false);
+    if (failCount === 0) toast.success(`${okCount}건 정산 완료`);
+    else toast.warning(`${okCount}건 성공, ${failCount}건 실패`);
     loadData();
   };
 

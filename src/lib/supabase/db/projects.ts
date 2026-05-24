@@ -137,7 +137,7 @@ export async function getProjectById(id: string): Promise<Project | null> {
     .from('projects')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
   if (error) { console.error('[DB] getProjectById:', error.message); return null; }
   if (!data) return null;
   return projectFromRow(data as ProjectRow);

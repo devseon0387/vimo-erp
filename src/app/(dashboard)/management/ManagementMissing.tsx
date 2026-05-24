@@ -50,13 +50,11 @@ function normalizeDate(v: string | undefined | null): string {
 
 function checkMissing(ep: Episode): MissingFlags {
   const partnerPay = ep.budget?.partnerPayment ?? 0;
-  const total = ep.budget?.totalAmount ?? 0;
-  const mgmtFee = ep.budget?.managementFee ?? 0;
-  const mgmtMissing = mgmtFee === 0 && (total - partnerPay) > 0;
 
   return {
     cost: partnerPay === 0,
-    mgmt: mgmtMissing,
+    // 매니징 비용 0원은 의도된 정상값 (0원 회차도 존재) — 미입력 분류에서 제외
+    mgmt: false,
     date: !isValidDateStr(ep.paymentDueDate),
     assignee: !ep.assignee || ep.assignee === '',
     manager: !ep.manager || ep.manager === '',

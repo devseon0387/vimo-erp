@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, FolderOpen, CheckCircle, Clock, TrendingUp, Wallet, Calendar, X, ChevronDown, Sparkles, AlertTriangle, Megaphone, Building2, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -116,30 +116,37 @@ export default function DashboardPage() {
 
   useSupabaseRealtime(['projects', 'episodes', 'partners', 'clients'], loadData);
 
-  // 클라이언트 추가 핸들러
+  // 클라이언트 추가 핸들러 — savingClientRef로 더블클릭 차단 (중복 INSERT 방지)
+  const savingClientRef = useRef(false);
   const handleAddClient = async () => {
+    if (savingClientRef.current) return;
     if (!newClient.name) {
       toast.warning('클라이언트 이름을 입력해주세요.');
       return;
     }
 
-    const saved = await insertClient({
-      name: newClient.name,
-      contactPerson: newClient.contactPerson,
-      email: newClient.email,
-      phone: newClient.phone,
-      company: newClient.company,
-      address: newClient.address,
-      status: newClient.status || 'active',
-      notes: newClient.notes,
-    });
+    savingClientRef.current = true;
+    try {
+      const saved = await insertClient({
+        name: newClient.name,
+        contactPerson: newClient.contactPerson,
+        email: newClient.email,
+        phone: newClient.phone,
+        company: newClient.company,
+        address: newClient.address,
+        status: newClient.status || 'active',
+        notes: newClient.notes,
+      });
 
-    if (saved) {
-      setClients(prev => [saved, ...prev]);
-      setLastAddedClientName(saved.name);
-      setIsClientSuccess(true);
-    } else {
-      toast.error('클라이언트 추가에 실패했습니다. 다시 시도해주세요.');
+      if (saved) {
+        setClients(prev => [saved, ...prev]);
+        setLastAddedClientName(saved.name);
+        setIsClientSuccess(true);
+      } else {
+        toast.error('클라이언트 추가에 실패했습니다. 다시 시도해주세요.');
+      }
+    } finally {
+      savingClientRef.current = false;
     }
   };
 
@@ -183,34 +190,41 @@ export default function DashboardPage() {
     });
   };
 
-  // 파트너 추가 핸들러
+  // 파트너 추가 핸들러 — savingPartnerRef로 더블클릭 차단
+  const savingPartnerRef = useRef(false);
   const handleAddPartner = async () => {
+    if (savingPartnerRef.current) return;
     if (!newPartner.name || !newPartner.email) {
       toast.warning('파트너 이름과 이메일을 입력해주세요.');
       return;
     }
 
-    const saved = await insertPartner({
-      name: newPartner.name,
-      email: newPartner.email,
-      phone: newPartner.phone,
-      company: newPartner.company,
-      partnerType: newPartner.partnerType || 'freelancer',
-      generation: newPartner.generation ?? 1,
-      role: newPartner.role || 'partner',
-      status: newPartner.status || 'active',
-    });
+    savingPartnerRef.current = true;
+    try {
+      const saved = await insertPartner({
+        name: newPartner.name,
+        email: newPartner.email,
+        phone: newPartner.phone,
+        company: newPartner.company,
+        partnerType: newPartner.partnerType || 'freelancer',
+        generation: newPartner.generation ?? 1,
+        role: newPartner.role || 'partner',
+        status: newPartner.status || 'active',
+      });
 
-    if (saved) {
-      setPartners(prev => [saved, ...prev]);
-      setIsPartnerSuccess(true);
-      setTimeout(() => {
-        setIsAddPartnerModalOpen(false);
-        setIsPartnerSuccess(false);
-        setNewPartner({ name: '', email: '', phone: '', company: '', role: 'partner', status: 'active' });
-      }, 1500);
-    } else {
-      toast.error('파트너 추가에 실패했습니다. 다시 시도해주세요.');
+      if (saved) {
+        setPartners(prev => [saved, ...prev]);
+        setIsPartnerSuccess(true);
+        setTimeout(() => {
+          setIsAddPartnerModalOpen(false);
+          setIsPartnerSuccess(false);
+          setNewPartner({ name: '', email: '', phone: '', company: '', role: 'partner', status: 'active' });
+        }, 1500);
+      } else {
+        toast.error('파트너 추가에 실패했습니다. 다시 시도해주세요.');
+      }
+    } finally {
+      savingPartnerRef.current = false;
     }
   };
 

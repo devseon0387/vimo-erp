@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>비봇 UI 디자인 시안</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  body { font-family: 'Pretendard', -apple-system, system-ui, sans-serif; }
+  .grad-orange { background: linear-gradient(135deg, #f97316 0%, #ec4899 100%); }
+  .grad-cool   { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+  .grad-dark   { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+  .dot-typing span { animation: dot 1.2s infinite; }
+  .dot-typing span:nth-child(2) { animation-delay: .2s; }
+  .dot-typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes dot { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 10px; }
+  .shimmer { background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; background: rgba(0,0,0,.06); border: 1px solid rgba(0,0,0,.08); border-radius: 4px; padding: 1px 5px; color: #475569; }
+  .pill { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; cursor: pointer; transition: .15s; }
+  .pill:hover { background: #e2e8f0; }
+  .variant-card { transition: box-shadow .3s; }
+  .variant-card:hover { box-shadow: 0 20px 40px -12px rgba(0,0,0,.15); }
+  .chat-bubble-ai { background: white; border: 1px solid #e5e7eb; border-bottom-left-radius: 4px; }
+  .chat-bubble-user { background: #f97316; color: white; border-bottom-right-radius: 4px; }
+  .badge { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<header class="max-w-7xl mx-auto px-6 pt-10 pb-6">
+  <h1 class="text-4xl font-black text-slate-900">비봇 UI 디자인 시안</h1>
+  <p class="text-slate-600 mt-2">여섯 가지 방향의 UX/UI 탐색. 각 시안의 강점·약점을 비교해 선택하세요.</p>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+<!-- ─────── 시안 1: Floating Refined ─────── -->
+<section class="variant-card bg-white rounded-3xl p-6 shadow-md">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="badge bg-orange-100 text-orange-700">1. 플로팅 리파인</span>
+        <span class="badge bg-slate-100 text-slate-600">현재 확장판</span>
+      </div>
+      <h2 class="text-xl font-bold text-slate-900">우하단 플로팅 + 액션칩</h2>
+      <p class="text-sm text-slate-600 mt-1">현재 구조 유지, UX 디테일 보강</p>
+    </div>
+  </div>
+
+  <div class="bg-slate-50 rounded-2xl p-6 flex justify-end min-h-[500px] relative">
+    <div class="w-[380px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden max-h-[480px]">
+      <!-- 헤더 -->
+      <div class="grad-orange px-4 py-3 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="font-bold text-sm leading-tight">비봇</div>
+            <div class="text-[11px] text-white/80 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+              온라인 · 세션 이어짐
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-1">
+          <button class="w-7 h-7 rounded hover:bg-white/10 flex items-center justify-center"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
+          <button class="w-7 h-7 rounded hover:bg-white/10 flex items-center justify-center"><i data-lucide="maximize-2" class="w-3.5 h-3.5"></i></button>
+          <button class="w-7 h-7 rounded hover:bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </div>
+      <!-- 메시지 -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 scrollbar-thin">
+        <div class="flex justify-end"><div class="chat-bubble-user px-3.5 py-2 rounded-2xl text-sm max-w-[80%]">가장 최근 회차로 가줘</div></div>
+        <div class="flex flex-col items-start gap-1">
+          <div class="chat-bubble-ai px-3.5 py-2 rounded-2xl text-sm max-w-[80%] text-slate-800">'소조한잔 ep.3 현재님 편'이 가장 최근입니다. 이동합니다.</div>
+          <button class="flex items-center gap-1.5 text-[11px] bg-white border border-orange-200 text-orange-600 px-2.5 py-1 rounded-full hover:bg-orange-50">
+            <i data-lucide="arrow-right" class="w-3 h-3"></i> 회차 페이지 열기
+          </button>
+        </div>
+        <div class="flex justify-start">
+          <div class="chat-bubble-ai px-3.5 py-2 rounded-2xl max-w-[80%]">
+            <div class="dot-typing text-slate-400 flex gap-0.5"><span>●</span><span>●</span><span>●</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- 액션칩 -->
+      <div class="px-3 py-2 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto">
+        <button class="pill whitespace-nowrap">📍 최근 회차</button>
+        <button class="pill whitespace-nowrap">💰 이번주 정산</button>
+        <button class="pill whitespace-nowrap">📋 오늘 할 일</button>
+      </div>
+      <!-- 입력 -->
+      <div class="border-t border-slate-200 p-2.5 bg-white">
+        <div class="flex items-end gap-2 bg-slate-50 rounded-xl p-1.5 border border-slate-200">
+          <button class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600"><i data-lucide="paperclip" class="w-4 h-4"></i></button>
+          <input type="text" placeholder="무엇이든 물어보세요..." class="flex-1 bg-transparent text-sm focus:outline-none px-1" />
+          <button class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600"><i data-lucide="mic" class="w-4 h-4"></i></button>
+          <button class="w-7 h-7 bg-orange-500 text-white rounded-lg flex items-center justify-center"><i data-lucide="send" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+      <div class="font-bold text-green-800 mb-1">👍 장점</div>
+      <p class="text-green-700 leading-relaxed">기존 UX 연속성, 빠른 열기, 빠른 액션, 모바일 친화</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+      <div class="font-bold text-amber-800 mb-1">⚠️ 단점</div>
+      <p class="text-amber-700 leading-relaxed">긴 대화 보기 답답, 작업 화면 일부 가림</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────── 시안 2: Command Palette (Spotlight) ─────── -->
+<section class="variant-card bg-white rounded-3xl p-6 shadow-md">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="badge bg-indigo-100 text-indigo-700">2. 커맨드 팔레트</span>
+        <span class="badge bg-slate-100 text-slate-600">키보드 우선</span>
+      </div>
+      <h2 class="text-xl font-bold text-slate-900">Spotlight / Raycast 스타일</h2>
+      <p class="text-sm text-slate-600 mt-1">Cmd+K로 호출 · 빠른 실행에 최적</p>
+    </div>
+  </div>
+
+  <div class="bg-slate-800 rounded-2xl p-6 flex items-start justify-center min-h-[500px] relative">
+    <div class="w-[480px] bg-white rounded-2xl shadow-2xl overflow-hidden mt-8">
+      <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+        <i data-lucide="sparkles" class="w-5 h-5 text-orange-500"></i>
+        <input type="text" value="가장 최근 회차" class="flex-1 text-base focus:outline-none placeholder-slate-400" />
+        <span class="kbd">ESC</span>
+      </div>
+      <div class="max-h-[320px] overflow-y-auto py-2">
+        <div class="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">제안</div>
+        <button class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 bg-orange-50 border-l-2 border-orange-500">
+          <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+            <i data-lucide="play" class="w-4 h-4 text-orange-600"></i>
+          </div>
+          <div class="flex-1 text-left">
+            <div class="text-sm font-medium text-slate-900">소조한잔 ep.3 · 2화</div>
+            <div class="text-[11px] text-slate-500">최근 업데이트: 4월 11일 · 진행 중</div>
+          </div>
+          <span class="kbd">↵</span>
+        </button>
+        <button class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
+          <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+            <i data-lucide="folder" class="w-4 h-4 text-slate-600"></i>
+          </div>
+          <div class="flex-1 text-left">
+            <div class="text-sm font-medium text-slate-900">1부 · b99afb72</div>
+            <div class="text-[11px] text-slate-500">최근 업데이트: 4월 10일</div>
+          </div>
+        </button>
+        <div class="px-3 py-1 mt-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">비봇에게 묻기</div>
+        <button class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+          </div>
+          <div class="flex-1 text-left">
+            <div class="text-sm text-slate-900">"가장 최근 회차"를 비봇에게 질문</div>
+            <div class="text-[11px] text-slate-500">대화형 응답 + 자동 이동</div>
+          </div>
+          <span class="kbd">⌘↵</span>
+        </button>
+      </div>
+      <div class="px-4 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+        <div class="flex items-center gap-3">
+          <span><span class="kbd">↑↓</span> 이동</span>
+          <span><span class="kbd">↵</span> 선택</span>
+        </div>
+        <span>비봇 v0.2.2</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+      <div class="font-bold text-green-800 mb-1">👍 장점</div>
+      <p class="text-green-700 leading-relaxed">초고속, 키보드 숙련자 만족, 검색·탐색·AI 일원화</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+      <div class="font-bold text-amber-800 mb-1">⚠️ 단점</div>
+      <p class="text-amber-700 leading-relaxed">긴 대화엔 부적합, 터치 기기에서 어색함</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────── 시안 3: Sidebar (Linear/Intercom) ─────── -->
+<section class="variant-card bg-white rounded-3xl p-6 shadow-md">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="badge bg-blue-100 text-blue-700">3. 사이드바</span>
+        <span class="badge bg-slate-100 text-slate-600">작업 병행</span>
+      </div>
+      <h2 class="text-xl font-bold text-slate-900">우측 전체 높이 사이드바</h2>
+      <p class="text-sm text-slate-600 mt-1">작업 화면과 나란히 · 긴 대화에 최적</p>
+    </div>
+  </div>
+
+  <div class="bg-slate-50 rounded-2xl overflow-hidden min-h-[500px] relative flex">
+    <!-- 가짜 메인 -->
+    <div class="flex-1 p-6 opacity-50">
+      <div class="h-6 w-40 bg-slate-200 rounded mb-4"></div>
+      <div class="h-4 w-full bg-slate-200 rounded mb-2"></div>
+      <div class="h-4 w-3/4 bg-slate-200 rounded mb-4"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="h-24 bg-white rounded-lg border border-slate-200"></div>
+        <div class="h-24 bg-white rounded-lg border border-slate-200"></div>
+      </div>
+    </div>
+    <!-- 사이드바 -->
+    <div class="w-[340px] bg-white border-l border-slate-200 flex flex-col">
+      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg grad-orange flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+          </div>
+          <div class="font-bold text-sm">비봇</div>
+        </div>
+        <div class="flex gap-1">
+          <button class="text-xs text-slate-500 hover:text-slate-700 px-2 py-1 rounded hover:bg-slate-100">새 대화</button>
+          <button class="w-6 h-6 rounded hover:bg-slate-100 flex items-center justify-center"><i data-lucide="panel-right-close" class="w-4 h-4 text-slate-500"></i></button>
+        </div>
+      </div>
+      <!-- 대화 목록 (탭 역할) -->
+      <div class="px-3 py-2 border-b border-slate-100 flex gap-1 overflow-x-auto">
+        <button class="px-2.5 py-1 text-xs rounded-md bg-orange-50 text-orange-700 whitespace-nowrap font-medium">오늘</button>
+        <button class="px-2.5 py-1 text-xs rounded-md hover:bg-slate-100 text-slate-600 whitespace-nowrap">어제</button>
+        <button class="px-2.5 py-1 text-xs rounded-md hover:bg-slate-100 text-slate-600 whitespace-nowrap">정산 질문</button>
+      </div>
+      <!-- 메시지 -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin">
+        <div class="flex justify-end"><div class="chat-bubble-user px-3 py-1.5 rounded-2xl text-sm max-w-[85%]">최근 회차 알려줘</div></div>
+        <div class="flex flex-col items-start gap-1.5">
+          <div class="flex items-center gap-1.5 text-[10px] text-slate-400">
+            <i data-lucide="sparkles" class="w-3 h-3"></i> 비봇 · 3초 전
+          </div>
+          <div class="chat-bubble-ai px-3 py-2 rounded-xl text-sm max-w-[85%] text-slate-800 space-y-2">
+            <p>최근 업데이트된 회차 Top 3입니다:</p>
+            <ol class="text-xs space-y-1 list-decimal list-inside pl-1 text-slate-700">
+              <li>소조한잔 ep.3 · 2화</li>
+              <li>1부 · b99afb72</li>
+              <li>인터뷰 · 5화</li>
+            </ol>
+          </div>
+          <div class="flex gap-1">
+            <button class="pill">첫 번째로 이동</button>
+            <button class="pill">상세 보기</button>
+          </div>
+        </div>
+      </div>
+      <!-- 입력 -->
+      <div class="border-t border-slate-200 p-2.5">
+        <div class="flex items-end gap-2 bg-slate-50 rounded-xl p-1.5 border border-slate-200 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
+          <textarea rows="1" placeholder="메시지 입력..." class="flex-1 bg-transparent text-sm focus:outline-none px-2 py-1 resize-none"></textarea>
+          <button class="w-7 h-7 grad-orange text-white rounded-lg flex items-center justify-center"><i data-lucide="arrow-up" class="w-3.5 h-3.5"></i></button>
+        </div>
+        <div class="flex gap-1 mt-2">
+          <span class="kbd">⌘↵ 전송</span>
+          <span class="kbd">↑ 이전 메시지</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+      <div class="font-bold text-green-800 mb-1">👍 장점</div>
+      <p class="text-green-700 leading-relaxed">작업·대화 동시, 과거 대화 탭, 긴 응답 편안</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+      <div class="font-bold text-amber-800 mb-1">⚠️ 단점</div>
+      <p class="text-amber-700 leading-relaxed">메인 컨텐츠 폭 줄어듦, 모바일 레이아웃 재설계 필요</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────── 시안 4: Card with Action Blocks ─────── -->
+<section class="variant-card bg-white rounded-3xl p-6 shadow-md">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="badge bg-emerald-100 text-emerald-700">4. 액션 카드</span>
+        <span class="badge bg-slate-100 text-slate-600">시각적</span>
+      </div>
+      <h2 class="text-xl font-bold text-slate-900">응답을 카드·블록으로</h2>
+      <p class="text-sm text-slate-600 mt-1">텍스트만이 아닌 풍부한 결과 뷰</p>
+    </div>
+  </div>
+
+  <div class="bg-slate-50 rounded-2xl p-6 flex justify-end min-h-[540px] relative">
+    <div class="w-[400px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden max-h-[520px]">
+      <div class="grad-orange px-4 py-3 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> <span class="font-bold text-sm">비봇</span></div>
+        <button class="w-6 h-6"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 scrollbar-thin">
+        <div class="flex justify-end"><div class="chat-bubble-user px-3 py-2 rounded-2xl text-sm max-w-[85%]">최근 회차 3개 보여줘</div></div>
+        <!-- 카드형 응답 -->
+        <div class="space-y-2">
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-3 py-2.5 border-b border-slate-100 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-slate-900">소조한잔 ep.3 · 2화</div>
+                <div class="text-[11px] text-slate-500">진행 중 · 마감 4/13</div>
+              </div>
+              <button class="text-orange-600 text-xs font-medium hover:underline">열기 →</button>
+            </div>
+            <div class="px-3 py-2 bg-slate-50 grid grid-cols-3 gap-2 text-center">
+              <div><div class="text-[10px] text-slate-500">파트너</div><div class="text-xs font-medium">김현재</div></div>
+              <div><div class="text-[10px] text-slate-500">비용</div><div class="text-xs font-medium">120만원</div></div>
+              <div><div class="text-[10px] text-slate-500">정산</div><div class="text-xs font-medium text-amber-600">대기</div></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-slate-900">1부</div>
+              <div class="text-[11px] text-slate-500">진행 중 · 마감 4/13</div>
+            </div>
+            <button class="text-orange-600 text-xs font-medium">열기 →</button>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-slate-900">인터뷰 · 5화</div>
+              <div class="text-[11px] text-slate-500">대기 중 · 마감 4/15</div>
+            </div>
+            <button class="text-orange-600 text-xs font-medium">열기 →</button>
+          </div>
+        </div>
+        <div class="chat-bubble-ai px-3 py-2 rounded-xl text-xs text-slate-600 max-w-[90%]">
+          더 자세히 보고 싶은 회차가 있으면 번호나 이름으로 알려주세요.
+        </div>
+      </div>
+      <div class="border-t border-slate-200 p-2.5 bg-white">
+        <div class="flex items-end gap-2 bg-slate-50 rounded-xl p-1.5">
+          <input type="text" placeholder="메시지..." class="flex-1 bg-transparent text-sm focus:outline-none px-2" />
+          <button class="w-7 h-7 bg-orange-500 text-white rounded-lg flex items-center justify-center"><i data-lucide="send" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+      <div class="font-bold text-green-800 mb-1">👍 장점</div>
+      <p class="text-green-700 leading-relaxed">정보 밀도 ↑, 한눈에 비교, 개별 액션 바로 실행</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+      <div class="font-bold text-amber-800 mb-1">⚠️ 단점</div>
+      <p class="text-amber-700 leading-relaxed">LLM이 구조화된 출력 꾸준히 내야 함, 카드 타입별 렌더러 필요</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────── 시안 5: Contextual Inline ─────── -->
+<section class="variant-card bg-white rounded-3xl p-6 shadow-md">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="badge bg-purple-100 text-purple-700">5. 컨텍스트 인라인</span>
+        <span class="badge bg-slate-100 text-slate-600">페이지 인지</span>
+      </div>
+      <h2 class="text-xl font-bold text-slate-900">보고 있는 화면을 아는 비봇</h2>
+      <p class="text-sm text-slate-600 mt-1">현재 페이지의 데이터 기반 제안</p>
+    </div>
+  </div>
+
+  <div class="bg-slate-50 rounded-2xl p-6 min-h-[540px] relative">
+    <!-- 가짜 프로젝트 상세 -->
+    <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center"><i data-lucide="folder-open" class="w-4 h-4 text-orange-600"></i></div>
+        <div>
+          <div class="text-sm font-bold">프로젝트 · 소조한잔</div>
+          <div class="text-[11px] text-slate-500">ep.3 현재님 편</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 text-xs">
+        <div class="bg-slate-50 rounded p-2"><div class="text-slate-500 text-[10px]">회차</div><div class="font-semibold">8개</div></div>
+        <div class="bg-slate-50 rounded p-2"><div class="text-slate-500 text-[10px]">진행률</div><div class="font-semibold">62%</div></div>
+        <div class="bg-slate-50 rounded p-2"><div class="text-slate-500 text-[10px]">정산</div><div class="font-semibold text-amber-600">2건 대기</div></div>
+      </div>
+    </div>
+
+    <!-- 인라인 비봇 -->
+    <div class="bg-gradient-to-br from-orange-50 to-pink-50 rounded-2xl border-2 border-orange-200 p-4">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-full grad-orange flex items-center justify-center flex-shrink-0">
+          <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+        </div>
+        <div class="flex-1">
+          <div class="text-xs text-orange-700 font-bold mb-1">이 프로젝트에 대해</div>
+          <div class="text-sm text-slate-800 mb-3">6개 회차가 진행 중이에요. 도와드릴까요?</div>
+          <div class="flex flex-wrap gap-1.5">
+            <button class="pill">💰 정산 대기 2건 처리</button>
+            <button class="pill">📍 다음 마감 회차로</button>
+            <button class="pill">📊 진행률 리포트</button>
+            <button class="pill">✏️ 회차 추가</button>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3 pt-3 border-t border-orange-200/50">
+        <div class="flex items-end gap-2 bg-white rounded-xl p-1.5 border border-orange-200">
+          <input type="text" placeholder="이 프로젝트에 대해 물어보기..." class="flex-1 bg-transparent text-sm focus:outline-none px-2" />
+          <button class="w-7 h-7 grad-orange text-white rounded-lg flex items-center justify-center"><i data-lucide="send" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+      <div class="font-bold text-green-800 mb-1">👍 장점</div>
+      <p class="text-green-700 leading-relaxed">현재 맥락 이해, 제안이 즉시 유용, 발견 가능성 ↑</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rameter-200 rounded-lg p-3">
+      <div class="font-bold text-amber-800 mb-1">⚠️ 단점</div>
+      <p class="text-amber-700 leading-relaxed">페이지마다 제안 로직 구현 필요, 화면 영역 차지</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─────── 시안 6: Dark Fullscreen (ChatGPT 스타일) ─────── -->
+<section class="variant-card bg-white rounded-3xl p-6 shadow-md lg:col-span-2">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="badge bg-slate-900 text-white">6. 몰입형 다크</span>
+        <span class="badge bg-slate-100 text-slate-600">전용 페이지</span>
+      </div>
+      <h2 class="text-xl font-bold text-slate-900">/bibot 전용 페이지 · 다크 테마</h2>
+      <p class="text-sm text-slate-600 mt-1">복잡한 작업·긴 대화에 · ChatGPT / Claude 스타일</p>
+    </div>
+  </div>
+
+  <div class="bg-slate-900 rounded-2xl overflow-hidden min-h-[560px] flex">
+    <!-- 사이드 -->
+    <div class="w-[220px] bg-slate-950 border-r border-slate-800 flex flex-col">
+      <div class="p-3 border-b border-slate-800">
+        <button class="w-full flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-white text-sm">
+          <i data-lucide="plus" class="w-4 h-4"></i> 새 대화
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-1 text-xs scrollbar-thin">
+        <div class="px-2 py-1 text-[10px] text-slate-500 uppercase tracking-wider">오늘</div>
+        <button class="w-full px-2 py-2 bg-slate-800 text-white rounded-md text-left truncate">최근 회차 찾기</button>
+        <button class="w-full px-2 py-2 text-slate-400 hover:bg-slate-800 rounded-md text-left truncate">정산 대기 목록</button>
+        <div class="px-2 py-1 mt-2 text-[10px] text-slate-500 uppercase tracking-wider">어제</div>
+        <button class="w-full px-2 py-2 text-slate-400 hover:bg-slate-800 rounded-md text-left truncate">파트너 추가 방법</button>
+        <button class="w-full px-2 py-2 text-slate-400 hover:bg-slate-800 rounded-md text-left truncate">회차 일괄 생성</button>
+      </div>
+      <div class="p-3 border-t border-slate-800 flex items-center gap-2">
+        <div class="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">V</div>
+        <div class="flex-1 text-xs">
+          <div class="text-white font-medium">비모</div>
+          <div class="text-slate-500 text-[10px]">Pro</div>
+        </div>
+        <button class="w-6 h-6 text-slate-400"><i data-lucide="settings" class="w-4 h-4"></i></button>
+      </div>
+    </div>
+    <!-- 메인 -->
+    <div class="flex-1 flex flex-col">
+      <div class="px-6 py-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2 text-white">
+          <i data-lucide="sparkles" class="w-4 h-4 text-orange-400"></i>
+          <span class="font-bold">비봇</span>
+          <span class="text-xs text-slate-500 ml-2">claude-opus-4-6</span>
+        </div>
+        <div class="flex gap-2">
+          <button class="text-slate-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-slate-800">공유</button>
+          <button class="w-7 h-7 text-slate-400 hover:text-white rounded hover:bg-slate-800"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+        <div class="flex justify-end">
+          <div class="bg-slate-800 text-white px-4 py-2.5 rounded-2xl rounded-br-md max-w-[70%] text-sm">가장 최근 회차 페이지로 이동해줘</div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full grad-orange flex items-center justify-center flex-shrink-0"><i data-lucide="sparkles" class="w-4 h-4 text-white"></i></div>
+          <div class="flex-1 space-y-3">
+            <div class="text-slate-200 text-sm leading-relaxed">
+              최근 업데이트된 회차를 확인했습니다.
+            </div>
+            <!-- 도구 사용 블록 -->
+            <div class="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
+              <div class="px-3 py-2 bg-slate-800/80 flex items-center gap-2 text-xs text-slate-400">
+                <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
+                <span class="font-mono">recent-episodes</span>
+                <span class="text-green-400 ml-auto">✓ 200ms</span>
+              </div>
+              <div class="px-3 py-2 font-mono text-[11px] text-slate-400">
+                GET /api/bibot/tools?action=recent-episodes&limit=1
+              </div>
+            </div>
+            <div class="text-slate-200 text-sm leading-relaxed">
+              가장 최근 회차는 <strong class="text-orange-300">'소조한잔 ep.3 · 2화'</strong>입니다. 이동합니다.
+            </div>
+            <button class="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i> 회차 페이지 열기
+            </button>
+            <div class="flex gap-2 pt-2">
+              <button class="text-slate-400 hover:text-white p-1"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+              <button class="text-slate-400 hover:text-white p-1"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
+              <button class="text-slate-400 hover:text-white p-1"><i data-lucide="thumbs-up" class="w-3.5 h-3.5"></i></button>
+              <button class="text-slate-400 hover:text-white p-1"><i data-lucide="thumbs-down" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 border-t border-slate-800">
+        <div class="max-w-3xl mx-auto">
+          <div class="bg-slate-800 rounded-2xl p-2 flex items-end gap-2 border border-slate-700 focus-within:border-slate-600">
+            <button class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-700 flex items-center justify-center"><i data-lucide="paperclip" class="w-4 h-4"></i></button>
+            <textarea rows="1" placeholder="비봇에게 메시지 보내기..." class="flex-1 bg-transparent text-white text-sm focus:outline-none px-2 py-1.5 resize-none placeholder-slate-500"></textarea>
+            <button class="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-700 flex items-center justify-center"><i data-lucide="mic" class="w-4 h-4"></i></button>
+            <button class="w-8 h-8 rounded-lg bg-white text-slate-900 flex items-center justify-center"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+          </div>
+          <div class="text-center text-[10px] text-slate-500 mt-2">비봇이 실수할 수 있어요. 중요한 작업은 확인 후 진행하세요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+      <div class="font-bold text-green-800 mb-1">👍 장점</div>
+      <p class="text-green-700 leading-relaxed">프로급 UX, 대화 히스토리·공유·툴 가시성, 긴 작업 최적</p>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+      <div class="font-bold text-amber-800 mb-1">⚠️ 단점</div>
+      <p class="text-amber-700 leading-relaxed">별도 페이지 이동 필요, 구현 범위 가장 큼, "옆에서 잠깐 쓰기" 어려움</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- 요약 -->
+<section class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-md">
+  <h2 class="text-xl font-bold text-slate-900 mb-4">추천 조합</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+    <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+      <div class="text-[11px] font-bold text-orange-700 mb-1">💼 실무 최적</div>
+      <div class="font-bold text-slate-900 mb-1">시안 1 + 시안 4</div>
+      <p class="text-slate-600 leading-relaxed">플로팅 위젯에 카드형 응답 렌더러 결합. 빠른 호출 + 풍부한 결과.</p>
+    </div>
+    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+      <div class="text-[11px] font-bold text-indigo-700 mb-1">⚡ 파워유저</div>
+      <div class="font-bold text-slate-900 mb-1">시안 2 + 시안 6</div>
+      <p class="text-slate-600 leading-relaxed">Cmd+K로 일상 조작, 깊은 대화는 전용 페이지로.</p>
+    </div>
+    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+      <div class="text-[11px] font-bold text-emerald-700 mb-1">🚀 차별화</div>
+      <div class="font-bold text-slate-900 mb-1">시안 5 + 시안 1</div>
+      <p class="text-slate-600 leading-relaxed">페이지마다 컨텍스트 제안 + 전역 플로팅. ERP에 고유한 경험.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

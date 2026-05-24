@@ -14,6 +14,9 @@ export default function PWAInstallPrompt() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    // 파트너 서브도메인에서는 ERP PWA 프롬프트 표시 안 함
+    if (window.location.host.startsWith('partner.')) return;
+
     // 서비스워커 등록
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');

@@ -86,8 +86,8 @@ export default function PortfolioPage() {
 
   // 일괄 추가 관련 상태
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-  const [bulkItems, setBulkItems] = useState<Array<{ title: string; client: string; category: string; youtubeUrl: string }>>(
-    Array.from({ length: 5 }, () => ({ title: '', client: '', category: '기타', youtubeUrl: '' }))
+  const [bulkItems, setBulkItems] = useState<Array<{ _uid: string; title: string; client: string; category: string; youtubeUrl: string }>>(
+    Array.from({ length: 5 }, () => ({ _uid: crypto.randomUUID(), title: '', client: '', category: '기타', youtubeUrl: '' }))
   );
   const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
 
@@ -419,7 +419,7 @@ export default function PortfolioPage() {
   };
 
   const addBulkRow = () => {
-    setBulkItems(prev => [...prev, { title: '', client: '', category: '기타', youtubeUrl: '' }]);
+    setBulkItems(prev => [...prev, { _uid: crypto.randomUUID(), title: '', client: '', category: '기타', youtubeUrl: '' }]);
   };
 
   const stats = {
@@ -464,7 +464,7 @@ export default function PortfolioPage() {
           <button
             type="button"
             onClick={() => {
-              setBulkItems(Array.from({ length: 5 }, () => ({ title: '', client: '', category: '기타', youtubeUrl: '' })));
+              setBulkItems(Array.from({ length: 5 }, () => ({ _uid: crypto.randomUUID(), title: '', client: '', category: '기타', youtubeUrl: '' })));
               setIsBulkModalOpen(true);
             }}
             className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors active:scale-[0.97] font-medium flex items-center gap-2"
@@ -723,8 +723,8 @@ export default function PortfolioPage() {
                   </div>
                   {item.tags && item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-4">
-                      {item.tags.slice(0, 3).map((tag, index) => (
-                        <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                      {item.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
                           #{tag}
                         </span>
                       ))}
@@ -906,8 +906,8 @@ export default function PortfolioPage() {
                     )}
                     {item.tags && item.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
-                        {item.tags.map((tag, index) => (
-                          <span key={index} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                        {item.tags.map((tag) => (
+                          <span key={tag} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
                             #{tag}
                           </span>
                         ))}
@@ -1130,8 +1130,8 @@ export default function PortfolioPage() {
                   </div>
                   {newItem.tags && newItem.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                      {newItem.tags.map((tag, index) => (
-                        <span key={index} className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm flex items-center gap-2">
+                      {newItem.tags.map((tag) => (
+                        <span key={tag} className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm flex items-center gap-2">
                           #{tag}
                           <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-orange-900">
                             <X size={14} />
@@ -1228,7 +1228,7 @@ export default function PortfolioPage() {
                 {/* 행 목록 */}
                 <div className="space-y-2">
                   {bulkItems.map((item, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_1fr_140px_1fr_36px] gap-2 items-center">
+                    <div key={item._uid} className="grid grid-cols-[1fr_1fr_140px_1fr_36px] gap-2 items-center">
                       <input
                         type="text"
                         value={item.title}

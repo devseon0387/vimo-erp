@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import DOMPurify from 'dompurify';
-import { Archive, RefreshCw, Mail, X, Inbox, Send } from 'lucide-react';
-import { useToast } from '@/contexts/ToastContext';
+import { Archive, RefreshCw, Mail, X, Send, AlertCircle } from 'lucide-react';
 
 interface ReceivedEmail {
   type: 'received';
@@ -36,52 +35,10 @@ interface SentEmail {
 type UnifiedEmail = ReceivedEmail | SentEmail;
 
 export default function AllMailPage() {
-  const toast = useToast();
-
-  const [emails, setEmails] = useState<UnifiedEmail[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 메일 백엔드 라우트(/api/hiworks/*, /api/mail/sent) 미구현 — 빈 상태 + 배너 안내로 고정
+  const [emails] = useState<UnifiedEmail[]>([]);
+  const [loading] = useState(false);
   const [selected, setSelected] = useState<UnifiedEmail | null>(null);
-
-  const fetchEmails = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const [inboxRes, sentRes] = await Promise.all([
-        fetch('/api/hiworks/emails'),
-        fetch('/api/mail/sent'),
-      ]);
-
-      const inboxData = await inboxRes.json();
-      const sentData = await sentRes.json();
-
-      const received: UnifiedEmail[] = (inboxData.emails || []).map((e: ReceivedEmail) => ({
-        ...e,
-        type: 'received' as const,
-      }));
-
-      const sent: UnifiedEmail[] = (sentData.emails || []).map((e: SentEmail) => ({
-        ...e,
-        type: 'sent' as const,
-      }));
-
-      const all = [...received, ...sent].sort((a, b) => {
-        const dateA = new Date(a.type === 'received' ? a.date : a.createdAt).getTime();
-        const dateB = new Date(b.type === 'received' ? b.date : b.createdAt).getTime();
-        return dateB - dateA;
-      });
-
-      setEmails(all);
-    } catch {
-      if (!silent) toast.error('메일 조회 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchEmails();
-    const interval = setInterval(() => fetchEmails(true), 30000);
-    return () => clearInterval(interval);
-  }, [fetchEmails]);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -117,6 +74,17 @@ export default function AllMailPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">전체 메일함</h1>
         <p className="text-gray-500 mt-2">받은 메일과 보낸 메일을 모두 확인합니다.</p>
+      </div>
+
+      {/* 백엔드 미연결 안내 */}
+      <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
+        <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: '1px' }} />
+        <div>
+          <p style={{ fontWeight: 600, color: '#92400e', fontSize: '14px' }}>메일 백엔드 연결 준비 중</p>
+          <p style={{ color: '#a16207', fontSize: '13px', marginTop: '4px' }}>
+            메일 수신·발송 API가 아직 구현되지 않아 메일 기능을 일시 비활성화했습니다. 후속 릴리스에서 복원됩니다.
+          </p>
+        </div>
       </div>
 
       {/* 메일 목록 */}

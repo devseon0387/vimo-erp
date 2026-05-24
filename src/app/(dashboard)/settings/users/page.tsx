@@ -312,10 +312,16 @@ export default function UsersSettingsPage() {
         <div className="p-3 bg-orange-100 rounded-xl">
           <Shield size={24} className="text-orange-600" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">계정 관리</h1>
           <p className="text-sm text-gray-500 mt-1">대표만 접근 가능한 페이지입니다</p>
         </div>
+        <a
+          href="/settings/app-access"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-divider bg-white text-gray-700 hover:border-orange-500 hover:text-orange-600 transition-colors"
+        >
+          앱 권한 관리 →
+        </a>
       </div>
 
       {/* 새 계정 생성 */}

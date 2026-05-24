@@ -6,6 +6,7 @@ import { Palette, ClipboardList, CheckCircle, AlertCircle } from 'lucide-react';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
 import PushNotificationSetup from '@/components/PushNotificationSetup';
 import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 export default function SettingsPage() {
   const [name, setName] = useState('');
@@ -27,10 +28,11 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }: { data: { user: any } }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
+      const user = data.user;
       if (user) {
         setEmail(user.email ?? '');
-        setName(user.user_metadata?.name ?? '');
+        setName((user.user_metadata?.name as string | undefined) ?? '');
       }
     });
     // 알림 설정 불러오기
