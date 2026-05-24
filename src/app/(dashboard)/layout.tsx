@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, FolderOpen, Settings, Briefcase, Trash2,
   Megaphone, LogOut, ClipboardCheck, Building2, Mail, Inbox, Send, MailPlus, Archive,
   Wallet, Receipt, FileText, Target, Shield, Layers, Menu, X, Calendar,
-  MessageSquarePlus, CreditCard, Bot, RefreshCw,
+  MessageSquarePlus, CreditCard, Bot, RefreshCw, UserPlus,
 } from 'lucide-react';
 import DashboardContent from '@/components/DashboardContent';
 import GlobalFAB from '@/components/GlobalFAB';
@@ -46,6 +46,7 @@ const SECTIONS: Section[] = [
       { type: 'divider' },
       { type: 'link', href: '/clients',    label: '클라이언트 관리', icon: Briefcase       },
       { type: 'link', href: '/partners',   label: '파트너 관리',     icon: Users           },
+      { type: 'link', href: '/partners/signups', label: '파트너 가입 승인', icon: UserPlus    },
       { type: 'divider' },
       { type: 'link', href: '/feedback',   label: '피드백',   icon: MessageSquarePlus },
       { type: 'link', href: '/updates',    label: '업데이트', icon: Megaphone },
