@@ -18,15 +18,23 @@ function unauthorized() {
   return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 }
 
-// 읽기용 인가: 비봇 CLI 키 OR 로그인 세션. service_role로 데이터 노출되지만
-// 같은 데이터는 RLS 통과 시에도 vimo_team에게 보이는 범위라서 read는 키 OR 세션.
+// 읽기용 인가: 비봇 CLI 키 OR vimo_team 세션 (app_access.vimo_erp.active).
+// 이전 버전은 로그인만 검증해서 partner_erp 전용 사용자도 통과 → 모든 finance·
+// 매니지먼트 데이터 노출. 이제 vimo_team 만 통과.
 async function authorizeRead(req: NextRequest): Promise<boolean> {
   const key = req.headers.get('x-bibot-key');
   if (process.env.BIBOT_API_KEY && key === process.env.BIBOT_API_KEY) return true;
   try {
     const supa = await createServerClient();
     const { data: { user } } = await supa.auth.getUser();
-    return !!user;
+    if (!user) return false;
+    const { data: access } = await supa
+      .from('app_access')
+      .select('status')
+      .eq('user_id', user.id)
+      .eq('app_code', 'vimo_erp')
+      .maybeSingle();
+    return !!access && access.status === 'active';
   } catch {
     return false;
   }

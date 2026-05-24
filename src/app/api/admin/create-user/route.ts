@@ -37,19 +37,34 @@ export async function POST(req: NextRequest) {
     const userId = authData.user.id;
 
     // user_profiles에 upsert
+    const finalRole = role || 'manager';
     const { error: profileError } = await adminSupabase
       .from('user_profiles')
       .upsert({
         id: userId,
         name: name.trim(),
         email,
-        role: role || 'manager',
+        role: finalRole,
         approved: true,
         needs_password_change: true,
       }, { onConflict: 'id' });
 
     if (profileError) {
       return NextResponse.json({ error: '프로필 생성 실패: ' + profileError.message }, { status: 500 });
+    }
+
+    // app_access(vimo_erp) 명시 시드 — proxy 의 무한 로그아웃 방지.
+    // (마이그레이션 트리거가 이미 처리하지만 트리거 미적용 환경에서도 동작하도록 이중화)
+    const { error: accessError } = await adminSupabase
+      .from('app_access')
+      .upsert({
+        user_id: userId,
+        app_code: 'vimo_erp',
+        role: finalRole === 'admin' ? 'admin' : 'staff',
+        status: 'active',
+      }, { onConflict: 'user_id,app_code' });
+    if (accessError) {
+      return NextResponse.json({ error: 'app_access 생성 실패: ' + accessError.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, userId });

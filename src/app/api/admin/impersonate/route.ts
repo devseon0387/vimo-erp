@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@/lib/supabase/server';
-import { createClient as createSbClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/auth/admin';
 
 // 파트너 ERP 콜백 URL — 환경에 따라 변경
 const PARTNER_ERP_BASE = process.env.PARTNER_ERP_URL ?? 'http://localhost:3010';
@@ -14,33 +13,31 @@ const IMP_COOKIE_TTL = 60; // seconds
 
 export async function POST(request: NextRequest) {
   // 0. CSRF 방지 — same-origin 검증
+  //    Referer 비교는 URL parse 후 origin 단위로. prefix startsWith 비교는
+  //    'app.vi-mo.kr.evil.com' 같은 도메인 위조에 취약하므로 사용 금지.
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
   const host = request.headers.get('host');
   const expectedOrigin = `${request.nextUrl.protocol}//${host}`;
   const originOk = origin === expectedOrigin;
-  const refererOk = referer?.startsWith(expectedOrigin) ?? false;
+  let refererOk = false;
+  if (referer) {
+    try {
+      refererOk = new URL(referer).origin === expectedOrigin;
+    } catch {
+      refererOk = false;
+    }
+  }
   if (!originOk && !refererOk) {
     return NextResponse.json({ error: 'Origin 검증 실패 (CSRF 의심)' }, { status: 403 });
   }
 
-  // 1. 호출자 검증 — 비모 ERP에 로그인된 admin 인지
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-  }
-
-  const { data: access } = await supabase
-    .from('app_access')
-    .select('role, status')
-    .eq('user_id', user.id)
-    .eq('app_code', 'vimo_erp')
-    .maybeSingle();
-
-  if (!access || access.role !== 'admin' || access.status !== 'active') {
-    return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
-  }
+  // 1. 호출자 검증 — 통합 admin 게이트 (user_profiles.role='admin' AND
+  //    app_access.vimo_erp.status='active'). impersonate 와 requireAdmin 의
+  //    admin 정의 불일치 해소 (C1).
+  const guard = await requireAdmin();
+  if (!guard.ok) return guard.response;
+  const { user, admin: adminSupabase } = guard;
 
   // 2. 대상 파트너 정보 가져오기
   let body: { partnerProfileId?: string; reason?: string };
@@ -55,7 +52,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'partnerProfileId 필수' }, { status: 400 });
   }
 
-  const { data: targetProfile } = await supabase
+  const { data: targetProfile } = await adminSupabase
     .from('profiles')
     .select('id, email, name, user_type')
     .eq('id', partnerProfileId)
@@ -71,13 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '대상 파트너의 이메일이 없습니다.' }, { status: 400 });
   }
 
-  // 3. Supabase Admin SDK로 magic link 생성
-  const adminSupabase = createSbClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-
+  // 3. Supabase Admin SDK로 magic link 생성 (adminSupabase 는 requireAdmin 이 발급한 service_role)
   const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
     type: 'magiclink',
     email: targetProfile.email,

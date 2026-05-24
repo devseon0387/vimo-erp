@@ -9,29 +9,15 @@
  */
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/admin';
 
 const IMP_COOKIE_NAME = 'vimo_imp_link';
 const IMP_COOKIE_PATH = '/api/admin/impersonate';
 
 export async function GET() {
-  // admin 재검증 — impersonate POST 와 동일 가드
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-  }
-
-  const { data: access } = await supabase
-    .from('app_access')
-    .select('role, status')
-    .eq('user_id', user.id)
-    .eq('app_code', 'vimo_erp')
-    .maybeSingle();
-
-  if (!access || access.role !== 'admin' || access.status !== 'active') {
-    return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
-  }
+  // admin 재검증 — impersonate POST 와 동일 가드 (통합 헬퍼)
+  const guard = await requireAdmin();
+  if (!guard.ok) return guard.response;
 
   const cookieStore = await cookies();
   const link = cookieStore.get(IMP_COOKIE_NAME)?.value;

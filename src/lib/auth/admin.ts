@@ -4,7 +4,10 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 
 /**
- * Admin role + service_role 헬퍼.
+ * Admin 검증 헬퍼.
+ *
+ * 정의: admin = `user_profiles.role='admin'` AND `app_access.vimo_erp.status='active'`
+ * 두 조건 모두 통과해야 함. ERP 접근이 suspended 된 전 admin 은 차단.
  *
  * 사용:
  *   const guard = await requireAdmin();
@@ -32,6 +35,7 @@ export async function requireAdmin(): Promise<AdminGuardOk | AdminGuardFail> {
     };
   }
 
+  // 1) user_profiles.role='admin'
   const { data: profile } = await serverSupabase
     .from('user_profiles')
     .select('role')
@@ -42,6 +46,24 @@ export async function requireAdmin(): Promise<AdminGuardOk | AdminGuardFail> {
     return {
       ok: false,
       response: NextResponse.json({ error: '권한 없음' }, { status: 403 }),
+    };
+  }
+
+  // 2) app_access.vimo_erp.status='active' — 오프보딩(suspended) 시 즉시 차단
+  const { data: access } = await serverSupabase
+    .from('app_access')
+    .select('status')
+    .eq('user_id', user.id)
+    .eq('app_code', 'vimo_erp')
+    .maybeSingle();
+
+  if (!access || access.status !== 'active') {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'ERP 접근 권한이 비활성 상태입니다.' },
+        { status: 403 },
+      ),
     };
   }
 
@@ -62,4 +84,29 @@ export async function requireAdmin(): Promise<AdminGuardOk | AdminGuardFail> {
   );
 
   return { ok: true, user, admin };
+}
+
+/**
+ * vimo_team 검증 (admin 보다 넓음): app_access.vimo_erp.status='active' 인
+ * 모든 staff 통과. partner_erp 만 가진 사용자 차단.
+ *
+ * 비봇 도구 같은 read-only API 의 vimo_team 게이트 용도.
+ */
+export type TeamGuardOk = { ok: true; user: User };
+export type TeamGuardFail = { ok: false };
+
+export async function isVimoTeamMember(): Promise<TeamGuardOk | TeamGuardFail> {
+  const serverSupabase = await createServerSupabase();
+  const { data: { user } } = await serverSupabase.auth.getUser();
+  if (!user) return { ok: false };
+
+  const { data: access } = await serverSupabase
+    .from('app_access')
+    .select('status')
+    .eq('user_id', user.id)
+    .eq('app_code', 'vimo_erp')
+    .maybeSingle();
+
+  if (!access || access.status !== 'active') return { ok: false };
+  return { ok: true, user };
 }
