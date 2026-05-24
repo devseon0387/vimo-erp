@@ -599,9 +599,9 @@ export default function ProjectDetailPage() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleAddEpisode = useCallback(async () => {
-    const nextEpisodeNumber = episodes.length > 0
-      ? Math.max(...episodes.map(ep => ep.episodeNumber)) + 1
-      : 1;
+    // 0 을 보내면 episodeToInsert 가 null 로 변환 → DB 트리거가 advisory lock
+    // 안에서 max+1 부여. 클라이언트 race 차단.
+    const nextEpisodeNumber = 0;
 
     const defaultAssignee = partnerIds.length > 0 ? partnerIds[0] : (allPartners[0]?.id || '');
     const defaultManager = managerIds.length > 0 ? managerIds[0] : (allPartners[0]?.id || '');

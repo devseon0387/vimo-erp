@@ -73,10 +73,15 @@ export function episodeFromRow(row: EpisodeRow): Episode & { projectId: string }
 }
 
 export function episodeToInsert(episode: Episode & { projectId: string }) {
+  // episode_number=0 또는 음수 → null 로 보내 DB 트리거(set_episode_number)가
+  // advisory lock 안에서 max+1 부여하도록 위임. 클라이언트 max+1 계산은 race 발생.
+  const epNum = episode.episodeNumber && episode.episodeNumber > 0
+    ? episode.episodeNumber
+    : null;
   return {
     id: episode.id,
     project_id: episode.projectId,
-    episode_number: episode.episodeNumber,
+    episode_number: epNum,
     title: episode.title,
     description: episode.description ?? null,
     client: episode.client ?? null,

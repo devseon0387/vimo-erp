@@ -14,6 +14,26 @@ export interface ChangelogItem {
 
 export const defaultChangelogs: ChangelogItem[] = [
   {
+    id: '10',
+    version: 'v0.2.4',
+    date: '2026-05-24',
+    title: '코드리뷰 후 보안·안정성 일괄 보강',
+    description: '권한 일관성, 격리 RLS 복원, 동시성 race 차단, 테스트 시드 정리',
+    type: 'fix',
+    details: [
+      '테스트 파트너 계정(vimotest.com) 운영 DB에서 영구 제거',
+      '체크리스트 사용자별 격리 정책 복원 (broad 정책이 per-user 정책 무력화하던 문제)',
+      'bibot/tools API에 vimo_team 게이트 추가 — partner_erp 단독 사용자 차단',
+      'requireAdmin 통합: user_profiles.role=admin + app_access.vimo_erp.active 이중 검증',
+      'impersonate / exchange 라우트가 동일 admin 검증 헬퍼 사용 (정의 불일치 해소)',
+      'impersonate CSRF Referer 정확 매칭 (URL.origin 비교, prefix 위조 차단)',
+      'app_access(vimo_erp) 자동 시드 트리거 + 백필 — 신규 매니저 로그인 무한루프 해소',
+      'episodes (project_id, episode_number) UNIQUE 제약 + UI는 트리거 위임으로 race 차단',
+      'invite token atomic UPDATE — 동시 가입 시 토큰 재사용 차단',
+      'profiles.user_type=staff 자동 동기 트리거 + 백필 — partners 화면 빈 화면 해소',
+    ],
+  },
+  {
     id: '9',
     version: 'v0.2.3',
     date: '2026-05-24',
