@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Copy, Check, Landmark, Receipt, ChevronLeft, ChevronRight, X, CheckCircle, Clock, Coins, Download } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Landmark, Receipt, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, CheckCircle, Clock, Coins, Download } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Partner, Episode } from '@/types';
@@ -57,6 +57,8 @@ export default function PartnerSettlementDetailPage() {
   const [editAmount, setEditAmount] = useState('');
   const [editStatus, setEditStatus] = useState<'pending' | 'completed'>('pending');
   const [saving, setSaving] = useState(false);
+  const [expandedEpId, setExpandedEpId] = useState<string | null>(null);
+  const [mobileFilter, setMobileFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   const [selectedDate, setSelectedDate] = useState(() => {
     const y = searchParams.get('year');
@@ -305,7 +307,7 @@ export default function PartnerSettlementDetailPage() {
           </motion.div>
         </div>
 
-        {/* 모바일: 프로젝트별 그룹 카드 */}
+        {/* 모바일: 시안 3B — 컴팩트 회차 행 (펼침) */}
         <div className="sm:hidden">
           {allItems.length === 0 ? (
             <div className="py-20 text-center text-gray-400">
@@ -313,74 +315,103 @@ export default function PartnerSettlementDetailPage() {
               <p className="font-medium text-gray-500">정산 내역이 없어요</p>
               <p className="text-xs mt-1">{selectedDate.year}년 {selectedDate.month}월에 해당하는 내역이 없습니다</p>
             </div>
-          ) : (() => {
-            const grouped = new Map<string, typeof allItems>();
-            allItems.forEach(item => {
-              const key = item.project.id;
-              if (!grouped.has(key)) grouped.set(key, []);
-              grouped.get(key)!.push(item);
-            });
-            let globalIdx = 0;
-            return [...grouped.entries()].map(([projId, items], groupIdx) => {
-              const projTitle = items[0].project.title;
-              const projNet = items.reduce((s, { episode: ep }) => s + calcNetAmount(ep.budget?.partnerPayment ?? 0, partner.partnerType), 0);
-              return (
-                <div key={projId}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: groupIdx * 0.08, ease: 'easeOut' }}
-                    className="px-4 py-3 bg-[#fafaf9] border-b border-[#f0ece9] flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[13px] font-bold">{projTitle}</span>
-                      <span className="text-[10px] text-[#a8a29e]">{items.length}건</span>
-                    </div>
-                    <span className="text-[12px] font-bold text-blue-600 tabular-nums">{projNet.toLocaleString()}원</span>
-                  </motion.div>
-                  {items.map(({ episode: ep, project }, idx) => {
-                    const epAmount = ep.budget?.partnerPayment ?? 0;
-                    const epNet = calcNetAmount(epAmount, partner.partnerType);
-                    const taxAmount = Math.abs(epNet - epAmount);
-                    const dday = ep.paymentDueDate ? getDday(ep.paymentDueDate) : null;
-                    const itemIdx = globalIdx++;
-                    return (
-                      <motion.div
-                        key={ep.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: itemIdx * 0.05 + 0.1, ease: 'easeOut' }}
-                        onClick={() => openEdit(ep, project.title)}
-                        className="flex items-center justify-between px-4 pl-8 py-3 border-b border-[#f8f7f6] hover:bg-[#fafaf9] transition-colors cursor-pointer"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-[13px] font-semibold">
-                            {ep.episodeNumber}편 <span className="text-[#a8a29e] font-medium">{ep.title || ''}</span>
-                          </div>
-                          <div className="text-[10px] text-[#a8a29e] mt-1 flex items-center gap-1">
-                            {ep.paymentDueDate ? (
-                              <>
-                                {(() => { const d = new Date(ep.paymentDueDate); return `${d.getMonth()+1}.${d.getDate()}`; })()} 마감
-                                {dday && (
-                                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${
-                                    dday.urgent ? 'bg-red-100 text-red-600' : 'bg-[#f5f5f4] text-[#a8a29e]'
-                                  }`}>{dday.label}</span>
-                                )}
-                              </>
-                            ) : '-'}
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0 ml-3">
-                          <div className="text-[14px] font-bold text-blue-600 tabular-nums">{epNet.toLocaleString()}</div>
-                          <div className="text-[10px] text-[#a8a29e] tabular-nums">{epAmount.toLocaleString()} {partner.partnerType === 'business' ? '+' : '−'}{taxAmount.toLocaleString()}</div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+          ) : (
+            <>
+              {/* 합계 카드 */}
+              <div className="px-4 py-3 bg-orange-50/40 border-b border-[#f0ece9]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-[#a8a29e] font-semibold">정산 합계</span>
+                  <span className="text-orange-600 font-bold text-[16px] tabular-nums">{totalAmount.toLocaleString()}<span className="text-[10px] ml-0.5">원</span></span>
                 </div>
-              );
-            });
-          })()}
+              </div>
+
+              {/* 필터 칩 */}
+              <div className="px-4 py-3 flex gap-1.5 border-b border-[#f0ece9] overflow-x-auto">
+                {(['all', 'pending', 'completed'] as const).map(f => {
+                  const cnt = f === 'all' ? allItems.length : allItems.filter(i => f === 'completed' ? i.episode.paymentStatus === 'completed' : i.episode.paymentStatus !== 'completed').length;
+                  const label = f === 'all' ? '전체' : f === 'pending' ? '미정산' : '완료';
+                  const active = mobileFilter === f;
+                  return (
+                    <button key={f} onClick={() => setMobileFilter(f)} className={`flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold transition-colors ${active ? 'bg-orange-500 text-white' : 'bg-white border border-divider text-[#44403c]'}`}>
+                      {label} {cnt}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 회차 리스트 */}
+              {(() => {
+                const filteredItems = allItems.filter(i => mobileFilter === 'all' ? true : mobileFilter === 'completed' ? i.episode.paymentStatus === 'completed' : i.episode.paymentStatus !== 'completed');
+                if (filteredItems.length === 0) {
+                  return (
+                    <div className="py-10 text-center text-[12px] text-[#a8a29e]">
+                      해당 상태의 정산 내역이 없습니다
+                    </div>
+                  );
+                }
+                return (
+                  <div className="divide-y divide-[#f0ece9]">
+                    {filteredItems.map(({ episode: ep, project }, idx) => {
+                      const expanded = expandedEpId === ep.id;
+                      const epAmount = ep.budget?.partnerPayment ?? 0;
+                      const epNet = calcNetAmount(epAmount, partner.partnerType);
+                      const taxAmount = Math.abs(epNet - epAmount);
+                      const isCompleted = ep.paymentStatus === 'completed';
+                      const dday = ep.paymentDueDate ? getDday(ep.paymentDueDate) : null;
+                      return (
+                        <motion.div key={ep.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: idx * 0.03 }}>
+                          <button onClick={() => setExpandedEpId(expanded ? null : ep.id)} className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${expanded ? 'bg-orange-50/40' : 'hover:bg-[#fafaf9]'}`}>
+                            <div className="min-w-0 flex-1 pr-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[12px] font-semibold truncate">{project.title}</span>
+                              </div>
+                              <div className="text-[10px] text-[#a8a29e] mt-0.5 truncate flex items-center gap-1">
+                                <span>{ep.episodeNumber}편 {ep.title || ''}</span>
+                                {ep.paymentDueDate && <span>· {fmtDate(ep.paymentDueDate)}</span>}
+                                {dday && <span className={`text-[9px] px-1 py-0.5 rounded-full font-semibold ${dday.urgent ? 'bg-red-100 text-red-600' : 'bg-[#f5f5f4] text-[#a8a29e]'}`}>{dday.label}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                              <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold ${isCompleted ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{isCompleted ? '완료' : '미정산'}</span>
+                              <div className="text-right">
+                                <div className={`text-[12px] font-bold tabular-nums ${isCompleted ? 'text-[#44403c]' : 'text-orange-600'}`}>{epAmount.toLocaleString()}</div>
+                              </div>
+                              {expanded ? <ChevronUp size={12} className="text-[#a8a29e]" /> : <ChevronDown size={12} className="text-[#a8a29e]" />}
+                            </div>
+                          </button>
+                          {expanded && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.2 }} className="px-4 py-3 bg-[#fafaf9] text-[11px] space-y-1.5 border-t border-[#f0ece9] overflow-hidden">
+                              <div className="flex justify-between"><span className="text-[#a8a29e]">매출액</span><span className="tabular-nums">{(ep.budget?.totalAmount ?? 0).toLocaleString()}원</span></div>
+                              <div className="flex justify-between"><span className="text-[#a8a29e]">파트너 지급</span><span className="tabular-nums">{epAmount.toLocaleString()}원</span></div>
+                              {partner.partnerType && (
+                                <div className="flex justify-between"><span className="text-[#a8a29e]">{partner.partnerType === 'business' ? '부가세' : '원천징수'}</span><span className="tabular-nums">{partner.partnerType === 'business' ? '+' : '−'}{taxAmount.toLocaleString()}원</span></div>
+                              )}
+                              <div className="flex justify-between"><span className="text-[#a8a29e]">실 수령</span><span className="font-bold text-blue-600 tabular-nums">{epNet.toLocaleString()}원</span></div>
+                              <div className="flex gap-1.5 mt-2 pt-2 border-t border-[#ede9e6]">
+                                <button onClick={(e) => { e.stopPropagation(); openEdit(ep, project.title); }} className="flex-1 py-2 text-[11px] font-semibold bg-white border border-divider text-[#44403c] rounded-lg hover:bg-[#fafaf9] transition-colors">편집</button>
+                                {!isCompleted && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const ok = await updateEpisodeFields(ep.id, { paymentStatus: 'completed' });
+                                      if (ok) { toast.success('정산 완료'); loadData(); } else { toast.error('저장 실패'); }
+                                    }}
+                                    className="flex-1 py-2 text-[11px] font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                                  >
+                                    정산 완료 처리
+                                  </button>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </>
+          )}
         </div>
 
         {/* 데스크탑: 기존 테이블 */}

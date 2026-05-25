@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Copy, Check, Landmark, Receipt, ChevronLeft, ChevronRight, X, CheckCircle, Clock, Coins, Download } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Landmark, Receipt, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, CheckCircle, Clock, Coins, Download } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Partner, Episode } from '@/types';
@@ -68,6 +68,8 @@ export default function ManagerSettlementDetailPage() {
   const [editAmount, setEditAmount] = useState('');
   const [editStatus, setEditStatus] = useState<'pending' | 'completed'>('pending');
   const [saving, setSaving] = useState(false);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [mobileFilter, setMobileFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   const [selectedDate, setSelectedDate] = useState(() => {
     const y = searchParams.get('year');
@@ -248,6 +250,19 @@ export default function ManagerSettlementDetailPage() {
             </div>
           </div>
         </div>
+        {/* 모바일: 헤더 내 프로그레스 바 */}
+        {rows.length > 0 && (
+          <div className="sm:hidden mt-3 pt-3 border-t border-[#f0ece9]">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] text-[#a8a29e] font-semibold">실 지급 <b className="text-blue-600">{totalNetAmount.toLocaleString()}원</b></span>
+              <span className="text-[10px] text-[#a8a29e]">{paidPct}% 지급됨</span>
+            </div>
+            <div className="h-[6px] bg-[#f0ece9] rounded-full overflow-hidden flex gap-0.5">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${paidPct}%` }} transition={{ duration: 0.6, delay: 0.2, ease: [0.4, 0, 0.2, 1] }} className="h-full bg-green-500 rounded-full" />
+              <motion.div initial={{ width: 0 }} animate={{ width: `${100 - paidPct}%` }} transition={{ duration: 0.6, delay: 0.3, ease: [0.4, 0, 0.2, 1] }} className="h-full bg-orange-500 rounded-full" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 월 이동 + 모두 정산 완료 */}
@@ -289,8 +304,8 @@ export default function ManagerSettlementDetailPage() {
 
       {/* 통합 카드: 통계 + 테이블 */}
       <div className="bg-white rounded-2xl border border-divider" style={{ overflow: 'clip' }}>
-        {/* 통계 바 */}
-        <div className="px-5 py-4 border-b border-[#f0ece9]">
+        {/* 통계 바 (모바일 숨김 — 헤더 진행률로 대체) */}
+        <div className="hidden sm:block px-5 py-4 border-b border-[#f0ece9]">
           <div className="flex items-baseline justify-between mb-1.5">
             <motion.span key={`label-${selectedYM}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="text-[13px] text-[#a8a29e]">
               총 정산 · 실 지급 <b className="text-blue-600">{totalNetAmount.toLocaleString()}원</b>
@@ -317,7 +332,100 @@ export default function ManagerSettlementDetailPage() {
           </div>
         ) : (
           <>
-            {/* 매니징 비용 섹션 */}
+            {/* 모바일: 시안 3B — 컴팩트 회차 행 (펼침) */}
+            <div className="sm:hidden">
+              {/* 합계 카드 */}
+              <div className="px-4 py-3 bg-orange-50/40 border-b border-[#f0ece9]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-[#a8a29e] font-semibold">정산 합계</span>
+                  <span className="text-orange-600 font-bold text-[16px] tabular-nums">{totalAmount.toLocaleString()}<span className="text-[10px] ml-0.5">원</span></span>
+                </div>
+              </div>
+
+              {/* 필터 칩 */}
+              <div className="px-4 py-3 flex gap-1.5 border-b border-[#f0ece9] overflow-x-auto">
+                {(['all', 'pending', 'completed'] as const).map(f => {
+                  const cnt = f === 'all' ? rows.length : rows.filter(r => f === 'completed' ? r.paymentStatus === 'completed' : r.paymentStatus !== 'completed').length;
+                  const label = f === 'all' ? '전체' : f === 'pending' ? '미정산' : '완료';
+                  const active = mobileFilter === f;
+                  return (
+                    <button key={f} onClick={() => setMobileFilter(f)} className={`flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold transition-colors ${active ? 'bg-orange-500 text-white' : 'bg-white border border-divider text-[#44403c]'}`}>
+                      {label} {cnt}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 회차 리스트 */}
+              {(() => {
+                const filteredRows = rows.filter(r => mobileFilter === 'all' ? true : mobileFilter === 'completed' ? r.paymentStatus === 'completed' : r.paymentStatus !== 'completed');
+                if (filteredRows.length === 0) {
+                  return (
+                    <div className="py-10 text-center text-[12px] text-[#a8a29e]">
+                      해당 상태의 정산 내역이 없습니다
+                    </div>
+                  );
+                }
+                return (
+                  <div className="divide-y divide-[#f0ece9]">
+                    {filteredRows.map((row, idx) => {
+                      const expanded = expandedRowId === row.id;
+                      const epNet = calcNetAmount(row.amount, manager.partnerType);
+                      const taxAmount = Math.abs(epNet - row.amount);
+                      const isCompleted = row.paymentStatus === 'completed';
+                      return (
+                        <motion.div key={row.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: idx * 0.03 }}>
+                          <button onClick={() => setExpandedRowId(expanded ? null : row.id)} className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${expanded ? 'bg-orange-50/40' : 'hover:bg-[#fafaf9]'}`}>
+                            <div className="min-w-0 flex-1 pr-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0 ${row.type === 'management' ? 'bg-purple-50 text-purple-600' : 'bg-orange-50 text-orange-600'}`}>{row.type === 'management' ? '매니징' : '작업'}</span>
+                                <span className="text-[12px] font-semibold truncate">{row.projectTitle}</span>
+                              </div>
+                              <div className="text-[10px] text-[#a8a29e] mt-0.5 truncate">
+                                {row.episodeNumber}편 {row.episodeTitle}{row.paymentDueDate ? ` · ${fmtDate(row.paymentDueDate)}` : ''}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                              <span className={`badge text-[8px] px-1.5 py-0.5 rounded font-bold ${isCompleted ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{isCompleted ? '완료' : '미정산'}</span>
+                              <div className="text-right">
+                                <div className={`text-[12px] font-bold tabular-nums ${isCompleted ? 'text-[#44403c]' : 'text-orange-600'}`}>{row.amount.toLocaleString()}</div>
+                              </div>
+                              {expanded ? <ChevronUp size={12} className="text-[#a8a29e]" /> : <ChevronDown size={12} className="text-[#a8a29e]" />}
+                            </div>
+                          </button>
+                          {expanded && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.2 }} className="px-4 py-3 bg-[#fafaf9] text-[11px] space-y-1.5 border-t border-[#f0ece9] overflow-hidden">
+                              <div className="flex justify-between"><span className="text-[#a8a29e]">매출액</span><span className="tabular-nums">{row.budgetTotal.toLocaleString()}원</span></div>
+                              <div className="flex justify-between"><span className="text-[#a8a29e]">파트너 지급</span><span className="tabular-nums">{row.budgetPartner.toLocaleString()}원</span></div>
+                              <div className="flex justify-between"><span className="text-[#a8a29e]">{manager.partnerType === 'business' ? '부가세' : '원천징수'}</span><span className="tabular-nums">{manager.partnerType === 'business' ? '+' : '−'}{taxAmount.toLocaleString()}원</span></div>
+                              <div className="flex justify-between"><span className="text-[#a8a29e]">실 수령</span><span className="font-bold text-blue-600 tabular-nums">{epNet.toLocaleString()}원</span></div>
+                              <div className="flex gap-1.5 mt-2 pt-2 border-t border-[#ede9e6]">
+                                <button onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="flex-1 py-2 text-[11px] font-semibold bg-white border border-divider text-[#44403c] rounded-lg hover:bg-[#fafaf9] transition-colors">편집</button>
+                                {!isCompleted && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const ok = await updateEpisodeFields(row.episodeId, { paymentStatus: 'completed' });
+                                      if (ok) { toast.success('정산 완료'); loadData(); } else { toast.error('저장 실패'); }
+                                    }}
+                                    className="flex-1 py-2 text-[11px] font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                                  >
+                                    정산 완료 처리
+                                  </button>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* 데스크탑: 매니징 비용 섹션 */}
+            <div className="hidden sm:block">
             {(() => {
               const mgmtRows = rows.filter(r => r.type === 'management');
               const mgmtNet = calcNetAmount(managementTotal, manager.partnerType);
@@ -408,6 +516,7 @@ export default function ManagerSettlementDetailPage() {
                 </div>
               );
             })()}
+            </div>
           </>
         )}
 

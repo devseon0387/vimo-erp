@@ -112,7 +112,7 @@ export default function AppAccessPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-divider shadow-sm">
-        <div className="px-5 py-4 border-b border-divider flex items-center gap-3">
+        <div className="px-4 sm:px-5 py-4 border-b border-divider flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
           <div className="relative flex-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -122,23 +122,77 @@ export default function AppAccessPage() {
               className="w-full pl-9 pr-3 py-2 border border-divider rounded-lg text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
             />
           </div>
-          <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
-            {([['all', '전체'], ['staff', '비모 팀'], ['partner', '파트너']] as const).map(([k, l]) => (
-              <button
-                key={k}
-                onClick={() => setFilter(k)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  filter === k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 justify-between sm:justify-end">
+            <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+              {([['all', '전체'], ['staff', '비모 팀'], ['partner', '파트너']] as const).map(([k, l]) => (
+                <button
+                  key={k}
+                  onClick={() => setFilter(k)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    filter === k ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs text-gray-400">{filtered.length}명</span>
           </div>
-          <span className="text-xs text-gray-400">{filtered.length}명</span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* 모바일: 시안 1A — 사용자 카드 + 앱 배지 */}
+        <div className="sm:hidden divide-y divide-gray-100">
+          {filtered.length === 0 && (
+            <div className="px-5 py-12 text-center text-gray-400 text-sm">검색 결과가 없습니다.</div>
+          )}
+          {filtered.map((u) => {
+            const initial = u.name.charAt(0);
+            const isStaff = u.userType === 'staff';
+            const isPartner = u.userType === 'partner';
+            return (
+              <div key={u.userId} className="px-4 py-3.5">
+                <div className="flex items-start justify-between mb-2.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className={`w-8 h-8 rounded-full text-[12px] font-bold flex items-center justify-center flex-shrink-0 ${
+                      isStaff ? 'bg-orange-100 text-orange-500' : isPartner ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-500'
+                    }`}>{initial}</div>
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold text-gray-900 truncate">{u.name}</div>
+                      <div className="text-[10px] text-gray-400 truncate">{u.email || '—'} · {isStaff ? '비모 팀' : isPartner ? '파트너' : '미지정'}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  {APPS.map((a) => {
+                    const status = u.access[a.code];
+                    const key = `${u.userId}:${a.code}`;
+                    const busy = busyKey === key;
+                    const isActive = status === 'active';
+                    const isSuspended = status === 'suspended';
+                    const toneActive = a.tone === 'orange' ? 'bg-orange-50 text-orange-600 border-orange-200' : a.tone === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200';
+                    return (
+                      <button
+                        key={a.code}
+                        disabled={busy}
+                        onClick={() => toggle(u, a.code)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors disabled:opacity-50 ${
+                          isActive ? toneActive : isSuspended ? 'bg-red-50 text-red-500 border-red-200' : 'bg-white text-gray-400 border-gray-200'
+                        }`}
+                      >
+                        {busy ? <Loader2 size={10} className="animate-spin" /> : isActive ? <Check size={10} /> : <XIcon size={10} />}
+                        <span>{a.label}</span>
+                        <span className="opacity-70">{isActive ? '활성' : isSuspended ? '정지' : '없음'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 데스크탑: 기존 테이블 */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
               <tr>
