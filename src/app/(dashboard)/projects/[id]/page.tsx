@@ -2456,7 +2456,7 @@ export default function ProjectDetailPage() {
                                   </div>
                                   <button
                                     onClick={() => setTempManagerIds(tempManagerIds.filter(id => id !== managerId))}
-                                    className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                    className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                                   >
                                     <X size={16} />
                                   </button>
@@ -2532,7 +2532,7 @@ export default function ProjectDetailPage() {
                                   </div>
                                   <button
                                     onClick={() => setTempPartnerIds(tempPartnerIds.filter(id => id !== partnerId))}
-                                    className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                    className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                                   >
                                     <X size={16} />
                                   </button>

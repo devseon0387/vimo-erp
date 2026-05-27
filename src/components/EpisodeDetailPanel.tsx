@@ -1956,7 +1956,7 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                                     {/* 작업 단계 제거 버튼 — 우측 상단 오버레이 */}
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleRemoveWorkStep(workType, step.id); }}
-                                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-50 bg-white/80 backdrop-blur-sm rounded-lg transition-all shadow-sm border border-transparent hover:border-red-200"
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 hover:bg-red-50 bg-white/80 backdrop-blur-sm rounded-lg transition-all shadow-sm border border-transparent hover:border-red-200"
                                       title="작업 단계 제거"
                                       type="button"
                                     >
