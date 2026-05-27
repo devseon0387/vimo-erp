@@ -14,6 +14,22 @@ export interface ChangelogItem {
 
 export const defaultChangelogs: ChangelogItem[] = [
   {
+    id: '12',
+    version: 'v0.2.6',
+    date: '2026-05-28',
+    title: '회차 상세 패널 진입 불가 핫픽스',
+    description: '프로젝트 상세에서 회차 카드 클릭 시 우측 상세 패널이 안 떠 진입 불가하던 문제 수정',
+    type: 'fix',
+    details: [
+      '회차 상세 패널 breakpoint xl(1280px) → lg(1024px) 하향',
+      'iMac 24" Retina(logical 1260px) 등 1280px 미만 화면에서 패널이 hidden으로 막혀 회차에 들어갈 수 없던 문제 해소',
+      '진행중 탭·회차 탭 양쪽 2단 grid 동시 적용',
+    ],
+    fixes: [
+      '회차 카드 클릭 → 우측 상세 패널 정상 표시',
+    ],
+  },
+  {
     id: '11',
     version: 'v0.2.5',
     date: '2026-05-25',
