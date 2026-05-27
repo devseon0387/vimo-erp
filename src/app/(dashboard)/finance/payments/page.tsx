@@ -160,9 +160,63 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* 테이블 */}
+      {/* 테이블 / 카드 */}
       <div className="bg-white rounded-2xl shadow-sm border border-divider overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* 모바일 카드 */}
+        <div className="sm:hidden">
+          {filtered.length === 0 ? (
+            <div className="py-16 text-center text-gray-400">
+              <Receipt className="mx-auto mb-3 text-gray-200" size={36} />
+              <p className="font-medium text-gray-500">데이터가 없습니다</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {filtered.map(({ episode, project, isOverdue }) => {
+                const isPending = episode.paymentStatus === 'pending';
+                return (
+                  <div
+                    key={episode.id}
+                    className={`px-4 py-3 flex items-start gap-3 transition-colors ${isOverdue ? 'bg-red-50' : 'hover:bg-gray-50'}`}
+                  >
+                    {isPending && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(episode.id)}
+                        onChange={() => toggleSelect(episode.id)}
+                        className="rounded border-gray-300 mt-1 flex-shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium text-gray-900 text-sm truncate">{project?.title ?? '-'}</p>
+                        <span className="text-sm font-bold text-gray-900 flex-shrink-0 tabular-nums">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-gray-500">
+                        <span className="font-medium">{episode.episodeNumber}회차</span>
+                        <span className="text-gray-300">·</span>
+                        <span className="truncate">{episode.client ?? project?.client ?? '-'}</span>
+                        {episode.paymentDueDate && (
+                          <>
+                            <span className="text-gray-300">·</span>
+                            <span className={`tabular-nums ${isOverdue ? 'text-red-600 font-semibold' : ''}`}>{episode.paymentDueDate}</span>
+                          </>
+                        )}
+                        <span className={`ml-auto px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${
+                          isOverdue ? 'bg-red-100 text-red-700' : isPending ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'
+                        }`}>
+                          {isOverdue ? '연체' : isPending ? '대기' : '완료'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 데스크탑 테이블 */}
+        <div className="hidden sm:block overflow-x-auto">
           <div className="min-w-[750px]">
             <div className="px-6 py-3 bg-gray-50 grid grid-cols-[32px_1fr_100px_120px_100px_100px_80px] gap-4 text-xs font-semibold text-gray-400 uppercase tracking-wide items-center">
               <span>
