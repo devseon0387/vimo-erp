@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X } from 'lucide-react';
+import { X, ArrowLeft } from 'lucide-react';
 import { Client, Project, Episode } from '@/types';
 import { addToTrash } from '@/lib/trash';
 import { formatPhoneNumber } from '@/lib/utils';
@@ -355,43 +355,54 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* 마스터-디테일 분할 — 뷰포트 높이에 고정, 양쪽 독립 스크롤 */}
+      {/* 마스터-디테일 — lg 이상에선 분할, 모바일에선 선택 시 디테일 전환 */}
       <div
-        className="grid gap-4"
+        className="grid gap-4 lg:grid-cols-[300px_1fr]"
         style={{
-          gridTemplateColumns: '300px 1fr',
           height: 'calc(100vh - 180px)',
           minHeight: '480px',
         }}
       >
-        <ClientMasterList
-          clients={filteredClients}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          searchQuery={searchQuery}
-          onSearch={setSearchQuery}
-          onAdd={() => setIsAddModalOpen(true)}
-        />
-
-        {selectedClient ? (
-          <ClientDetailView
-            client={selectedClient}
-            projects={selectedProjects}
-            episodes={allEpisodes}
-            onEdit={handleEditClient}
-            onDelete={handleRequestDelete}
-            onNewProject={handleNewProject}
-            onNotesChange={handleNotesChange}
+        <div className={`${selectedId ? 'hidden lg:flex' : 'flex'} flex-col overflow-hidden`}>
+          <ClientMasterList
+            clients={filteredClients}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            searchQuery={searchQuery}
+            onSearch={setSearchQuery}
+            onAdd={() => setIsAddModalOpen(true)}
           />
-        ) : (
-          <div
-            className="rounded-xl flex items-center justify-center"
-            style={{ background: 'white', border: '1px solid var(--color-ink-200)', minHeight: '60vh' }}
-          >
-            <div className="text-center">
-              <p className="text-[14px]" style={{ color: 'var(--color-ink-500)' }}>
-                {clients.length === 0 ? '첫 클라이언트를 추가해 보세요' : '왼쪽에서 클라이언트를 선택하세요'}
-              </p>
+        </div>
+
+        <div className={`${selectedId ? 'flex' : 'hidden lg:flex'} flex-col overflow-hidden`}>
+          {selectedClient && (
+            <button
+              type="button"
+              onClick={() => setSelectedId(null)}
+              className="lg:hidden mb-2 inline-flex items-center gap-1.5 self-start text-sm font-medium text-stone-600 hover:text-stone-900"
+            >
+              <ArrowLeft size={14} /> 목록으로
+            </button>
+          )}
+          {selectedClient ? (
+            <ClientDetailView
+              client={selectedClient}
+              projects={selectedProjects}
+              episodes={allEpisodes}
+              onEdit={handleEditClient}
+              onDelete={handleRequestDelete}
+              onNewProject={handleNewProject}
+              onNotesChange={handleNotesChange}
+            />
+          ) : (
+            <div
+              className="rounded-xl flex items-center justify-center"
+              style={{ background: 'white', border: '1px solid var(--color-ink-200)', minHeight: '60vh' }}
+            >
+              <div className="text-center">
+                <p className="text-[14px]" style={{ color: 'var(--color-ink-500)' }}>
+                  {clients.length === 0 ? '첫 클라이언트를 추가해 보세요' : '왼쪽에서 클라이언트를 선택하세요'}
+                </p>
               {clients.length === 0 && (
                 <button
                   type="button"
@@ -404,7 +415,8 @@ export default function ClientsPage() {
               )}
             </div>
           </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* 추가 모달 */}

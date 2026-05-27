@@ -264,7 +264,7 @@ function EpisodeListItemImpl({
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onDelete(episode.id); }}
-          className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 bg-gray-50 rounded-lg shadow-md hover:bg-red-50 hover:text-red-600 transition-all"
+          className="absolute top-2 right-2 p-2 sm:opacity-0 sm:group-hover:opacity-100 bg-gray-50 rounded-lg shadow-md hover:bg-red-50 hover:text-red-600 transition-all"
           title="회차 삭제"
         >
           <Trash2 size={16} />

@@ -275,7 +275,7 @@ function MemberCard({ partner, onDelete }: { partner: Partner; onDelete: (p: Par
     <div className="bg-white rounded-xl border border-divider p-4 hover:border-gray-300 hover:shadow-sm transition-all group relative">
       <button
         onClick={() => onDelete(partner)}
-        className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-all"
+        className="absolute top-3 right-3 p-1.5 rounded-lg sm:opacity-0 sm:group-hover:opacity-100 hover:bg-red-50 transition-all"
         title="삭제"
       >
         <Trash2 size={14} className="text-gray-400 hover:text-red-500" />

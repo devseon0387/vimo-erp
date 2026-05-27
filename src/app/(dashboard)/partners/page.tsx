@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X, ChevronDown, UserPlus, ChevronRight, Send, Copy, Check } from 'lucide-react';
+import { X, ChevronDown, UserPlus, ChevronRight, Send, Copy, Check, ArrowLeft } from 'lucide-react';
 import { Partner, Project, Episode } from '@/types';
 import { addToTrash } from '@/lib/trash';
 import { formatPhoneNumber } from '@/lib/utils';
@@ -362,54 +362,66 @@ export default function PartnersPage() {
         </Link>
       )}
 
-      {/* 마스터-디테일 — 뷰포트 고정, 양쪽 독립 스크롤 */}
+      {/* 마스터-디테일 — lg 이상에선 분할, 모바일에선 선택 시 디테일 전환 */}
       <div
-        className="grid gap-4"
+        className="grid gap-4 lg:grid-cols-[300px_1fr]"
         style={{
-          gridTemplateColumns: '300px 1fr',
           height: 'calc(100vh - 180px)',
           minHeight: '480px',
         }}
       >
-        <PartnerMasterList
-          partners={filteredPartners}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          searchQuery={searchQuery}
-          onSearch={setSearchQuery}
-          onAdd={() => setIsAddModalOpen(true)}
-        />
-
-        {selectedPartner ? (
-          <PartnerDetailView
-            partner={selectedPartner}
-            projects={selectedProjects}
-            episodes={selectedEpisodes}
-            onEdit={handleEditPartner}
-            onDelete={handleRequestDelete}
+        <div className={`${selectedId ? 'hidden lg:flex' : 'flex'} flex-col overflow-hidden`}>
+          <PartnerMasterList
+            partners={filteredPartners}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            searchQuery={searchQuery}
+            onSearch={setSearchQuery}
+            onAdd={() => setIsAddModalOpen(true)}
           />
-        ) : (
-          <div
-            className="rounded-xl flex items-center justify-center"
-            style={{ background: 'white', border: '1px solid var(--color-ink-200)' }}
-          >
-            <div className="text-center">
-              <p className="text-[14px]" style={{ color: 'var(--color-ink-500)' }}>
-                {partners.length === 0 ? '첫 파트너를 추가해 보세요' : '왼쪽에서 파트너를 선택하세요'}
-              </p>
-              {partners.length === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="mt-3 px-4 py-2 rounded-md text-[13px] font-semibold text-white"
-                  style={{ background: 'var(--color-brand-500)' }}
-                >
-                  + 새 파트너 추가
-                </button>
-              )}
+        </div>
+
+        <div className={`${selectedId ? 'flex' : 'hidden lg:flex'} flex-col overflow-hidden`}>
+          {selectedPartner && (
+            <button
+              type="button"
+              onClick={() => setSelectedId(null)}
+              className="lg:hidden mb-2 inline-flex items-center gap-1.5 self-start text-sm font-medium text-stone-600 hover:text-stone-900"
+            >
+              <ArrowLeft size={14} /> 목록으로
+            </button>
+          )}
+          {selectedPartner ? (
+            <PartnerDetailView
+              partner={selectedPartner}
+              projects={selectedProjects}
+              episodes={selectedEpisodes}
+              onEdit={handleEditPartner}
+              onDelete={handleRequestDelete}
+            />
+          ) : (
+            <div
+              className="rounded-xl flex items-center justify-center"
+              style={{ background: 'white', border: '1px solid var(--color-ink-200)' }}
+            >
+              <div className="text-center">
+                <p className="text-[14px]" style={{ color: 'var(--color-ink-500)' }}>
+                  {partners.length === 0 ? '첫 파트너를 추가해 보세요' : '왼쪽에서 파트너를 선택하세요'}
+                </p>
+                {partners.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="mt-3 px-4 py-2 rounded-md text-[13px] font-semibold text-white"
+                    style={{ background: 'var(--color-brand-500)' }}
+                  >
+                    + 새 파트너 추가
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* 추가 모달 */}
