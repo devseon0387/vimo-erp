@@ -911,32 +911,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -12 }}
                       transition={{ duration: 0.15 }}
-                      style={{ width: '220px', background: '#fff', borderRight: '1px solid #f0ece9', overflowY: 'auto', padding: '16px 12px' }}
+                      style={{ width: '220px', background: '#fff', borderRight: '1px solid #f0ece9', display: 'flex', flexDirection: 'column' }}
                     >
-                      <p style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', padding: '4px 8px', marginBottom: '8px' }}>{sec.label}</p>
-                      {sec.items.filter(isLink).map(item => {
-                        const Icon = item.icon;
-                        const active = pathname === item.href || pathname.startsWith(item.href + '/');
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setMobileMenu(false)}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: '10px',
-                              padding: '10px 10px', borderRadius: '10px', textDecoration: 'none',
-                              background: active ? '#f97316' : 'transparent',
-                              color: active ? '#fff' : '#44403c',
-                              fontSize: '14px', fontWeight: active ? 600 : 400,
-                              marginBottom: '2px',
-                            }}
-                          >
-                            <Icon size={16} style={{ opacity: active ? 1 : 0.6 }} />
-                            <span>{item.label}</span>
-                            {item.badge && <PanelBadge label={item.badge} active={active} />}
-                          </Link>
-                        );
-                      })}
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px 8px' }}>
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', padding: '4px 8px', marginBottom: '8px' }}>{sec.label}</p>
+                        {sec.items.filter(isLink).map(item => {
+                          const Icon = item.icon;
+                          const active = pathname === item.href || pathname.startsWith(item.href + '/');
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setMobileMenu(false)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                padding: '10px 10px', borderRadius: '10px', textDecoration: 'none',
+                                background: active ? '#f97316' : 'transparent',
+                                color: active ? '#fff' : '#44403c',
+                                fontSize: '14px', fontWeight: active ? 600 : 400,
+                                marginBottom: '2px',
+                              }}
+                            >
+                              <Icon size={16} style={{ opacity: active ? 1 : 0.6 }} />
+                              <span>{item.label}</span>
+                              {item.badge && <PanelBadge label={item.badge} active={active} />}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                      {/* 모바일 메뉴 하단 — 브랜드 워드마크 + 버전 (데스크탑 패널과 동일 형식) */}
+                      <div style={{ flexShrink: 0, padding: '12px 16px', borderTop: '1px solid #f0ece9' }}>
+                        <p style={{ fontSize: '10px', fontWeight: 700, color: '#d6cec8', letterSpacing: '0.1em' }}>
+                          VIMO ERP{' '}
+                          <span style={{ fontWeight: 500, color: '#e0d9d3' }}>{APP_VERSION}</span>{' '}
+                          <span style={{ fontWeight: 400, color: '#e0d9d3', marginLeft: '4px' }}>· {APP_LAST_UPDATED}</span>
+                        </p>
+                      </div>
                     </motion.div>
                   );
                 })()}
