@@ -666,7 +666,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           상단 헤더
       ══════════════════════════════════════════ */}
       <header
-        className="vm-header"
+        className="vm-header px-4 sm:px-6"
         style={{
           position:    'fixed',
           top:         0,
@@ -677,7 +677,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           zIndex:      30,
           display:     'flex',
           alignItems:  'center',
-          padding:     '0 24px',
           gap:         '12px',
           background:  '#ffffff',
           borderBottom:'1px solid #ede9e6',
@@ -761,14 +760,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {isProjectSubpage && breadcrumbProject && !breadcrumbEpisode && (
                       <>
                         <span style={{ color: '#d6cec8' }}>/</span>
-                        <span style={{ fontWeight: 600, color: '#1c1917' }}>{breadcrumbProject}</span>
+                        <span style={{ fontWeight: 600, color: '#1c1917', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}>{breadcrumbProject}</span>
                       </>
                     )}
                     {isProjectSubpage && breadcrumbEpisode && (
                       <>
                         <span style={{ color: '#d6cec8' }}>/</span>
                         {breadcrumbProject && (
-                          <Link href={`/projects/${pathname.match(/^\/projects\/([^/]+)/)?.[1]}`} style={{ color: '#a8a29e', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}
+                          <Link href={`/projects/${pathname.match(/^\/projects\/([^/]+)/)?.[1]}`} style={{ color: '#a8a29e', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}
                             onMouseEnter={e => { e.currentTarget.style.color = '#f97316'; }}
                             onMouseLeave={e => { e.currentTarget.style.color = '#a8a29e'; }}
                           >
@@ -776,7 +775,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           </Link>
                         )}
                         <span style={{ color: '#d6cec8' }} className="hidden sm:inline">/</span>
-                        <span style={{ fontWeight: 600, color: '#1c1917' }} className="hidden sm:inline">{breadcrumbEpisode}</span>
+                        <span style={{ fontWeight: 600, color: '#1c1917', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle' }} className="hidden sm:inline-block">{breadcrumbEpisode}</span>
                       </>
                     )}
                   </div>
