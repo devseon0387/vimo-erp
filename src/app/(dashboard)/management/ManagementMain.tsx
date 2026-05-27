@@ -13,6 +13,9 @@ import { Calendar, Plus, Bell, X, Link2, Search, ChevronLeft, ChevronRight, User
 import { Project, Episode, Partner, Client, WorkContentType, WorkStep } from '@/types';
 import Link from 'next/link';
 import ProjectWizardModal from '@/components/ProjectWizardModal';
+import PartnerStatusStrip from './PartnerStatusStrip';
+import MiniCalendar from './MiniCalendar';
+import Checklist from './Checklist';
 import EpisodeQuickViewContent from './EpisodeQuickViewContent';
 import { useToast } from '@/contexts/ToastContext';
 import DateTimePicker, { RepeatType } from '@/components/DateTimePicker';
@@ -733,175 +736,30 @@ export default function ManagementMain() {
             모바일: 메인 콘텐츠 아래로 자연 흐름 (시안 C) */}
         <div className="relative self-start" data-tour="tour-mgmt-checklist">
         <div className="space-y-3">
-          {/* 파트너 현황 — 인라인 칩 */}
-          <div className="bg-white rounded-2xl border border-ink-100 p-4">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[13px] font-bold">파트너 현황</span>
-            </div>
-            <div className="flex gap-[5px] flex-wrap">
-              {(() => {
-                const activePartners = partners.filter(p => p.status === 'active');
-                const sorted = activePartners.sort((a, b) => {
-                  const aWork = allEpisodes.some(ep => ep.assignee === a.id && ep.dueDate && new Date(ep.dueDate) >= thisWeekStart && new Date(ep.dueDate) <= thisWeekEnd) ? 0 : 1;
-                  const bWork = allEpisodes.some(ep => ep.assignee === b.id && ep.dueDate && new Date(ep.dueDate) >= thisWeekStart && new Date(ep.dueDate) <= thisWeekEnd) ? 0 : 1;
-                  if (aWork !== bWork) return aWork - bWork;
-                  const aExec = a.position === 'executive' ? 1 : 0;
-                  const bExec = b.position === 'executive' ? 1 : 0;
-                  return aExec - bExec;
-                });
-                return sorted.map(p => {
-                  const weekEps = allEpisodes.filter(ep => ep.assignee === p.id && ep.dueDate && (() => {
-                    const d = new Date(ep.dueDate);
-                    return d >= thisWeekStart && d <= thisWeekEnd;
-                  })());
-                  const total = weekEps.length;
-                  const hasWork = total > 0;
-                  const isExec = p.position === 'executive';
-                  return (
-                    <div key={p.id} className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] transition-colors ${
-                      isExec
-                        ? hasWork ? 'bg-purple-50' : 'bg-[var(--color-ink-50)]'
-                        : hasWork ? 'bg-[var(--color-brand-50)]' : 'bg-[var(--color-ink-50)]'
-                    }`}>
-                      <div className={`w-[20px] h-[20px] rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0 ${
-                        isExec
-                          ? hasWork ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-400'
-                          : hasWork ? 'bg-brand-500 text-white' : 'bg-[var(--color-ink-200)] text-[var(--color-ink-400)]'
-                      }`}>
-                        {p.name.charAt(0)}
-                      </div>
-                      <span className={hasWork ? 'font-semibold text-[var(--color-ink-900)]' : 'text-[var(--color-ink-400)]'}>{p.name}</span>
-                      <span className={`font-bold ml-0.5 ${
-                        isExec
-                          ? hasWork ? 'text-purple-500' : 'text-[var(--color-ink-300)]'
-                          : hasWork ? 'text-brand-500' : 'text-[var(--color-ink-300)]'
-                      }`}>{total}</span>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
+          <PartnerStatusStrip
+            partners={partners}
+            allEpisodes={allEpisodes}
+            thisWeekStart={thisWeekStart}
+            thisWeekEnd={thisWeekEnd}
+          />
 
-          {/* 미니 달력 */}
-          <div className="bg-white rounded-2xl border border-ink-100 p-4">
-            {/* 달력 헤더 */}
-            <div className="flex items-center justify-between mb-3">
-              <button onClick={() => { if (calMonth === 0) { setCalYear(calYear - 1); setCalMonth(11); } else setCalMonth(calMonth - 1); }} className="p-1 hover:bg-ink-100 rounded-lg transition-colors">
-                <ChevronLeft size={14} className="text-[var(--color-ink-400)]" />
-              </button>
-              <span className="text-[13px] font-bold">{calYear}년 {calMonth + 1}월</span>
-              <button onClick={() => { if (calMonth === 11) { setCalYear(calYear + 1); setCalMonth(0); } else setCalMonth(calMonth + 1); }} className="p-1 hover:bg-ink-100 rounded-lg transition-colors">
-                <ChevronRight size={14} className="text-[var(--color-ink-400)]" />
-              </button>
-            </div>
-            {/* 요일 */}
-            <div className="grid grid-cols-7 mb-1">
-              {['일','월','화','수','목','금','토'].map(d => (
-                <div key={d} className={`text-center text-[10px] font-semibold py-1 ${d === '일' ? 'text-red-400' : d === '토' ? 'text-blue-400' : 'text-[var(--color-ink-400)]'}`}>{d}</div>
-              ))}
-            </div>
-            {/* 날짜 그리드 */}
-            {(() => {
-              const firstDay = new Date(calYear, calMonth, 1).getDay();
-              const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-              const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-              const cells = [];
-              for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
-              for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const isToday = dateStr === todayStr;
-                const dayOfWeek = new Date(calYear, calMonth, d).getDay();
-                // 해당 날짜에 마감인 에피소드 수 — pre-built Map으로 O(1)
-                const deadlineCount = deadlineCountByDay.get(dateStr) ?? 0;
-                cells.push(
-                  <button
-                    key={d}
-                    onClick={() => setSelectedCalendarDay(selectedCalendarDay === dateStr ? null : dateStr)}
-                    className={`relative text-center py-1.5 rounded-lg text-[12px] font-medium transition-all ${
-                      isToday
-                        ? 'bg-brand-500 text-white font-bold'
-                        : selectedCalendarDay === dateStr
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'hover:bg-ink-50'
-                    } ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : ''} ${isToday ? '!text-white' : ''}`}
-                  >
-                    {d}
-                    {deadlineCount > 0 && !isToday && (
-                      <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-orange-400" />
-                    )}
-                  </button>
-                );
-              }
-              return <div className="grid grid-cols-7 gap-0.5">{cells}</div>;
-            })()}
-          </div>
+          <MiniCalendar
+            calYear={calYear}
+            calMonth={calMonth}
+            setCalYear={setCalYear}
+            setCalMonth={setCalMonth}
+            now={now}
+            selectedCalendarDay={selectedCalendarDay}
+            setSelectedCalendarDay={setSelectedCalendarDay}
+            deadlineCountByDay={deadlineCountByDay}
+          />
 
-          {/* 체크리스트 */}
-          <div className="bg-white rounded-2xl border border-ink-100 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[13px] font-bold">체크리스트</span>
-              <span className="text-[11px] text-brand-500 font-semibold">{checklistItems.filter(i => !i.completed).length}개 남음</span>
-            </div>
-
-            {/* 체크리스트 아이템 렌더링 */}
-            <div className="flex flex-direction:column gap-1">
-              <AnimatePresence initial={false}>
-                {oneTimeItems.filter(i => !i.completed).map(item => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className={`flex items-center gap-2 p-2 rounded-lg ${item.reminderTime ? 'bg-bad-50 border border-red-200' : 'hover:bg-[var(--color-ink-50)]'}`}>
-                      <button
-                        onClick={() => toggleChecklistItem(item.id)}
-                        className="w-[18px] h-[18px] rounded-[5px] border-2 border-[var(--color-ink-300)] flex-shrink-0 flex items-center justify-center hover:border-brand-500 transition-colors"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[12px] font-medium block truncate">{item.text}</span>
-                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                          {item.reminderTime && (
-                            <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
-                          )}
-                          {item.linkedProjectTitle && (
-                            <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
-                          )}
-                          {item.linkedEpisodeTitle && (
-                            <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">🎬 {item.linkedEpisodeNumber}편</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-
-              {/* 완료 항목 */}
-              {oneTimeItems.filter(i => i.completed).length > 0 && (
-                <div className="border-t border-[var(--color-ink-200)] pt-2 mt-2">
-                  <p className="text-[10px] text-[var(--color-ink-400)] mb-1.5">완료 · {oneTimeItems.filter(i => i.completed).length}개</p>
-                  {oneTimeItems.filter(i => i.completed).map(item => (
-                    <div key={item.id} className="flex items-center gap-2 p-1.5 opacity-40">
-                      <button
-                        onClick={() => toggleChecklistItem(item.id)}
-                        className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]"
-                      >✓</button>
-                      <span className="text-[12px] line-through text-[var(--color-ink-400)]">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-lg text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
-            >
-              + 할 일 추가
-            </button>
-          </div>
+          <Checklist
+            oneTimeItems={oneTimeItems}
+            checklistItems={checklistItems}
+            onToggle={toggleChecklistItem}
+            onAdd={() => setShowAddForm(true)}
+          />
         </div>
         </div>
 
