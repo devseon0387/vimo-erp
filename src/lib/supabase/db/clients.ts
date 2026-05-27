@@ -80,6 +80,20 @@ export async function getClients(): Promise<Client[]> {
   });
 }
 
+export async function getClientById(id: string): Promise<Client | null> {
+  return cachedFetch(`clients:byId:${id}`, async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) { console.error('[DB] getClientById:', error.message); return null; }
+    if (!data) return null;
+    return clientFromRow(data as ClientRow);
+  });
+}
+
 export async function insertClient(
   client: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<Client | null> {

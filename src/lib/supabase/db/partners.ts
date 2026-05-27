@@ -104,6 +104,20 @@ export async function getPartners(): Promise<Partner[]> {
   });
 }
 
+export async function getPartnerById(id: string): Promise<Partner | null> {
+  return cachedFetch(`partners:byId:${id}`, async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('partners_safe')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) { console.error('[DB] getPartnerById:', error.message); return null; }
+    if (!data) return null;
+    return partnerFromRow(data as PartnerRow);
+  });
+}
+
 export async function insertPartner(
   partner: Omit<Partner, 'id' | 'createdAt'>
 ): Promise<Partner | null> {
@@ -132,5 +146,121 @@ export async function deletePartner(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from('partners').delete().eq('id', id);
   if (error) console.error('[DB] deletePartner:', error.message);
+  return !error;
+}
+
+// ─── Partner History (활동 기수 이력) ───────────────────────────
+
+export interface PartnerHistoryRow {
+  id: string;
+  partner_id: string;
+  generation: number;
+  start_date: string;
+  end_date: string | null;
+  created_at: string;
+}
+
+export interface PartnerHistoryEntry {
+  id: string;
+  generation: number;
+  startDate: string;
+  endDate?: string;
+}
+
+export async function getPartnerHistory(partnerId: string): Promise<PartnerHistoryEntry[]> {
+  return cachedFetch(`partner_history:${partnerId}`, async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('partner_history')
+      .select('*')
+      .eq('partner_id', partnerId)
+      .order('generation', { ascending: true });
+    if (error) { console.error('[DB] getPartnerHistory:', error.message); return []; }
+    if (!data) return [];
+    return (data as PartnerHistoryRow[]).map(r => ({
+      id: r.id,
+      generation: r.generation,
+      startDate: r.start_date,
+      endDate: r.end_date ?? undefined,
+    }));
+  });
+}
+
+export async function insertPartnerHistory(
+  partnerId: string,
+  entry: Omit<PartnerHistoryEntry, 'id'>
+): Promise<PartnerHistoryEntry | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('partner_history')
+    .insert([{ partner_id: partnerId, generation: entry.generation, start_date: entry.startDate, end_date: entry.endDate ?? null }])
+    .select()
+    .single();
+  if (error) { console.error('[DB] insertPartnerHistory:', error.message); return null; }
+  if (!data) return null;
+  const r = data as PartnerHistoryRow;
+  return { id: r.id, generation: r.generation, startDate: r.start_date, endDate: r.end_date ?? undefined };
+}
+
+export async function deletePartnerHistory(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from('partner_history').delete().eq('id', id);
+  if (error) console.error('[DB] deletePartnerHistory:', error.message);
+  return !error;
+}
+
+// ─── Partner Issues (파트너 이슈/메모) ──────────────────────────
+
+export interface PartnerIssueRow {
+  id: string;
+  partner_id: string;
+  content: string;
+  created_at: string;
+}
+
+export interface PartnerIssueEntry {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
+export async function getPartnerIssues(partnerId: string): Promise<PartnerIssueEntry[]> {
+  return cachedFetch(`partner_issues:${partnerId}`, async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('partner_issues')
+      .select('*')
+      .eq('partner_id', partnerId)
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[DB] getPartnerIssues:', error.message); return []; }
+    if (!data) return [];
+    return (data as PartnerIssueRow[]).map(r => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.created_at,
+    }));
+  });
+}
+
+export async function insertPartnerIssue(
+  partnerId: string,
+  content: string
+): Promise<PartnerIssueEntry | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('partner_issues')
+    .insert([{ partner_id: partnerId, content }])
+    .select()
+    .single();
+  if (error) { console.error('[DB] insertPartnerIssue:', error.message); return null; }
+  if (!data) return null;
+  const r = data as PartnerIssueRow;
+  return { id: r.id, content: r.content, createdAt: r.created_at };
+}
+
+export async function deletePartnerIssue(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from('partner_issues').delete().eq('id', id);
+  if (error) console.error('[DB] deletePartnerIssue:', error.message);
   return !error;
 }

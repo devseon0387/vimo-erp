@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Client, Project, Partner, Episode, WorkContentType } from '@/types';
 import { ArrowLeft, Mail, Phone, Building2, MapPin, User, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { getClients, getProjects, getPartners, getAllEpisodes, insertProject, insertClient, upsertEpisodes, updateClient } from '@/lib/supabase/db';
+import { getClients, getClientById, getProjects, getPartners, getAllEpisodes, insertProject, insertClient, upsertEpisodes, updateClient } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { formatPhoneNumber } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,14 +25,15 @@ export default function ClientDetailPage() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [clients, projects, partners, episodesData] = await Promise.all([
+    // 우선 이 client만 스코프 조회 → 나머지는 보조 데이터로 병렬 fetch (캐시 활용)
+    const [foundClient, clients, projects, partners, episodesData] = await Promise.all([
+      getClientById(clientId),
       getClients(),
       getProjects(),
       getPartners(),
       getAllEpisodes(),
     ]);
     setAllClients(clients);
-    const foundClient = clients.find(c => c.id === clientId);
     if (foundClient) {
       setClient(foundClient);
       setClientProjects(projects.filter(p => p.clientId === foundClient.id || p.client === foundClient.name));
@@ -43,7 +44,9 @@ export default function ClientDetailPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  useSupabaseRealtime(['clients', 'projects', 'episodes'], loadData);
+  // realtime: 이 client 행만 구독, projects/episodes는 전체 (사용 중인 모든 프로젝트/회차 갱신 필요)
+  useSupabaseRealtime(['clients'], loadData, { filter: { column: 'id', value: clientId } });
+  useSupabaseRealtime(['projects', 'episodes'], loadData);
 
   if (!client) {
     return (

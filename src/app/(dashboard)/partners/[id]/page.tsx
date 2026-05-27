@@ -9,7 +9,11 @@ import { addToTrash } from '@/lib/trash';
 import DatePicker from '@/components/DatePicker';
 import { formatPhoneNumber } from '@/lib/utils';
 import { useToast } from '@/contexts/ToastContext';
-import { getPartners, updatePartner, deletePartner, getProjects, getAllEpisodes } from '@/lib/supabase/db';
+import {
+  getPartners, getPartnerById, updatePartner, deletePartner, getProjects, getAllEpisodes,
+  getPartnerHistory, insertPartnerHistory, deletePartnerHistory,
+  getPartnerIssues, insertPartnerIssue, deletePartnerIssue,
+} from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import PartnerEditModal from '../PartnerEditModal';
 
@@ -196,36 +200,28 @@ export default function PartnerDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [partners, proj, eps] = await Promise.all([getPartners(), getProjects(), getAllEpisodes()]);
-      const found = partners.find(p => p.id === partnerId);
+      // 파트너 본인 + 히스토리/이슈 (DB) + 프로젝트/회차 보조 데이터 한 번에
+      const [found, history, issues, proj, eps] = await Promise.all([
+        getPartnerById(partnerId),
+        getPartnerHistory(partnerId),
+        getPartnerIssues(partnerId),
+        getProjects(),
+        getAllEpisodes(),
+      ]);
       if (found) {
         setPartner(found);
         setNewHistoryEntry(prev => ({ ...prev, generation: found.generation || 1 }));
 
-        // 히스토리 로드
-        const stored = localStorage.getItem(`partner_history_${found.id}`);
-        let history: PartnerHistoryEntry[] = [];
-        if (stored) {
-          try { history = JSON.parse(stored); } catch { /* ignore */ }
-        }
+        // 히스토리가 비어 있고 partner.generation 설정돼 있으면 최초 1행 seed
+        let finalHistory = history;
         if (history.length === 0 && found.generation) {
-          const initialEntry = {
-            id: crypto.randomUUID(),
+          const seeded = await insertPartnerHistory(found.id, {
             generation: found.generation,
             startDate: found.createdAt ? found.createdAt.split('T')[0] : '',
-            endDate: undefined,
-          };
-          history = [initialEntry];
-          localStorage.setItem(`partner_history_${found.id}`, JSON.stringify(history));
+          });
+          if (seeded) finalHistory = [seeded];
         }
-        setPartnerHistories(history);
-
-        // 이슈 로드
-        const storedIssues = localStorage.getItem(`partner_issues_${found.id}`);
-        let issues: PartnerIssueEntry[] = [];
-        if (storedIssues) {
-          try { issues = JSON.parse(storedIssues); } catch { /* ignore */ }
-        }
+        setPartnerHistories(finalHistory);
         setPartnerIssues(issues);
       }
       setAllProjectsData(proj);
@@ -241,7 +237,10 @@ export default function PartnerDetailPage() {
     loadData();
   }, [loadData]);
 
-  useSupabaseRealtime(['partners', 'episodes'], loadData);
+  // realtime: 이 partner 행만 구독 + partner_history/issues (DB 이전)
+  useSupabaseRealtime(['partners'], loadData, { filter: { column: 'id', value: partnerId } });
+  useSupabaseRealtime(['partner_history', 'partner_issues'], loadData, { filter: { column: 'partner_id', value: partnerId } });
+  useSupabaseRealtime(['episodes'], loadData);
 
   // #1 로딩: 스켈레톤 UI
   if (loading) {
@@ -281,46 +280,45 @@ export default function PartnerDetailPage() {
   const stats = computePartnerStats(partner.id, allProjectsData, allEpisodesData);
   const inProgressEpisodesCount = allEpisodesData.filter(e => e.assignee === partner.id && e.status === 'in_progress').length;
 
-  // 히스토리 핸들러
-  const handleAddHistory = () => {
+  // 히스토리 핸들러 (DB)
+  const handleAddHistory = async () => {
     if (!newHistoryEntry.startDate) return;
-    const entry = {
-      id: crypto.randomUUID(),
+    const created = await insertPartnerHistory(partner.id, {
       generation: newHistoryEntry.generation,
       startDate: newHistoryEntry.startDate,
       endDate: newHistoryEntry.endDate || undefined,
-    };
-    const updated = [...partnerHistories, entry].sort((a, b) => a.generation - b.generation);
-    setPartnerHistories(updated);
-    localStorage.setItem(`partner_history_${partner.id}`, JSON.stringify(updated));
-    setIsAddingHistory(false);
-    setNewHistoryEntry({ generation: newHistoryEntry.generation + 1, startDate: '', endDate: '' });
+    });
+    if (created) {
+      setPartnerHistories(prev => [...prev, created].sort((a, b) => a.generation - b.generation));
+      setIsAddingHistory(false);
+      setNewHistoryEntry({ generation: newHistoryEntry.generation + 1, startDate: '', endDate: '' });
+    } else {
+      toast.error('이력 추가에 실패했습니다.');
+    }
   };
 
-  const handleDeleteHistory = (entryId: string) => {
-    const updated = partnerHistories.filter(e => e.id !== entryId);
-    setPartnerHistories(updated);
-    localStorage.setItem(`partner_history_${partner.id}`, JSON.stringify(updated));
+  const handleDeleteHistory = async (entryId: string) => {
+    const ok = await deletePartnerHistory(entryId);
+    if (ok) setPartnerHistories(prev => prev.filter(e => e.id !== entryId));
+    else toast.error('이력 삭제에 실패했습니다.');
   };
 
-  // 이슈 핸들러
-  const handleAddIssue = () => {
+  // 이슈 핸들러 (DB)
+  const handleAddIssue = async () => {
     if (!newIssueText.trim()) return;
-    const entry: PartnerIssueEntry = {
-      id: crypto.randomUUID(),
-      content: newIssueText.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [entry, ...partnerIssues];
-    setPartnerIssues(updated);
-    localStorage.setItem(`partner_issues_${partner.id}`, JSON.stringify(updated));
-    setNewIssueText('');
+    const created = await insertPartnerIssue(partner.id, newIssueText.trim());
+    if (created) {
+      setPartnerIssues(prev => [created, ...prev]);
+      setNewIssueText('');
+    } else {
+      toast.error('이슈 추가에 실패했습니다.');
+    }
   };
 
-  const handleDeleteIssue = (issueId: string) => {
-    const updated = partnerIssues.filter(e => e.id !== issueId);
-    setPartnerIssues(updated);
-    localStorage.setItem(`partner_issues_${partner.id}`, JSON.stringify(updated));
+  const handleDeleteIssue = async (issueId: string) => {
+    const ok = await deletePartnerIssue(issueId);
+    if (ok) setPartnerIssues(prev => prev.filter(e => e.id !== issueId));
+    else toast.error('이슈 삭제에 실패했습니다.');
   };
 
   // 상태 토글

@@ -57,11 +57,13 @@ export function invalidateAll(): void {
 
 /** 테이블명 → 캐시 prefix 매핑. realtime hook이 사용. */
 const TABLE_PREFIX: Record<string, string> = {
-  projects:  'projects:',
-  episodes:  'episodes:',
-  partners:  'partners:',
-  clients:   'clients:',
-  user_profiles: 'profile:',
+  projects:        'projects:',
+  episodes:        'episodes:',
+  partners:        'partners:',
+  partner_history: 'partner_history:',
+  partner_issues:  'partner_issues:',
+  clients:         'clients:',
+  user_profiles:   'profile:',
 };
 
 export function invalidateTable(table: string): void {
