@@ -281,8 +281,8 @@ export default function DateTimePicker({
             onClick={() => setIsOpen(false)}
           />
           <motion.div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-divider overflow-hidden"
-            style={{ zIndex: 10001, width: '580px' }}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-divider overflow-hidden w-[min(580px,calc(100vw-16px))]"
+            style={{ zIndex: 10001 }}
             initial={{ opacity: 0, scale: 0.93, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.93, y: 12 }}

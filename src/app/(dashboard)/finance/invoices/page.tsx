@@ -119,12 +119,12 @@ export default function InvoicesPage() {
       </div>
 
       {/* 요약 바 */}
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 flex items-center gap-6">
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-6 flex-wrap">
         <div className="flex items-center gap-2">
           <FileText size={16} className="text-amber-600" />
           <span className="text-sm font-medium text-amber-800">미발행 {pendingCount}건</span>
         </div>
-        <div className="h-4 w-px bg-amber-200" />
+        <div className="h-4 w-px bg-amber-200 hidden sm:block" />
         <span className="text-sm font-medium text-amber-800">총 금액 {(pendingAmount / 10000).toFixed(0)}만원</span>
       </div>
 

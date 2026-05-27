@@ -233,9 +233,9 @@ export default function ManagerSettlementDetailPage() {
           <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-[11px] font-bold text-white">
             {manager.name.charAt(0)}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-[21px] font-extrabold tracking-tight">{manager.name}</h1>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-[21px] font-extrabold tracking-tight truncate max-w-full">{manager.name}</h1>
               <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-purple-50 text-purple-600">
                 매니저 · {manager.partnerType === 'business' ? '사업자' : '프리랜서'} · {getNetLabel(manager.partnerType)}
               </span>

@@ -100,9 +100,9 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 }
               }}
             />
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{pathname}</span>
-              <div className="flex gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-gray-400 truncate min-w-0 flex-1 hidden sm:inline">{pathname}</span>
+              <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={onClose}
                   className="px-4 py-2 border border-divider rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"

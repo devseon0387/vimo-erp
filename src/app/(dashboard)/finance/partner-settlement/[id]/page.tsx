@@ -213,9 +213,9 @@ export default function PartnerSettlementDetailPage() {
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white ${partner.position === 'executive' ? 'bg-purple-500' : 'bg-orange-500'}`}>
             {partner.name.charAt(0)}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-[21px] font-extrabold tracking-tight">{partner.name}</h1>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-[21px] font-extrabold tracking-tight truncate max-w-full">{partner.name}</h1>
               {partner.partnerType && (
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                   partner.partnerType === 'business' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'

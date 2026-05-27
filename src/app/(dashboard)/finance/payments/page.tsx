@@ -131,17 +131,17 @@ export default function PaymentsPage() {
       </div>
 
       {/* 요약 바 */}
-      <div className="bg-orange-50 border border-orange-200 rounded-2xl px-6 py-4 flex items-center gap-6 flex-wrap">
+      <div className="bg-orange-50 border border-orange-200 rounded-2xl px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-6 flex-wrap">
         <div className="flex items-center gap-2">
           <Clock size={16} className="text-orange-600" />
           <span className="text-sm font-medium text-orange-800">대기 {pendingCount}건</span>
         </div>
-        <div className="h-4 w-px bg-orange-200" />
+        <div className="h-4 w-px bg-orange-200 hidden sm:block" />
         <div className="flex items-center gap-2">
           <AlertTriangle size={16} className="text-red-600" />
           <span className="text-sm font-medium text-red-700">연체 {overdueCount}건</span>
         </div>
-        <div className="h-4 w-px bg-orange-200" />
+        <div className="h-4 w-px bg-orange-200 hidden sm:block" />
         <span className="text-sm font-medium text-orange-800">총 미수금 {(totalReceivable / 10000).toFixed(0)}만원</span>
       </div>
 
