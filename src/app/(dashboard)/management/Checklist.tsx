@@ -1,13 +1,24 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import type { ChecklistRow } from '@/lib/supabase/db';
+
+/** ManagementMain 내부 ChecklistItem 과 동일 shape (camelCase UI 타입) */
+export interface ChecklistItemView {
+  id: string;
+  text: string;
+  completed: boolean;
+  reminderTime?: string;
+  repeatType?: string;
+  linkedProjectTitle?: string;
+  linkedEpisodeTitle?: string;
+  linkedEpisodeNumber?: number;
+}
 
 interface Props {
   /** 1회성 체크리스트 (반복 아닌 것만) */
-  oneTimeItems: ChecklistRow[];
+  oneTimeItems: ChecklistItemView[];
   /** 전체 체크리스트 (헤더의 '남은 개수' 계산용) */
-  checklistItems: ChecklistRow[];
+  checklistItems: ChecklistItemView[];
   onToggle: (id: string) => void;
   onAdd: () => void;
 }
