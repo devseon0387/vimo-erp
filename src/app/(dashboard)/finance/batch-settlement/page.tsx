@@ -553,6 +553,13 @@ export default function BatchSettlementPage() {
           </div>
         </div>
 
+        {/* 모바일 안내 — 인라인 편집 10컬럼 그리드라 가로 스크롤 발생.
+            해당 회차 상세 페이지(/projects/[id]/episodes/[episodeId])에서 개별 편집을 권장. */}
+        <div className="sm:hidden mb-3 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[12px] text-amber-800">
+          <p className="font-semibold mb-0.5">데스크탑에서 사용하는 것을 권장합니다</p>
+          <p className="text-[11px] text-amber-700">이 페이지는 10개 열의 일괄 편집 그리드라 모바일에선 가로 스크롤 필요. 회차 1개씩 편집은 회차 상세 페이지가 빠릅니다.</p>
+        </div>
+
         {/* 테이블 */}
         {loading ? (
           <div className="flex items-center justify-center h-40">
