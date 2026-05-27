@@ -1273,8 +1273,8 @@ export default function ProjectDetailPage() {
 
       {/* 진행 중인 회차 탭 */}
       {activeTab === 'in-progress' && (
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(420px,480px)_1fr] gap-4 xl:h-[calc(100vh-220px)] xl:min-h-[620px]">
-      <div data-tour="tour-detail-inprogress" className="bg-white rounded-xl border border-divider xl:overflow-y-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(420px,480px)_1fr] gap-4 lg:h-[calc(100vh-220px)] lg:min-h-[620px]">
+      <div data-tour="tour-detail-inprogress" className="bg-white rounded-xl border border-divider lg:overflow-y-auto">
         <div className="px-4 sm:px-6 py-4 border-b border-divider flex items-center justify-between gap-2">
           <div>
             <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
@@ -1580,7 +1580,7 @@ export default function ProjectDetailPage() {
         )}
       </div>
       {/* 디테일 패널 (회차 선택 시) */}
-      <aside className="hidden xl:block xl:overflow-y-auto">
+      <aside className="hidden lg:block lg:overflow-y-auto">
         {selectedEpisodeId ? (
           <EpisodeDetailPanel
             key={selectedEpisodeId}
@@ -1601,8 +1601,8 @@ export default function ProjectDetailPage() {
 
       {/* 회차 탭 */}
       {activeTab === 'episodes' && (
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(420px,480px)_1fr] gap-4 xl:h-[calc(100vh-220px)] xl:min-h-[620px]">
-      <div className="bg-white rounded-xl border border-divider xl:overflow-y-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(420px,480px)_1fr] gap-4 lg:h-[calc(100vh-220px)] lg:min-h-[620px]">
+      <div className="bg-white rounded-xl border border-divider lg:overflow-y-auto">
         <div className="px-4 sm:px-6 py-4 border-b border-divider flex items-center justify-between gap-2">
           <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 flex-shrink-0">
             회차 관리
@@ -1911,7 +1911,7 @@ export default function ProjectDetailPage() {
         )}
       </div>
       {/* 디테일 패널 (회차 선택 시) */}
-      <aside className="hidden xl:block xl:overflow-y-auto">
+      <aside className="hidden lg:block lg:overflow-y-auto">
         {selectedEpisodeId ? (
           <EpisodeDetailPanel
             key={selectedEpisodeId}
