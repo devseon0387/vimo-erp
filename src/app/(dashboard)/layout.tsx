@@ -5,8 +5,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Users, FolderOpen, Settings, Briefcase, Trash2,
   Megaphone, LogOut, ClipboardCheck, Building2, Mail, Inbox, Send, MailPlus, Archive,
-  Wallet, Receipt, FileText, Target, Shield, Layers, Menu, X, Calendar,
+  Wallet, Receipt, FileText, Shield, Layers, Menu, X, Calendar,
   MessageSquarePlus, CreditCard, Bot, RefreshCw, UserPlus,
+  MessageSquare, Video,
 } from 'lucide-react';
 import DashboardContent from '@/components/DashboardContent';
 import BibotWidget from '@/components/BibotWidget';
@@ -53,6 +54,18 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    key: 'inquiries',
+    icon: MessageSquare,
+    label: '문의',
+    items: [
+      { type: 'link', href: '/inquiries?tab=dashboard', label: '문의 매니지먼트', icon: ClipboardCheck },
+      { type: 'link', href: '/inquiries',               label: '신규 문의',       icon: Mail },
+      { type: 'link', href: '/inquiries?tab=all',       label: '문의 관리',       icon: MessageSquare },
+      { type: 'divider' },
+      { type: 'link', href: '/inquiries/portfolio',     label: '포트폴리오',      icon: Video },
+    ],
+  },
+  {
     key: 'finance',
     icon: Wallet,
     label: '재무',
@@ -72,13 +85,7 @@ const SECTIONS: Section[] = [
     label: '경영',
     items: [
       { type: 'link', href: '/contracts',    label: '계약',       icon: FileText, badge: '준비중' },
-      { type: 'link', href: '/strategy',   label: '전략',       icon: Target,   badge: '준비중' },
       { type: 'link', href: '/operations', label: '운영',       icon: Layers,   badge: '준비중' },
-      { type: 'divider' },
-      { type: 'link', href: '/marketing',  label: '마케팅',     icon: Megaphone, sub: [
-        { href: '/marketing/portfolio', label: '포트폴리오', icon: Megaphone },
-        { href: '/marketing/inquiries', label: '문의', icon: MessageSquarePlus },
-      ] },
     ],
   },
   {
@@ -200,8 +207,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (!stay && !session) { await supabase.auth.signOut(); router.push('/login'); return; }
       setUserEmail(user.email ?? '');
 
-      // 프로필 캐싱 (sessionStorage)
+      // 프로필 캐싱 (sessionStorage + 5분 TTL)
+      const PROFILE_TTL_MS = 5 * 60 * 1000;
       const cached = sessionStorage.getItem('vm_profile');
+      const cachedAt = Number(sessionStorage.getItem('vm_profile_at') ?? 0);
+      const cacheFresh = cached && Date.now() - cachedAt < PROFILE_TTL_MS;
       if (cached) {
         try {
           const p = JSON.parse(cached);
@@ -213,12 +223,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setMyRole(p.role);
         } catch { /* 캐시 파싱 실패 시 서버에서 다시 로드 */ }
       }
-      // 항상 서버에서 최신 프로필 확인 (캐시와 무관)
+      // 캐시가 신선하면 서버 fetch 생략 (네비마다 호출 방지)
+      if (cacheFresh) return;
       getMyProfile().then(p => {
         if (p) {
           sessionStorage.setItem('vm_profile', JSON.stringify(p));
+          sessionStorage.setItem('vm_profile_at', String(Date.now()));
           if (p.role !== 'admin' && p.approved !== true) {
             sessionStorage.removeItem('vm_profile');
+            sessionStorage.removeItem('vm_profile_at');
             supabase.auth.signOut();
             router.push('/login');
             return;
@@ -237,6 +250,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     localStorage.removeItem('vm_stay_logged_in');
     sessionStorage.removeItem('vm_active_session');
     sessionStorage.removeItem('vm_profile');
+    sessionStorage.removeItem('vm_profile_at');
     await createClient().auth.signOut();
     window.location.href = '/login';
   };
@@ -488,19 +502,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             initial={{ x: -PANEL_W, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -PANEL_W, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             style={{
-              position:      'fixed',
-              top:           0,
-              left:          RAIL_W,
-              bottom:        0,
-              width:         PANEL_W,
-              zIndex:        45,
-              display:       'flex',
-              flexDirection: 'column',
-              background:    '#ffffff',
-              borderRight:   '1px solid #ede9e6',
-              boxShadow:     '4px 0 16px rgba(0,0,0,0.06)',
+              position:           'fixed',
+              top:                0,
+              left:               RAIL_W,
+              bottom:             0,
+              width:              PANEL_W,
+              zIndex:             45,
+              display:            'flex',
+              flexDirection:      'column',
+              background:         '#ffffff',
+              borderRight:        '1px solid #ede9e6',
+              boxShadow:          '2px 0 12px rgba(0,0,0,0.05)',
+              willChange:         'transform, opacity',
+              backfaceVisibility: 'hidden',
             }}
           >
             {/* 패널 헤더 */}
@@ -673,7 +689,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           left:        totalW,
           right:       'var(--bibot-pad, 0px)',
           height:      '56px',
-          transition:  'right 0.25s cubic-bezier(0.4,0,0.2,1), left 0.2s cubic-bezier(0.4,0,0.2,1)',
+          transition:  'right 0.25s cubic-bezier(0.4,0,0.2,1), left 0.22s cubic-bezier(0.22,1,0.36,1)',
+          willChange:  'left',
+          transform:   'translateZ(0)',
           zIndex:      30,
           display:     'flex',
           alignItems:  'center',
@@ -936,7 +954,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           marginRight: 'var(--bibot-pad, 0px)',
           marginTop:   '56px',
           minHeight:   'calc(100vh - 56px)',
-          transition:  'margin-left 0.2s cubic-bezier(0.4,0,0.2,1), margin-right 0.25s cubic-bezier(0.4,0,0.2,1)',
+          transition:  'margin-left 0.22s cubic-bezier(0.22,1,0.36,1), margin-right 0.25s cubic-bezier(0.4,0,0.2,1)',
+          willChange:  'margin-left',
+          transform:   'translateZ(0)',
         }}
       >
         <div className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-6 lg:pb-8">

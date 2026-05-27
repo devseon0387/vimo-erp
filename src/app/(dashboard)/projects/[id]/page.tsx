@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Project, Client, Episode, Partner, WorkContentType, WorkStep, WorkTypeBudget } from '@/types';
 import { ArrowLeft, Calendar, User, DollarSign, Tag, Edit, Trash2, TrendingUp, ChevronRight, X, UserCircle, FileText, Users, Video, Palette, Image, CheckCircle2, Clock, Pause, Target, ChevronDown, ClipboardCheck, Building2, Tv, Youtube, Monitor, Camera } from 'lucide-react';
@@ -159,7 +159,10 @@ export default function ProjectDetailPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  useSupabaseRealtime(['projects', 'episodes', 'partners', 'clients'], loadData);
+  // realtime: 이 프로젝트 행만 구독 (전체 projects 변경에 반응하던 폭주 차단)
+  useSupabaseRealtime(['projects'], loadData, { filter: { column: 'id', value: projectId } });
+  useSupabaseRealtime(['episodes'], loadData, { filter: { column: 'project_id', value: projectId } });
+  useSupabaseRealtime(['partners', 'clients'], loadData);
 
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -231,9 +234,7 @@ export default function ProjectDetailPage() {
 
     // 회차를 먼저 휴지통으로 이전 (프로젝트 삭제 전에 해야 조회 가능)
     const eps = await getProjectEpisodes(projectId);
-    for (const ep of eps) {
-      await addToTrash('episode', ep, projectId);
-    }
+    await Promise.all(eps.map(ep => addToTrash('episode', ep, projectId)));
     await deleteProjectEpisodes(projectId);
 
     // 프로젝트 휴지통 이전 후 삭제
@@ -429,11 +430,38 @@ export default function ProjectDetailPage() {
   };
 
 
-  const partners = partnerIds.map(id => allPartners.find(p => p.id === id)).filter(Boolean);
-  const managers = managerIds.map(id => allPartners.find(p => p.id === id)).filter(Boolean);
-  const activeEpisodes = episodes.filter(ep => ep.status === 'in_progress' || ep.status === 'waiting');
-  const availablePartners = allPartners.filter(p => !partnerIds.includes(p.id));
-  const availableManagers = allPartners.filter(p => !managerIds.includes(p.id));
+  // partners 조회용 Map (O(1) lookup) — `.find()` O(N) 매 row마다 호출하던 패턴 제거
+  const partnersById = useMemo(() => new Map(allPartners.map(p => [p.id, p])), [allPartners]);
+  const partners = useMemo(
+    () => partnerIds.map(id => partnersById.get(id)).filter(Boolean),
+    [partnerIds, partnersById]
+  );
+  const managers = useMemo(
+    () => managerIds.map(id => partnersById.get(id)).filter(Boolean),
+    [managerIds, partnersById]
+  );
+  const activeEpisodes = useMemo(
+    () => episodes.filter(ep => ep.status === 'in_progress' || ep.status === 'waiting'),
+    [episodes]
+  );
+  const availablePartners = useMemo(
+    () => allPartners.filter(p => !partnerIds.includes(p.id)),
+    [allPartners, partnerIds]
+  );
+  const availableManagers = useMemo(
+    () => allPartners.filter(p => !managerIds.includes(p.id)),
+    [allPartners, managerIds]
+  );
+
+  // 정렬된 회차 — `episodes.sort()` 는 in-place 변형이라 state 뮤테이션. spread 후 sort로 안전 처리.
+  const activeEpisodesSorted = useMemo(
+    () => [...activeEpisodes].sort((a, b) => b.episodeNumber - a.episodeNumber),
+    [activeEpisodes]
+  );
+  const episodesSorted = useMemo(
+    () => [...episodes].sort((a, b) => b.episodeNumber - a.episodeNumber),
+    [episodes]
+  );
 
   // Calculate budget values
   const calculatedPartnerPayment = getTotalPartnerPayment();
@@ -441,79 +469,57 @@ export default function ProjectDetailPage() {
   const calculatedReserve = getReserveAmount();
   const calculatedMarginRate = getMarginRate();
 
-  // 누적 작업 수 계산
-  const getTotalWorkCount = () => {
-    const counts = { '롱폼': 0, '본편 숏폼': 0, '기획 숏폼': 0 };
-    episodes.forEach(ep => {
-      ep.workContent.forEach(work => {
-        if (work === '롱폼') counts['롱폼']++;
-        else if (work === '본편 숏폼') counts['본편 숏폼']++;
-        else if (work === '기획 숏폼') counts['기획 숏폼']++;
-      });
-    });
-    return counts;
-  };
+  // 작업 카운트·납품일·마감 회차 — 한 번 순회로 묶고 episodes 변경 시에만 재계산
+  const workCounts = useMemo(() => {
+    const total = { '롱폼': 0, '본편 숏폼': 0, '기획 숏폼': 0 };
+    const inProgress = { '롱폼': 0, '본편 숏폼': 0, '기획 숏폼': 0 };
+    for (const ep of episodes) {
+      for (const work of ep.workContent) {
+        if (work === '롱폼' || work === '본편 숏폼' || work === '기획 숏폼') {
+          total[work]++;
+          if (ep.status === 'in_progress') inProgress[work]++;
+        }
+      }
+    }
+    return { total, inProgress };
+  }, [episodes]);
+  const getTotalWorkCount = useCallback(() => workCounts.total, [workCounts]);
+  const getInProgressWorkCount = useCallback(() => workCounts.inProgress, [workCounts]);
 
-  // 진행 중인 작업 수 계산
-  const getInProgressWorkCount = () => {
-    const counts = { '롱폼': 0, '본편 숏폼': 0, '기획 숏폼': 0 };
-    episodes
-      .filter(ep => ep.status === 'in_progress')
-      .forEach(ep => {
-        ep.workContent.forEach(work => {
-          if (work === '롱폼') counts['롱폼']++;
-          else if (work === '본편 숏폼') counts['본편 숏폼']++;
-          else if (work === '기획 숏폼') counts['기획 숏폼']++;
-        });
-      });
-    return counts;
-  };
+  const lastDeliveryDate = useMemo(() => {
+    let maxMs = -Infinity;
+    for (const ep of episodes) {
+      if (!ep.endDate) continue;
+      const ms = new Date(ep.endDate).getTime();
+      if (ms > maxMs) maxMs = ms;
+    }
+    return maxMs === -Infinity ? null : new Date(maxMs);
+  }, [episodes]);
+  const getLastDeliveryDate = useCallback(() => lastDeliveryDate, [lastDeliveryDate]);
 
-  // 최종 납품일 계산
-  const getLastDeliveryDate = () => {
-    const completedEpisodes = episodes.filter(ep => ep.endDate);
-    if (completedEpisodes.length === 0) return null;
-
-    const dates = completedEpisodes.map(ep => new Date(ep.endDate!));
-    return new Date(Math.max(...dates.map(d => d.getTime())));
-  };
-
-  // 오늘 마감인 회차 찾기
-  const getTodayDueEpisodes = () => {
+  // 오늘/이번주 마감 — episodes 또는 날짜 경계만 바뀌면 재계산
+  const { todayDue, thisWeekDue } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    return episodes.filter(ep => {
-      if (!ep.dueDate || ep.status === 'completed') return false;
-
-      const dueDate = new Date(ep.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-
-      return dueDate.getTime() === today.getTime();
-    });
-  };
-
-  // 이번 주 마감인 회차 찾기 (오늘 제외)
-  const getThisWeekDueEpisodes = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // 이번 주 일요일 계산
+    const todayMs = today.getTime();
     const sunday = new Date(today);
-    const dayOfWeek = today.getDay(); // 0(일) ~ 6(토)
-    sunday.setDate(today.getDate() + (7 - dayOfWeek) % 7);
+    sunday.setDate(today.getDate() + (7 - today.getDay()) % 7);
     sunday.setHours(23, 59, 59, 999);
-
-    return episodes.filter(ep => {
-      if (!ep.dueDate || ep.status === 'completed') return false;
-
-      const dueDate = new Date(ep.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-
-      // 오늘보다 크고, 이번 주 일요일 이하
-      return dueDate.getTime() > today.getTime() && dueDate.getTime() <= sunday.getTime();
-    });
-  };
+    const sundayMs = sunday.getTime();
+    const todayList: Episode[] = [];
+    const weekList: Episode[] = [];
+    for (const ep of episodes) {
+      if (!ep.dueDate || ep.status === 'completed') continue;
+      const due = new Date(ep.dueDate);
+      due.setHours(0, 0, 0, 0);
+      const dueMs = due.getTime();
+      if (dueMs === todayMs) todayList.push(ep);
+      else if (dueMs > todayMs && dueMs <= sundayMs) weekList.push(ep);
+    }
+    return { todayDue: todayList, thisWeekDue: weekList };
+  }, [episodes]);
+  const getTodayDueEpisodes = useCallback(() => todayDue, [todayDue]);
+  const getThisWeekDueEpisodes = useCallback(() => thisWeekDue, [thisWeekDue]);
 
   // 편집 모달 열기
   // 통합 모달 취소
@@ -1332,12 +1338,10 @@ export default function ProjectDetailPage() {
           </div>
         ) : (
           <div className="p-4 space-y-2">
-            {episodes
-              .filter(ep => ep.status === 'in_progress' || ep.status === 'waiting')
-              .sort((a, b) => b.episodeNumber - a.episodeNumber)
+            {activeEpisodesSorted
               .map((episode) => {
-                const assignee = allPartners.find(p => p.id === episode.assignee);
-                const manager = allPartners.find(p => p.id === episode.manager);
+                const assignee = partnersById.get(episode.assignee);
+                const manager = partnersById.get(episode.manager);
 
                 const isSelected = selectedEpisodeId === episode.id;
                 return (
@@ -1659,9 +1663,9 @@ export default function ProjectDetailPage() {
           </div>
         ) : (
           <div className="p-4 space-y-2">
-            {episodes.sort((a, b) => b.episodeNumber - a.episodeNumber).map((episode) => {
-              const assignee = allPartners.find(p => p.id === episode.assignee);
-              const manager = allPartners.find(p => p.id === episode.manager);
+            {episodesSorted.map((episode) => {
+              const assignee = partnersById.get(episode.assignee);
+              const manager = partnersById.get(episode.manager);
 
               // 총 비용 계산
               const totalBudget = episode.budget

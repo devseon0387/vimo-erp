@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Episode, Partner, EpisodeWorkItem, WorkContentType, Project, WorkStep, WorkTypeBudget } from '@/types';
 import { Plus, Calendar, DollarSign, ChevronDown, ChevronRight, ArrowLeft, X, User } from 'lucide-react';
-import { getProjects, getProjectEpisodes, getPartners, updateEpisodeFields } from '@/lib/supabase/db';
+import { getProjectById, getProjectEpisodes, getPartners, updateEpisodeFields } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import DateRangePicker from '@/components/DateRangePicker';
 import DatePicker from '@/components/DatePicker';
@@ -284,13 +284,12 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
   }, [paymentStatusOpen, invoiceStatusOpen]);
 
   const loadData = useCallback(async () => {
-    const [projects, episodes, partnersData] = await Promise.all([
-      getProjects(),
+    const [foundProject, episodes, partnersData] = await Promise.all([
+      getProjectById(projectId),
       getProjectEpisodes(projectId),
       getPartners(),
     ]);
 
-    const foundProject = projects.find(p => p.id === projectId);
     if (foundProject) setProject(foundProject);
 
     const foundEpisode = episodes.find(e => e.id === episodeId);
@@ -438,8 +437,9 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
     );
   }
 
-  const partner = partners.find(p => p.id === editedEpisode.assignee);
-  const managerPartner = partners.find(p => p.id === editedEpisode.manager);
+  const partnersById = useMemo(() => new Map(partners.map(p => [p.id, p])), [partners]);
+  const partner = editedEpisode.assignee ? partnersById.get(editedEpisode.assignee) : undefined;
+  const managerPartner = editedEpisode.manager ? partnersById.get(editedEpisode.manager) : undefined;
 
   // 실제 종료일 계산 (모든 작업 단계의 마감일 중 가장 늦은 날짜)
   const calculateActualEndDate = (): string | null => {
@@ -1726,14 +1726,14 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                                           >{step.category || '가편'}</span>
                                         )}
                                         <span className={`text-[12px] font-medium truncate ${step.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                                          {step.label || partners.find(p => p.id === step.assigneeId)?.name || '작업'}
+                                          {step.label || partnersById.get(step.assigneeId)?.name || '작업'}
                                         </span>
                                       </div>
                                       {/* 담당자 + 날짜 */}
                                       <div className="flex items-center gap-1 flex-shrink-0">
                                         {step.assigneeId && (
                                           <div className="w-4 h-4 bg-orange-100 rounded-full flex items-center justify-center text-[7px] font-bold text-orange-600">
-                                            {partners.find(p => p.id === step.assigneeId)?.name?.charAt(0) || '?'}
+                                            {partnersById.get(step.assigneeId)?.name?.charAt(0) || '?'}
                                           </div>
                                         )}
                                         {step.dueDate && (
@@ -1833,7 +1833,7 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                                                 <User size={10} className="text-orange-500" />
                                               </div>
                                               <span className="text-sm text-gray-900 truncate">
-                                                {partners.find(p => p.id === step.assigneeId)?.name}
+                                                {partnersById.get(step.assigneeId)?.name}
                                               </span>
                                             </>
                                           ) : (
@@ -2031,7 +2031,7 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
           const { workType: mwt, stepId: msid } = mobileStepEdit;
           const mStep = workSteps[mwt]?.find(s => s.id === msid);
           if (!mStep) return null;
-          const mPartner = partners.find(p => p.id === mStep.assigneeId);
+          const mPartner = partnersById.get(mStep.assigneeId);
           const mIndex = workSteps[mwt]?.findIndex(s => s.id === msid) ?? 0;
           return (
             <>
@@ -2121,9 +2121,9 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                         {mStep.assigneeId ? (
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center text-[10px] font-bold text-orange-600 flex-shrink-0">
-                              {partners.find(p => p.id === mStep.assigneeId)?.name?.charAt(0) || '?'}
+                              {partnersById.get(mStep.assigneeId)?.name?.charAt(0) || '?'}
                             </div>
-                            <span className="text-[14px] font-medium text-gray-900">{partners.find(p => p.id === mStep.assigneeId)?.name}</span>
+                            <span className="text-[14px] font-medium text-gray-900">{partnersById.get(mStep.assigneeId)?.name}</span>
                           </div>
                         ) : (
                           <span className="text-[14px] text-gray-400">선택 안함</span>
@@ -2606,7 +2606,7 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                         }
                       `}</style>
                       {steps.map((step, index) => {
-                        const partner = partners.find(p => p.id === step.assigneeId);
+                        const partner = partnersById.get(step.assigneeId);
 
                         return (
                           <div

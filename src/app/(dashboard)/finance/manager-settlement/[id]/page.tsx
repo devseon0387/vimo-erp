@@ -206,16 +206,13 @@ export default function ManagerSettlementDetailPage() {
     const unpaidRows = rows.filter(r => r.paymentStatus !== 'completed');
     if (unpaidRows.length === 0) return;
     setSaving(true);
-    const seen = new Set<string>();
-    let okCount = 0;
-    let failCount = 0;
-    for (const row of unpaidRows) {
-      if (seen.has(row.episodeId)) continue;
-      seen.add(row.episodeId);
-      const ok = await updateEpisodeFields(row.episodeId, { paymentStatus: 'completed' });
-      if (ok) okCount += 1;
-      else failCount += 1;
-    }
+    // 같은 episodeId 중복 제거 후 병렬 처리
+    const uniqueIds = Array.from(new Set(unpaidRows.map(r => r.episodeId)));
+    const results = await Promise.all(
+      uniqueIds.map(id => updateEpisodeFields(id, { paymentStatus: 'completed' }))
+    );
+    const okCount = results.filter(Boolean).length;
+    const failCount = results.length - okCount;
     setSaving(false);
     if (failCount === 0) toast.success(`${okCount}건 정산 완료`);
     else toast.warning(`${okCount}건 성공, ${failCount}건 실패`);

@@ -186,13 +186,13 @@ export default function PartnerSettlementDetailPage() {
     const unpaid = allItems.filter(i => i.episode.paymentStatus !== 'completed');
     if (unpaid.length === 0) return;
     setSaving(true);
-    let okCount = 0;
-    let failCount = 0;
-    for (const { episode } of unpaid) {
-      const ok = await updateEpisodeFields(episode.id, { paymentStatus: 'completed' });
-      if (ok) okCount += 1;
-      else failCount += 1;
-    }
+    const results = await Promise.all(
+      unpaid.map(({ episode }) =>
+        updateEpisodeFields(episode.id, { paymentStatus: 'completed' })
+      )
+    );
+    const okCount = results.filter(Boolean).length;
+    const failCount = results.length - okCount;
     setSaving(false);
     if (failCount === 0) toast.success(`${okCount}건 정산 완료`);
     else toast.warning(`${okCount}건 성공, ${failCount}건 실패`);

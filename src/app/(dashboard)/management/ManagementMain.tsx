@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   getProjects, getPartners, getClients, getAllEpisodes,
@@ -431,95 +431,118 @@ export default function ManagementMain() {
     return () => clearInterval(interval);
   }, []);
 
-  // 현재 날짜 및 시간 계산
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  // 현재 날짜 및 시간 계산 — 마운트 시 고정. 페이지를 자정 넘겨 켜두면 새로고침 필요.
+  const { now, todayStart, todayEnd, thisWeekStart, thisWeekEnd, tomorrowStart, tomorrowEnd } = useMemo(() => {
+    const n = new Date();
+    const ts = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    const te = new Date(n.getFullYear(), n.getMonth(), n.getDate(), 23, 59, 59);
+    const currentDay = n.getDay();
+    const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+    const ws = new Date(n.getFullYear(), n.getMonth(), n.getDate() + mondayOffset);
+    const we = new Date(ws);
+    we.setDate(ws.getDate() + 6);
+    we.setHours(23, 59, 59);
+    const tms = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1);
+    const tme = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 23, 59, 59);
+    return { now: n, todayStart: ts, todayEnd: te, thisWeekStart: ws, thisWeekEnd: we, tomorrowStart: tms, tomorrowEnd: tme };
+  }, []);
 
-  // 이번 주 시작일과 종료일 (월요일 시작)
-  const currentDay = now.getDay();
-  const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
-  const thisWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
-  const thisWeekEnd = new Date(thisWeekStart);
-  thisWeekEnd.setDate(thisWeekStart.getDate() + 6);
-  thisWeekEnd.setHours(23, 59, 59);
+  // O(1) 조회용 Maps — `.find()` 매번 호출 패턴 제거
+  const projectsById = useMemo(() => new Map(projects.map(p => [p.id, p])), [projects]);
+  const partnersById = useMemo(() => new Map(partners.map(p => [p.id, p])), [partners]);
 
-  // 내일 시작/종료
-  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
-
-  // 오늘 마감인 회차
-  const todayDeadlines = allEpisodes.filter(ep => {
-    if (!ep.dueDate || ep.status === 'completed') return false;
-    const dueDate = new Date(ep.dueDate);
-    return dueDate >= todayStart && dueDate <= todayEnd;
-  }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-
-  // 내일 마감인 회차
-  const tomorrowDeadlines = allEpisodes.filter(ep => {
-    if (!ep.dueDate || ep.status === 'completed') return false;
-    const dueDate = new Date(ep.dueDate);
-    return dueDate >= tomorrowStart && dueDate <= tomorrowEnd;
-  }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-
-  // 오늘 검수 대기 중인 회차
-  const todayReviews = allEpisodes.filter(ep => ep.status === 'review');
-
-  // 긴급 이슈 (마감일 지난 회차)
-  const overdueEpisodes = allEpisodes.filter(ep => {
-    if (!ep.dueDate || ep.status === 'completed') return false;
-    const dueDate = new Date(ep.dueDate);
-    return dueDate < todayStart;
-  }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-
-  // 이번 주 마감 예정 회차
-  const thisWeekDeadlines = allEpisodes.filter(ep => {
-    if (!ep.dueDate || ep.status === 'completed') return false;
-    const dueDate = new Date(ep.dueDate);
-    return dueDate >= thisWeekStart && dueDate <= thisWeekEnd && dueDate > todayEnd;
-  }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-
-  // 이번 주 완료된 회차
-  const thisWeekCompleted = allEpisodes.filter(ep => {
-    if (ep.status !== 'completed' || !ep.completedAt) return false;
-    const completedDate = new Date(ep.completedAt);
-    return completedDate >= thisWeekStart && completedDate <= thisWeekEnd;
-  });
-
-  // 진행 중인 프로젝트
-  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'planning');
-
-  // 체크리스트 분류
-  const oneTimeItems = checklistItems.filter(i => !i.repeatType || i.repeatType === 'none');
-  const recurringItems = checklistItems.filter(i => i.repeatType && i.repeatType !== 'none');
-
-  // 파트너별 이번 주 작업 현황
-  const partnerWeeklyWorkload = partners.map(partner => {
-    const partnerEpisodes = allEpisodes.filter(ep => ep.assignee === partner.id);
-    const thisWeekEpisodes = partnerEpisodes.filter(ep => {
-      if (!ep.dueDate) return false;
-      const dueDate = new Date(ep.dueDate);
-      return dueDate >= thisWeekStart && dueDate <= thisWeekEnd;
-    });
-    const completed = thisWeekEpisodes.filter(ep => ep.status === 'completed').length;
-    const inProgress = thisWeekEpisodes.filter(ep => ep.status === 'in_progress').length;
-    const waiting = thisWeekEpisodes.filter(ep => ep.status === 'waiting').length;
-
+  // 회차들의 한 번 순회로 마감/검수/지연/주간 분류 — 8개 filter+sort 체인 → 1번 순회
+  const {
+    todayDeadlines, tomorrowDeadlines, todayReviews, overdueEpisodes,
+    thisWeekDeadlines, thisWeekCompleted, deadlineCountByDay,
+  } = useMemo(() => {
+    const todayMs = todayStart.getTime();
+    const todayEndMs = todayEnd.getTime();
+    const tomorrowMs = tomorrowStart.getTime();
+    const tomorrowEndMs = tomorrowEnd.getTime();
+    const weekStartMs = thisWeekStart.getTime();
+    const weekEndMs = thisWeekEnd.getTime();
+    const today: typeof allEpisodes = [];
+    const tomorrow: typeof allEpisodes = [];
+    const reviews: typeof allEpisodes = [];
+    const overdue: typeof allEpisodes = [];
+    const weekDue: typeof allEpisodes = [];
+    const weekComp: typeof allEpisodes = [];
+    const dayMap = new Map<string, number>(); // YYYY-MM-DD → count
+    for (const ep of allEpisodes) {
+      if (ep.status === 'review') reviews.push(ep);
+      if (ep.status === 'completed') {
+        if (ep.completedAt) {
+          const ms = new Date(ep.completedAt).getTime();
+          if (ms >= weekStartMs && ms <= weekEndMs) weekComp.push(ep);
+        }
+        continue;
+      }
+      if (!ep.dueDate) continue;
+      const dueMs = new Date(ep.dueDate).getTime();
+      // 캘린더용 day key (YYYY-MM-DD 첫 10자)
+      const dayKey = ep.dueDate.slice(0, 10);
+      dayMap.set(dayKey, (dayMap.get(dayKey) ?? 0) + 1);
+      if (dueMs < todayMs) overdue.push(ep);
+      else if (dueMs >= todayMs && dueMs <= todayEndMs) today.push(ep);
+      else if (dueMs >= tomorrowMs && dueMs <= tomorrowEndMs) tomorrow.push(ep);
+      if (dueMs >= weekStartMs && dueMs <= weekEndMs && dueMs > todayEndMs) weekDue.push(ep);
+    }
+    const byDueAsc = (a: typeof allEpisodes[number], b: typeof allEpisodes[number]) =>
+      new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime();
     return {
-      partner,
-      total: thisWeekEpisodes.length,
-      completed,
-      inProgress,
-      waiting,
+      todayDeadlines: today.sort(byDueAsc),
+      tomorrowDeadlines: tomorrow.sort(byDueAsc),
+      todayReviews: reviews,
+      overdueEpisodes: overdue.sort(byDueAsc),
+      thisWeekDeadlines: weekDue.sort(byDueAsc),
+      thisWeekCompleted: weekComp,
+      deadlineCountByDay: dayMap,
     };
-  }).filter(pw => pw.total > 0).sort((a, b) => b.total - a.total);
+  }, [allEpisodes, todayStart, todayEnd, tomorrowStart, tomorrowEnd, thisWeekStart, thisWeekEnd]);
 
-  // 헬퍼 함수: 회차의 프로젝트와 파트너 찾기
-  const getEpisodeDetails = (episode: Episode & { projectId: string }) => {
-    const project = projects.find(p => p.id === episode.projectId);
-    const partner = partners.find(p => p.id === episode.assignee);
+  const activeProjects = useMemo(
+    () => projects.filter(p => p.status === 'in_progress' || p.status === 'planning'),
+    [projects]
+  );
+
+  const oneTimeItems = useMemo(
+    () => checklistItems.filter(i => !i.repeatType || i.repeatType === 'none'),
+    [checklistItems]
+  );
+  const recurringItems = useMemo(
+    () => checklistItems.filter(i => i.repeatType && i.repeatType !== 'none'),
+    [checklistItems]
+  );
+
+  // 파트너별 이번 주 작업 현황 — O(partners × episodes × 4) 였던 nested filter를 1패스로
+  const partnerWeeklyWorkload = useMemo(() => {
+    const weekStartMs = thisWeekStart.getTime();
+    const weekEndMs = thisWeekEnd.getTime();
+    const acc = new Map<string, { total: number; completed: number; inProgress: number; waiting: number }>();
+    for (const ep of allEpisodes) {
+      if (!ep.dueDate || !ep.assignee) continue;
+      const dueMs = new Date(ep.dueDate).getTime();
+      if (dueMs < weekStartMs || dueMs > weekEndMs) continue;
+      const cur = acc.get(ep.assignee) ?? { total: 0, completed: 0, inProgress: 0, waiting: 0 };
+      cur.total++;
+      if (ep.status === 'completed') cur.completed++;
+      else if (ep.status === 'in_progress') cur.inProgress++;
+      else if (ep.status === 'waiting') cur.waiting++;
+      acc.set(ep.assignee, cur);
+    }
+    return partners
+      .map(partner => ({ partner, ...(acc.get(partner.id) ?? { total: 0, completed: 0, inProgress: 0, waiting: 0 }) }))
+      .filter(pw => pw.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [partners, allEpisodes, thisWeekStart, thisWeekEnd]);
+
+  // 헬퍼 함수: 회차의 프로젝트와 파트너 찾기 (Map 사용)
+  const getEpisodeDetails = useCallback((episode: Episode & { projectId: string }) => {
+    const project = projectsById.get(episode.projectId);
+    const partner = partnersById.get(episode.assignee);
     return { project, partner };
-  };
+  }, [projectsById, partnersById]);
 
   if (loading) {
     return (
@@ -705,8 +728,10 @@ export default function ManagementMain() {
           )}
         </div>
 
-        {/* 오른쪽: 파트너 현황 + 달력 + 체크리스트 (데스크탑만) */}
-        <div className="hidden lg:block relative self-start" data-tour="tour-mgmt-checklist">
+        {/* 오른쪽: 파트너 현황 + 달력 + 체크리스트
+            데스크탑: lg:grid-cols-[1fr_560px] 우측 칼럼
+            모바일: 메인 콘텐츠 아래로 자연 흐름 (시안 C) */}
+        <div className="relative self-start" data-tour="tour-mgmt-checklist">
         <div className="space-y-3">
           {/* 파트너 현황 — 인라인 칩 */}
           <div className="bg-white rounded-2xl border border-ink-100 p-4">
@@ -787,11 +812,8 @@ export default function ManagementMain() {
                 const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const isToday = dateStr === todayStr;
                 const dayOfWeek = new Date(calYear, calMonth, d).getDay();
-                // 해당 날짜에 마감인 에피소드 수
-                const deadlineCount = allEpisodes.filter(ep => {
-                  if (!ep.dueDate || ep.status === 'completed') return false;
-                  return ep.dueDate.startsWith(dateStr);
-                }).length;
+                // 해당 날짜에 마감인 에피소드 수 — pre-built Map으로 O(1)
+                const deadlineCount = deadlineCountByDay.get(dateStr) ?? 0;
                 cells.push(
                   <button
                     key={d}
