@@ -2,6 +2,7 @@
  * Projects CRUD
  */
 import { createClient } from '../client';
+import { cachedFetch } from '../cache';
 import type { Project, WorkContentType } from '@/types';
 
 // ─── Row Types (Supabase snake_case) ─────────────────────────
@@ -121,26 +122,30 @@ export function projectToUpdate(project: Partial<Project>) {
 // ─── CRUD ────────────────────────────────────────────────────
 
 export async function getProjects(): Promise<Project[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { console.error('[DB] getProjects:', error.message); return []; }
-  if (!data) return [];
-  return (data as ProjectRow[]).map(projectFromRow);
+  return cachedFetch('projects:list', async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[DB] getProjects:', error.message); return []; }
+    if (!data) return [];
+    return (data as ProjectRow[]).map(projectFromRow);
+  });
 }
 
 export async function getProjectById(id: string): Promise<Project | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) { console.error('[DB] getProjectById:', error.message); return null; }
-  if (!data) return null;
-  return projectFromRow(data as ProjectRow);
+  return cachedFetch(`projects:byId:${id}`, async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) { console.error('[DB] getProjectById:', error.message); return null; }
+    if (!data) return null;
+    return projectFromRow(data as ProjectRow);
+  });
 }
 
 export async function insertProject(

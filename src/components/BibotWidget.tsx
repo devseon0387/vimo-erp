@@ -188,8 +188,13 @@ export default function BibotWidget() {
     return () => window.removeEventListener(OPEN_EVENT, handler);
   }, []);
 
+  // 메시지 변경마다 즉시 직렬화 → main thread 블로킹 (스트리밍 중 키스트로크 jank).
+  // 500ms 디바운스로 채팅 메시지가 빠르게 쌓일 때 직렬화 부담 차단.
   useEffect(() => {
-    try { localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages)); } catch {}
+    const t = setTimeout(() => {
+      try { localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages)); } catch {}
+    }, 500);
+    return () => clearTimeout(t);
   }, [messages]);
 
   useEffect(() => {

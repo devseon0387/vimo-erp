@@ -2,6 +2,7 @@
  * Episodes CRUD
  */
 import { createClient } from '../client';
+import { cachedFetch } from '../cache';
 import type { Episode, WorkContentType } from '@/types';
 
 // ─── Row Types (Supabase snake_case) ─────────────────────────
@@ -147,28 +148,32 @@ export async function updateEpisodeFields(
 // ─── CRUD ────────────────────────────────────────────────────
 
 export async function getAllEpisodes(): Promise<(Episode & { projectId: string })[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('episodes')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { console.error('[DB] getAllEpisodes:', error.message); return []; }
-  if (!data) return [];
-  return (data as EpisodeRow[]).map(episodeFromRow);
+  return cachedFetch('episodes:all', async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('episodes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[DB] getAllEpisodes:', error.message); return []; }
+    if (!data) return [];
+    return (data as EpisodeRow[]).map(episodeFromRow);
+  });
 }
 
 export async function getProjectEpisodes(
   projectId: string
 ): Promise<(Episode & { projectId: string })[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('episodes')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('episode_number', { ascending: false });
-  if (error) { console.error('[DB] getProjectEpisodes:', error.message); return []; }
-  if (!data) return [];
-  return (data as EpisodeRow[]).map(episodeFromRow);
+  return cachedFetch(`episodes:project:${projectId}`, async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('episodes')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('episode_number', { ascending: false });
+    if (error) { console.error('[DB] getProjectEpisodes:', error.message); return []; }
+    if (!data) return [];
+    return (data as EpisodeRow[]).map(episodeFromRow);
+  });
 }
 
 export async function upsertEpisodes(

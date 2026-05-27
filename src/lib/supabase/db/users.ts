@@ -2,22 +2,25 @@
  * User Profiles, Custom Roles, Checklists
  */
 import { createClient } from '../client';
+import { cachedFetch } from '../cache';
 
 // ─── User Profiles ───────────────────────────────────────────
 
 export async function getMyProfile(): Promise<{ id: string; role: string; name: string | null; approved?: boolean } | null> {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  return cachedFetch('profile:me', async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
 
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-  if (error) { console.error('[DB] getMyProfile:', error.message); return null; }
-  return data;
+    if (error) { console.error('[DB] getMyProfile:', error.message); return null; }
+    return data;
+  }, 5 * 60 * 1000); // 프로필은 5분 TTL (자주 안 바뀜)
 }
 
 export async function upsertMyProfile(role: string, name: string): Promise<boolean> {

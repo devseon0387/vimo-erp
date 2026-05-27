@@ -2,6 +2,7 @@
  * Clients CRUD
  */
 import { createClient } from '../client';
+import { cachedFetch } from '../cache';
 import type { Client } from '@/types';
 
 // ─── Row Types (Supabase snake_case) ─────────────────────────
@@ -67,14 +68,16 @@ export function clientToUpdate(client: Partial<Client>) {
 // ─── CRUD ────────────────────────────────────────────────────
 
 export async function getClients(): Promise<Client[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('clients')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { console.error('[DB] getClients:', error.message); return []; }
-  if (!data) return [];
-  return (data as ClientRow[]).map(clientFromRow);
+  return cachedFetch('clients:list', async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[DB] getClients:', error.message); return []; }
+    if (!data) return [];
+    return (data as ClientRow[]).map(clientFromRow);
+  });
 }
 
 export async function insertClient(

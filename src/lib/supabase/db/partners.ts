@@ -2,6 +2,7 @@
  * Partners CRUD
  */
 import { createClient } from '../client';
+import { cachedFetch } from '../cache';
 import type { Partner } from '@/types';
 
 // ─── Row Types (Supabase snake_case) ─────────────────────────
@@ -89,16 +90,18 @@ export function partnerToUpdate(partner: Partial<Partner>) {
 // ─── CRUD ────────────────────────────────────────────────────
 
 export async function getPartners(): Promise<Partner[]> {
-  const supabase = createClient();
-  // partners_safe view: 민감 컬럼(email/phone/bank/bank_account)은 admin 만 볼 수 있게
-  // DB 차원에서 마스킹. 일반 staff/매니저에게는 NULL 로 반환됨.
-  const { data, error } = await supabase
-    .from('partners_safe')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { console.error('[DB] getPartners:', error.message); return []; }
-  if (!data) return [];
-  return (data as PartnerRow[]).map(partnerFromRow);
+  return cachedFetch('partners:list', async () => {
+    const supabase = createClient();
+    // partners_safe view: 민감 컬럼(email/phone/bank/bank_account)은 admin 만 볼 수 있게
+    // DB 차원에서 마스킹. 일반 staff/매니저에게는 NULL 로 반환됨.
+    const { data, error } = await supabase
+      .from('partners_safe')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[DB] getPartners:', error.message); return []; }
+    if (!data) return [];
+    return (data as PartnerRow[]).map(partnerFromRow);
+  });
 }
 
 export async function insertPartner(

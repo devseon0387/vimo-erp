@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { invalidateTable } from '@/lib/supabase/cache';
 
 interface RealtimeOptions {
   filter?: { column: string; value: string };
@@ -42,6 +43,8 @@ export function useSupabaseRealtime(
         opts.filter = `${filter.column}=eq.${filter.value}`;
       }
       channel.on('postgres_changes', opts, () => {
+        // 캐시 무효화 즉시 (debounce 전) — 동시 마운트 다수 컴포넌트가 곧 호출할 fetch는 fresh 가져옴
+        invalidateTable(table);
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => {
           callbackRef.current();

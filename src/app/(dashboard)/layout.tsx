@@ -17,6 +17,7 @@ import TutorialOverlay from '@/components/tutorial/TutorialOverlay';
 import NotificationDropdown from '@/components/NotificationDropdown';
 
 import FeedbackModal from '@/components/FeedbackModal';
+import { invalidateAll } from '@/lib/supabase/cache';
 import UpdateNoticeModal from '@/components/UpdateNoticeModal';
 import { APP_VERSION, APP_LAST_UPDATED } from '@/config/version';
 import Link from 'next/link';
@@ -251,6 +252,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     sessionStorage.removeItem('vm_active_session');
     sessionStorage.removeItem('vm_profile');
     sessionStorage.removeItem('vm_profile_at');
+    invalidateAll();
     await createClient().auth.signOut();
     window.location.href = '/login';
   };
