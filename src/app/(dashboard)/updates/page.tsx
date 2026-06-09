@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
+import { getAppUpdates } from '@/lib/supabase/db/app-updates';
 import type { ChangeType } from './data';
 
 type Tab = 'erp' | 'bibot';
@@ -92,13 +92,8 @@ export default function UpdatesPage() {
 
   const loadUpdates = useCallback(async (app: string) => {
     setLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('app_updates')
-      .select('*')
-      .eq('app', app)
-      .order('date', { ascending: false });
-    setUpdates((data as UpdateEntry[]) || []);
+    const data = await getAppUpdates(app);
+    setUpdates((data as unknown as UpdateEntry[]) || []);
     setLoading(false);
   }, []);
 

@@ -1,18 +1,17 @@
+// Phase 2b: Supabase service_role .from() → 자체 PG(Drizzle) 이전.
+// ★ 기존 인증 게이트는 불변:
+//   - GET: authorizeRead(비봇 CLI 키 OR 로그인 세션) — auth.getUser는 Supabase Auth 유지(Phase4).
+//   - POST: requireAdmin(admin 세션) — service_role 우회를 admin 게이트로 차단하던 의미 보존.
+// 본 PG는 RLS가 없어 app_vimoerp가 풀 액세스 → 기존 service_role 읽기/쓰기 범위가 그대로 재현됨.
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth/admin';
+import { db } from '@/db';
+import { projects, episodes, clients, partners } from '@/db/schema';
+import { and, eq, ne, ilike, inArray, asc, desc, isNotNull, gte, lt } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
-}
 
 function unauthorized() {
   return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -42,36 +41,50 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const action = searchParams.get('action');
-  const db = adminClient();
 
   try {
     if (action === 'recent-projects') {
       const limit = Math.min(Number(searchParams.get('limit') ?? 20), 100);
-      const { data, error } = await db
-        .from('projects')
-        .select('id, title, client, status, updated_at')
-        .order('updated_at', { ascending: false })
+      const data = await db
+        .select({
+          id: projects.id,
+          title: projects.title,
+          client: projects.client,
+          status: projects.status,
+          updated_at: projects.updatedAt,
+        })
+        .from(projects)
+        .orderBy(desc(projects.updatedAt))
         .limit(limit);
-      if (error) throw error;
       return NextResponse.json({ projects: data });
     }
 
     if (action === 'recent-episodes') {
       const limit = Math.min(Number(searchParams.get('limit') ?? 20), 100);
       const projectId = searchParams.get('projectId');
-      let q = db
-        .from('episodes')
-        .select('id, project_id, episode_number, title, status, due_date, end_date, updated_at')
-        .order('updated_at', { ascending: false })
+      const data = await db
+        .select({
+          id: episodes.id,
+          project_id: episodes.projectId,
+          episode_number: episodes.episodeNumber,
+          title: episodes.title,
+          status: episodes.status,
+          due_date: episodes.dueDate,
+          end_date: episodes.endDate,
+          updated_at: episodes.updatedAt,
+        })
+        .from(episodes)
+        .where(projectId ? eq(episodes.projectId, projectId) : undefined)
+        .orderBy(desc(episodes.updatedAt))
         .limit(limit);
-      if (projectId) q = q.eq('project_id', projectId);
-      const { data, error } = await q;
-      if (error) throw error;
 
       const projectIds = [...new Set((data ?? []).map(r => r.project_id))];
       let projectMap: Record<string, { title: string; client: string | null }> = {};
       if (projectIds.length) {
-        const { data: projs } = await db.from('projects').select('id, title, client').in('id', projectIds);
+        const projs = await db
+          .select({ id: projects.id, title: projects.title, client: projects.client })
+          .from(projects)
+          .where(inArray(projects.id, projectIds));
         projectMap = Object.fromEntries((projs ?? []).map(p => [p.id, { title: p.title, client: p.client }]));
       }
       return NextResponse.json({
@@ -88,45 +101,79 @@ export async function GET(req: NextRequest) {
       if (!raw) return NextResponse.json({ projects: [], episodes: [], clients: [], partners: [] });
       const q = escapeIlike(raw);
 
-      const [projects, episodes, clients, partners] = await Promise.all([
-        db.from('projects').select('id, title, client, status').ilike('title', `%${q}%`).limit(10),
-        db.from('episodes').select('id, project_id, episode_number, title, status').ilike('title', `%${q}%`).limit(10),
-        db.from('clients').select('id, name, company').ilike('name', `%${q}%`).limit(10),
+      const [projectRows, episodeRows, clientRows, partnerRows] = await Promise.all([
+        db
+          .select({ id: projects.id, title: projects.title, client: projects.client, status: projects.status })
+          .from(projects)
+          .where(ilike(projects.title, `%${q}%`))
+          .limit(10),
+        db
+          .select({
+            id: episodes.id,
+            project_id: episodes.projectId,
+            episode_number: episodes.episodeNumber,
+            title: episodes.title,
+            status: episodes.status,
+          })
+          .from(episodes)
+          .where(ilike(episodes.title, `%${q}%`))
+          .limit(10),
+        db
+          .select({ id: clients.id, name: clients.name, company: clients.company })
+          .from(clients)
+          .where(ilike(clients.name, `%${q}%`))
+          .limit(10),
         // partner email은 민감 정보 — 검색 결과에서 제외
-        db.from('partners').select('id, name').ilike('name', `%${q}%`).limit(10),
+        db
+          .select({ id: partners.id, name: partners.name })
+          .from(partners)
+          .where(ilike(partners.name, `%${q}%`))
+          .limit(10),
       ]);
 
       return NextResponse.json({
-        projects: projects.data ?? [],
-        episodes: episodes.data ?? [],
-        clients: clients.data ?? [],
-        partners: partners.data ?? [],
+        projects: projectRows ?? [],
+        episodes: episodeRows ?? [],
+        clients: clientRows ?? [],
+        partners: partnerRows ?? [],
       });
     }
 
     if (action === 'project') {
       const id = searchParams.get('id');
       if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
-      const { data, error } = await db.from('projects').select('*').eq('id', id).single();
-      if (error) throw error;
+      const [data] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+      // 원본 .single()은 행이 없으면 에러 → 빈 결과도 동일하게 catch로 500.
+      if (!data) throw new Error('JSON object requested, multiple (or no) rows returned');
       return NextResponse.json({ project: data });
     }
 
     if (action === 'pending-settlements') {
       const limit = Math.min(Number(searchParams.get('limit') ?? 30), 100);
-      const { data, error } = await db
-        .from('episodes')
-        .select('id, project_id, episode_number, title, payment_status, payment_due_date, budget_partner, end_date')
-        .eq('payment_status', 'pending')
-        .not('end_date', 'is', null)
-        .order('payment_due_date', { ascending: true, nullsFirst: false })
+      const data = await db
+        .select({
+          id: episodes.id,
+          project_id: episodes.projectId,
+          episode_number: episodes.episodeNumber,
+          title: episodes.title,
+          payment_status: episodes.paymentStatus,
+          payment_due_date: episodes.paymentDueDate,
+          budget_partner: episodes.budgetPartner,
+          end_date: episodes.endDate,
+        })
+        .from(episodes)
+        .where(and(eq(episodes.paymentStatus, 'pending'), isNotNull(episodes.endDate)))
+        // 원본: .order('payment_due_date', { ascending: true, nullsFirst: false })
+        .orderBy(asc(episodes.paymentDueDate))
         .limit(limit);
-      if (error) throw error;
 
       const projectIds = [...new Set((data ?? []).map(r => r.project_id))];
       let projectMap: Record<string, { title: string }> = {};
       if (projectIds.length) {
-        const { data: projs } = await db.from('projects').select('id, title').in('id', projectIds);
+        const projs = await db
+          .select({ id: projects.id, title: projects.title })
+          .from(projects)
+          .where(inArray(projects.id, projectIds));
         projectMap = Object.fromEntries((projs ?? []).map(p => [p.id, { title: p.title }]));
       }
       return NextResponse.json({
@@ -146,19 +193,33 @@ export async function GET(req: NextRequest) {
       const td = String(tomorrow.getDate()).padStart(2, '0');
       const tomorrowStr = `${ty}-${tm}-${td}`;
 
-      const { data, error } = await db
-        .from('episodes')
-        .select('id, project_id, episode_number, title, status, due_date, assignee')
-        .gte('due_date', todayStr)
-        .lt('due_date', tomorrowStr)
-        .neq('status', 'completed')
-        .order('episode_number', { ascending: true });
-      if (error) throw error;
+      const data = await db
+        .select({
+          id: episodes.id,
+          project_id: episodes.projectId,
+          episode_number: episodes.episodeNumber,
+          title: episodes.title,
+          status: episodes.status,
+          due_date: episodes.dueDate,
+          assignee: episodes.assignee,
+        })
+        .from(episodes)
+        // due_date(text 컬럼)에 대한 lexicographic 비교 — 원본 .gte/.lt(YYYY-MM-DD 문자열)와 동일.
+        // (text 컬럼이라 ISO 날짜 문자열 사전순 = 시간순이 일치)
+        .where(and(
+          gte(episodes.dueDate, todayStr),
+          lt(episodes.dueDate, tomorrowStr),
+          ne(episodes.status, 'completed'),
+        ))
+        .orderBy(asc(episodes.episodeNumber));
 
       const projectIds = [...new Set((data ?? []).map(r => r.project_id))];
       let projectMap: Record<string, { title: string }> = {};
       if (projectIds.length) {
-        const { data: projs } = await db.from('projects').select('id, title').in('id', projectIds);
+        const projs = await db
+          .select({ id: projects.id, title: projects.title })
+          .from(projects)
+          .where(inArray(projects.id, projectIds));
         projectMap = Object.fromEntries((projs ?? []).map(p => [p.id, { title: p.title }]));
       }
       return NextResponse.json({
@@ -169,21 +230,26 @@ export async function GET(req: NextRequest) {
 
     if (action === 'active-projects') {
       const limit = Math.min(Number(searchParams.get('limit') ?? 20), 100);
-      const { data, error } = await db
-        .from('projects')
-        .select('id, title, client, status, updated_at')
-        .eq('status', 'in_progress')
-        .order('updated_at', { ascending: false })
+      const data = await db
+        .select({
+          id: projects.id,
+          title: projects.title,
+          client: projects.client,
+          status: projects.status,
+          updated_at: projects.updatedAt,
+        })
+        .from(projects)
+        .where(eq(projects.status, 'in_progress'))
+        .orderBy(desc(projects.updatedAt))
         .limit(limit);
-      if (error) throw error;
 
       const projectIds = (data ?? []).map(p => p.id);
       let counts: Record<string, { total: number; done: number }> = {};
       if (projectIds.length) {
-        const { data: eps } = await db
-          .from('episodes')
-          .select('project_id, status')
-          .in('project_id', projectIds);
+        const eps = await db
+          .select({ project_id: episodes.projectId, status: episodes.status })
+          .from(episodes)
+          .where(inArray(episodes.projectId, projectIds));
         for (const e of eps ?? []) {
           if (!counts[e.project_id]) counts[e.project_id] = { total: 0, done: 0 };
           counts[e.project_id].total++;
@@ -202,12 +268,19 @@ export async function GET(req: NextRequest) {
     if (action === 'episodes-by-project') {
       const projectId = searchParams.get('projectId');
       if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
-      const { data, error } = await db
-        .from('episodes')
-        .select('id, project_id, episode_number, title, status, due_date, end_date')
-        .eq('project_id', projectId)
-        .order('episode_number', { ascending: true });
-      if (error) throw error;
+      const data = await db
+        .select({
+          id: episodes.id,
+          project_id: episodes.projectId,
+          episode_number: episodes.episodeNumber,
+          title: episodes.title,
+          status: episodes.status,
+          due_date: episodes.dueDate,
+          end_date: episodes.endDate,
+        })
+        .from(episodes)
+        .where(eq(episodes.projectId, projectId))
+        .orderBy(asc(episodes.episodeNumber));
       return NextResponse.json({ episodes: data });
     }
 
@@ -252,24 +325,25 @@ type WriteBody =
       }>;
     };
 
-const camelToSnake: Record<string, string> = {
+// camelCase 필드 키 → episodes 스키마 컬럼(Drizzle 속성명) 화이트리스트.
+const fieldToColumn: Record<string, keyof typeof episodes.$inferInsert> = {
   title: 'title',
   status: 'status',
-  dueDate: 'due_date',
-  startDate: 'start_date',
-  endDate: 'end_date',
+  dueDate: 'dueDate',
+  startDate: 'startDate',
+  endDate: 'endDate',
   description: 'description',
   assignee: 'assignee',
   manager: 'manager',
-  paymentStatus: 'payment_status',
-  invoiceStatus: 'invoice_status',
+  paymentStatus: 'paymentStatus',
+  invoiceStatus: 'invoiceStatus',
 };
 
 export async function POST(req: NextRequest) {
-  // 쓰기 액션은 service_role로 episodes를 직접 변조 → admin 세션만 허용 (키 우회 차단)
+  // 쓰기 액션은 episodes를 직접 변조 → admin 세션만 허용 (키 우회 차단).
+  // requireAdmin 게이트는 불변. guard.admin(supabase service_role)은 데이터에만 쓰였으므로 db로 대체.
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
-  const db = guard.admin;
 
   let body: WriteBody;
   try {
@@ -288,30 +362,35 @@ export async function POST(req: NextRequest) {
       // advisory_xact_lock 으로 atomic 할당 — 동시 INSERT race 차단.
       const episodeNumber = body.episodeNumber ?? null;
 
-      const { data, error } = await db
-        .from('episodes')
-        .insert({
-          project_id: body.projectId,
-          episode_number: episodeNumber,
+      const [data] = await db
+        .insert(episodes)
+        .values({
+          projectId: body.projectId,
+          // NULL → trg_set_episode_number 트리거가 채움. 스키마는 notNull이라 cast.
+          episodeNumber: episodeNumber as unknown as number,
           title: body.title,
           status: body.status ?? 'pending',
           description: body.description ?? null,
-          due_date: body.dueDate ?? null,
-          start_date: body.startDate ?? null,
-          end_date: body.endDate ?? null,
+          dueDate: body.dueDate ?? null,
+          startDate: body.startDate ?? null,
+          endDate: body.endDate ?? null,
           assignee: body.assignee ?? null,
           manager: body.manager ?? null,
-          work_content: body.workContent ?? [],
-          budget_total: 0,
-          budget_partner: 0,
-          budget_management: 0,
-          payment_status: 'pending',
-          invoice_status: 'pending',
+          workContent: body.workContent ?? [],
+          budgetTotal: '0',
+          budgetPartner: '0',
+          budgetManagement: '0',
+          paymentStatus: 'pending',
+          invoiceStatus: 'pending',
         })
-        .select('id, project_id, episode_number, title')
-        .single();
+        .returning({
+          id: episodes.id,
+          project_id: episodes.projectId,
+          episode_number: episodes.episodeNumber,
+          title: episodes.title,
+        });
 
-      if (error) throw error;
+      if (!data) throw new Error('insert returned no row');
       return NextResponse.json({
         ok: true,
         episode: data,
@@ -323,23 +402,26 @@ export async function POST(req: NextRequest) {
       if (!body.id || !body.fields) {
         return NextResponse.json({ error: 'id와 fields 필수' }, { status: 400 });
       }
-      const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const row: Partial<typeof episodes.$inferInsert> = { updatedAt: new Date().toISOString() };
       for (const [k, v] of Object.entries(body.fields)) {
-        const col = camelToSnake[k];
+        const col = fieldToColumn[k];
         if (!col) continue;
-        row[col] = v;
+        (row as Record<string, unknown>)[col] = v;
       }
       if (Object.keys(row).length <= 1) {
         return NextResponse.json({ error: '수정할 필드 없음' }, { status: 400 });
       }
 
-      const { data, error } = await db
-        .from('episodes')
-        .update(row)
-        .eq('id', body.id)
-        .select('id, project_id, title')
-        .single();
-      if (error) throw error;
+      const [data] = await db
+        .update(episodes)
+        .set(row)
+        .where(eq(episodes.id, body.id))
+        .returning({
+          id: episodes.id,
+          project_id: episodes.projectId,
+          title: episodes.title,
+        });
+      if (!data) throw new Error('JSON object requested, multiple (or no) rows returned');
       return NextResponse.json({
         ok: true,
         episode: data,

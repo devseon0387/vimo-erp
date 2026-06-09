@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Bot, RefreshCw, ChevronDown, ChevronUp,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { getAppUpdates } from '@/lib/supabase/db/app-updates';
 
 interface AppUpdate {
   id: string;
@@ -36,20 +36,12 @@ export default function VbotUpdatesPage() {
   const loadUpdates = async () => {
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('app_updates')
-        .select('*')
-        .eq('app', 'bibot')
-        .order('date', { ascending: false })
-        .limit(30);
-
-      if (error) throw error;
+      const data = await getAppUpdates('bibot', 30);
       // 첫 번째 항목은 자동 펼침
       if (data && data.length > 0) {
         setExpandedUpdate(data[0].id);
       }
-      setUpdates(data ?? []);
+      setUpdates(data as unknown as AppUpdate[]);
     } catch {
       setUpdates([]);
     } finally {

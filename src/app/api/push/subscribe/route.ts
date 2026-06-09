@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { and, eq } from 'drizzle-orm';
+import { db } from '@/db';
+import { pushSubscriptions } from '@/db/schema';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
@@ -12,20 +15,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 });
   }
 
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert(
-      {
-        user_id: user.id,
+  // Supabase upsert(onConflict: 'endpoint') 1:1 재현.
+  // 충돌 시 제공한 컬럼 전체 덮어쓰기(user_id/p256dh/auth/user_agent).
+  try {
+    await db
+      .insert(pushSubscriptions)
+      .values({
+        userId: user.id,
         endpoint,
-        p256dh: keys.p256dh,
+        p256Dh: keys.p256dh,
         auth: keys.auth,
-        user_agent: userAgent ?? null,
-      },
-      { onConflict: 'endpoint' }
+        userAgent: userAgent ?? null,
+      })
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        set: {
+          userId: user.id,
+          p256Dh: keys.p256dh,
+          auth: keys.auth,
+          userAgent: userAgent ?? null,
+        },
+      });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : String(e) },
+      { status: 500 }
     );
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -37,12 +53,18 @@ export async function DELETE(req: Request) {
   const { endpoint } = await req.json();
   if (!endpoint) return NextResponse.json({ error: 'endpoint required' }, { status: 400 });
 
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .delete()
-    .eq('user_id', user.id)
-    .eq('endpoint', endpoint);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    await db
+      .delete(pushSubscriptions)
+      .where(and(
+        eq(pushSubscriptions.userId, user.id),
+        eq(pushSubscriptions.endpoint, endpoint),
+      ));
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : String(e) },
+      { status: 500 }
+    );
+  }
   return NextResponse.json({ ok: true });
 }
