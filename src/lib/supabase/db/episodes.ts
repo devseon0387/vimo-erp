@@ -1,212 +1,252 @@
+'use server';
 /**
- * Episodes CRUD
+ * Episodes CRUD — Supabase → Baseon 자체 PG(Drizzle) 이전 (Phase 2).
+ * ★ 기존: 브라우저 클라이언트가 직접 쿼리(RLS가 보호) + cachedFetch.
+ * ★ 변경: 'use server' 서버 액션에서 Drizzle로 쿼리 + 서버에서 권한 검사.
+ *   - vimo_team_episodes RLS(is_vimo_team = vimo_erp active = hasErpAccess) → 쓰기는 hasErpAccess 게이트.
+ *   - 읽기는 충실번역 최소층(currentUser 로그인 게이트). partner_self_episodes_select(파트너=본인
+ *     assignee 회차만 read-only)는 현 DAL이 전체 회차를 반환하므로 미반영 → Phase 3 하드닝으로 분리.
+ *   인증(currentUser)은 Phase 4까지 Supabase Auth 유지. 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
+ * ★ cachedFetch 제거: 서버 액션은 브라우저측 cache/realtime invalidate와 무관(portfolio.ts와 동일하게 캐시 미사용).
  */
-import { createClient } from '../client';
-import { cachedFetch } from '../cache';
+import { eq, desc, sql, type SQL } from 'drizzle-orm';
+import { db } from '@/db';
+import { episodes } from '@/db/schema';
+import { currentUser, hasErpAccess } from '@/lib/authz';
 import type { Episode, WorkContentType } from '@/types';
 
-// ─── Row Types (Supabase snake_case) ─────────────────────────
-
-export interface EpisodeRow {
-  id: string;
-  project_id: string;
-  episode_number: number;
-  title: string;
-  description: string | null;
-  client: string | null;
-  client_id: string | null;
-  work_content: string[] | null;
-  work_items: unknown | null;
-  status: string;
-  assignee: string | null;
-  manager: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  due_date: string | null;
-  budget_total: number;
-  budget_partner: number;
-  budget_management: number;
-  work_steps: unknown | null;
-  work_budgets: unknown | null;
-  payment_due_date: string | null;
-  payment_status: string | null;
-  invoice_date: string | null;
-  invoice_status: string | null;
-  completed_at: string | null;
-  created_at: string;
-  updated_at: string;
+// onConflictDoUpdate set 절: Supabase upsert(onConflict:'id')의 "충돌 시 제공 컬럼 전체 덮어쓰기"를
+// PG의 excluded 의사테이블로 1:1 재현. (col = excluded.<db_column>)
+function excluded(dbColumn: string): SQL {
+  return sql.raw(`excluded.${dbColumn}`);
 }
 
-// ─── Mappers ─────────────────────────────────────────────────
+// ─── Mappers (내부 helper — 외부 미사용, 'use server'라 export 금지) ──────────
 
-export function episodeFromRow(row: EpisodeRow): Episode & { projectId: string } {
+type EpisodeRow = typeof episodes.$inferSelect;
+
+function episodeFromRow(row: EpisodeRow): Episode & { projectId: string } {
   return {
     id: row.id,
-    projectId: row.project_id,
-    episodeNumber: row.episode_number,
+    projectId: row.projectId,
+    episodeNumber: row.episodeNumber,
     title: row.title,
     description: row.description ?? undefined,
     client: row.client ?? undefined,
-    clientId: row.client_id ?? undefined,
-    workContent: (row.work_content as WorkContentType[]) ?? [],
-    workItems: row.work_items as Episode['workItems'],
+    clientId: row.clientId ?? undefined,
+    workContent: (row.workContent as WorkContentType[]) ?? [],
+    workItems: row.workItems as Episode['workItems'],
     status: row.status as Episode['status'],
     assignee: row.assignee ?? '',
     manager: row.manager ?? '',
-    startDate: row.start_date ?? '',
-    endDate: row.end_date ?? undefined,
-    dueDate: row.due_date ?? undefined,
+    startDate: row.startDate ?? '',
+    endDate: row.endDate ?? undefined,
+    dueDate: row.dueDate ?? undefined,
     budget: {
-      totalAmount: row.budget_total,
-      partnerPayment: row.budget_partner,
-      managementFee: row.budget_management,
+      // numeric 컬럼은 Drizzle에서 string으로 반환 → Number() 캐스트 필수.
+      totalAmount: Number(row.budgetTotal ?? 0),
+      partnerPayment: Number(row.budgetPartner ?? 0),
+      managementFee: Number(row.budgetManagement ?? 0),
     },
-    workSteps: row.work_steps as Episode['workSteps'],
-    workBudgets: row.work_budgets as Episode['workBudgets'],
-    paymentDueDate: row.payment_due_date ?? undefined,
-    paymentStatus: (row.payment_status as Episode['paymentStatus']) ?? 'pending',
-    invoiceDate: row.invoice_date ?? undefined,
-    invoiceStatus: (row.invoice_status as Episode['invoiceStatus']) ?? 'pending',
-    completedAt: row.completed_at ?? undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    workSteps: row.workSteps as Episode['workSteps'],
+    workBudgets: row.workBudgets as Episode['workBudgets'],
+    paymentDueDate: row.paymentDueDate ?? undefined,
+    paymentStatus: (row.paymentStatus as Episode['paymentStatus']) ?? 'pending',
+    invoiceDate: row.invoiceDate ?? undefined,
+    invoiceStatus: (row.invoiceStatus as Episode['invoiceStatus']) ?? 'pending',
+    completedAt: row.completedAt ?? undefined,
+    createdAt: row.createdAt ?? '',
+    updatedAt: row.updatedAt ?? '',
   };
 }
 
-export function episodeToInsert(episode: Episode & { projectId: string }) {
+function episodeToInsert(
+  episode: Episode & { projectId: string }
+): typeof episodes.$inferInsert {
+  // 주의: 기존 episodeToInsert는 client_id를 insert payload에 포함하지 않았음 → 동작 보존 위해 clientId 생략.
   return {
     id: episode.id,
-    project_id: episode.projectId,
-    episode_number: episode.episodeNumber,
+    projectId: episode.projectId,
+    episodeNumber: episode.episodeNumber,
     title: episode.title,
     description: episode.description ?? null,
     client: episode.client ?? null,
-    work_content: episode.workContent ?? [],
-    work_items: episode.workItems ?? null,
+    workContent: episode.workContent ?? [],
+    workItems: episode.workItems ?? null,
     status: episode.status,
     assignee: episode.assignee ?? null,
     manager: episode.manager ?? null,
-    start_date: episode.startDate ?? null,
-    end_date: episode.endDate ?? null,
-    due_date: episode.dueDate ?? null,
-    budget_total: episode.budget?.totalAmount ?? 0,
-    budget_partner: episode.budget?.partnerPayment ?? 0,
-    budget_management: episode.budget?.managementFee ?? 0,
-    work_steps: episode.workSteps ?? null,
-    work_budgets: episode.workBudgets ?? null,
-    payment_due_date: episode.paymentDueDate ?? null,
-    payment_status: episode.paymentStatus ?? 'pending',
-    invoice_date: episode.invoiceDate ?? null,
-    invoice_status: episode.invoiceStatus ?? 'pending',
-    completed_at: episode.completedAt ?? null,
+    startDate: episode.startDate ?? null,
+    endDate: episode.endDate ?? null,
+    dueDate: episode.dueDate ?? null,
+    budgetTotal: String(episode.budget?.totalAmount ?? 0),
+    budgetPartner: String(episode.budget?.partnerPayment ?? 0),
+    budgetManagement: String(episode.budget?.managementFee ?? 0),
+    workSteps: episode.workSteps ?? null,
+    workBudgets: episode.workBudgets ?? null,
+    paymentDueDate: episode.paymentDueDate ?? null,
+    paymentStatus: episode.paymentStatus ?? 'pending',
+    invoiceDate: episode.invoiceDate ?? null,
+    invoiceStatus: episode.invoiceStatus ?? 'pending',
+    completedAt: episode.completedAt ?? null,
   };
 }
 
-export function episodeToUpdate(fields: Partial<Episode>) {
-  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (fields.episodeNumber !== undefined) row.episode_number = fields.episodeNumber;
-  if (fields.title !== undefined) row.title = fields.title;
-  if (fields.description !== undefined) row.description = fields.description ?? null;
-  if (fields.client !== undefined) row.client = fields.client ?? null;
-  if (fields.clientId !== undefined) row.client_id = fields.clientId ?? null;
-  if (fields.workContent !== undefined) row.work_content = fields.workContent ?? [];
-  if (fields.workItems !== undefined) row.work_items = fields.workItems ?? null;
-  if (fields.status !== undefined) row.status = fields.status;
-  if (fields.assignee !== undefined) row.assignee = fields.assignee ?? null;
-  if (fields.manager !== undefined) row.manager = fields.manager ?? null;
-  if (fields.startDate !== undefined) row.start_date = fields.startDate ?? null;
-  if (fields.endDate !== undefined) row.end_date = fields.endDate ?? null;
-  if (fields.dueDate !== undefined) row.due_date = fields.dueDate ?? null;
+function episodeToUpdate(fields: Partial<Episode>): Partial<typeof episodes.$inferInsert> {
+  const patch: Partial<typeof episodes.$inferInsert> = { updatedAt: new Date().toISOString() };
+  if (fields.episodeNumber !== undefined) patch.episodeNumber = fields.episodeNumber;
+  if (fields.title !== undefined) patch.title = fields.title;
+  if (fields.description !== undefined) patch.description = fields.description ?? null;
+  if (fields.client !== undefined) patch.client = fields.client ?? null;
+  if (fields.clientId !== undefined) patch.clientId = fields.clientId ?? null;
+  if (fields.workContent !== undefined) patch.workContent = fields.workContent ?? [];
+  if (fields.workItems !== undefined) patch.workItems = fields.workItems ?? null;
+  if (fields.status !== undefined) patch.status = fields.status;
+  if (fields.assignee !== undefined) patch.assignee = fields.assignee ?? null;
+  if (fields.manager !== undefined) patch.manager = fields.manager ?? null;
+  if (fields.startDate !== undefined) patch.startDate = fields.startDate ?? null;
+  if (fields.endDate !== undefined) patch.endDate = fields.endDate ?? null;
+  if (fields.dueDate !== undefined) patch.dueDate = fields.dueDate ?? null;
   if (fields.budget !== undefined) {
-    row.budget_total = fields.budget.totalAmount;
-    row.budget_partner = fields.budget.partnerPayment;
-    row.budget_management = fields.budget.managementFee;
+    patch.budgetTotal = String(fields.budget.totalAmount);
+    patch.budgetPartner = String(fields.budget.partnerPayment);
+    patch.budgetManagement = String(fields.budget.managementFee);
   }
-  if (fields.workSteps !== undefined) row.work_steps = fields.workSteps ?? null;
-  if (fields.workBudgets !== undefined) row.work_budgets = fields.workBudgets ?? null;
-  if (fields.paymentDueDate !== undefined) row.payment_due_date = fields.paymentDueDate ?? null;
-  if (fields.paymentStatus !== undefined) row.payment_status = fields.paymentStatus ?? 'pending';
-  if (fields.invoiceDate !== undefined) row.invoice_date = fields.invoiceDate ?? null;
-  if (fields.invoiceStatus !== undefined) row.invoice_status = fields.invoiceStatus ?? 'pending';
-  if (fields.completedAt !== undefined) row.completed_at = fields.completedAt ?? null;
-  return row;
+  if (fields.workSteps !== undefined) patch.workSteps = fields.workSteps ?? null;
+  if (fields.workBudgets !== undefined) patch.workBudgets = fields.workBudgets ?? null;
+  if (fields.paymentDueDate !== undefined) patch.paymentDueDate = fields.paymentDueDate ?? null;
+  if (fields.paymentStatus !== undefined) patch.paymentStatus = fields.paymentStatus ?? 'pending';
+  if (fields.invoiceDate !== undefined) patch.invoiceDate = fields.invoiceDate ?? null;
+  if (fields.invoiceStatus !== undefined) patch.invoiceStatus = fields.invoiceStatus ?? 'pending';
+  if (fields.completedAt !== undefined) patch.completedAt = fields.completedAt ?? null;
+  return patch;
+}
+
+// ─── CRUD ────────────────────────────────────────────────────
+
+export async function getAllEpisodes(): Promise<(Episode & { projectId: string })[]> {
+  // 충실번역 최소층: 로그인 필수. (partner read-only subset은 Phase 3 하드닝)
+  if (!(await currentUser())) return [];
+  try {
+    const rows = await db
+      .select()
+      .from(episodes)
+      .orderBy(desc(episodes.createdAt));
+    return rows.map(episodeFromRow);
+  } catch (e) {
+    console.error('[DB] getAllEpisodes:', e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
+export async function getProjectEpisodes(
+  projectId: string
+): Promise<(Episode & { projectId: string })[]> {
+  if (!(await currentUser())) return [];
+  try {
+    const rows = await db
+      .select()
+      .from(episodes)
+      .where(eq(episodes.projectId, projectId))
+      .orderBy(desc(episodes.episodeNumber));
+    return rows.map(episodeFromRow);
+  } catch (e) {
+    console.error('[DB] getProjectEpisodes:', e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
+export async function upsertEpisodes(
+  episodeList: (Episode & { projectId: string })[]
+): Promise<boolean> {
+  if (episodeList.length === 0) return true;
+  // 쓰기 → vimo_team(is_vimo_team = hasErpAccess)만.
+  const u = await currentUser();
+  if (!u || !(await hasErpAccess(u.id))) return false;
+  try {
+    await db
+      .insert(episodes)
+      .values(episodeList.map(episodeToInsert))
+      .onConflictDoUpdate({
+        target: episodes.id,
+        set: {
+          projectId: excluded('project_id'),
+          episodeNumber: excluded('episode_number'),
+          title: excluded('title'),
+          description: excluded('description'),
+          client: excluded('client'),
+          workContent: excluded('work_content'),
+          workItems: excluded('work_items'),
+          status: excluded('status'),
+          assignee: excluded('assignee'),
+          manager: excluded('manager'),
+          startDate: excluded('start_date'),
+          endDate: excluded('end_date'),
+          dueDate: excluded('due_date'),
+          budgetTotal: excluded('budget_total'),
+          budgetPartner: excluded('budget_partner'),
+          budgetManagement: excluded('budget_management'),
+          workSteps: excluded('work_steps'),
+          workBudgets: excluded('work_budgets'),
+          paymentDueDate: excluded('payment_due_date'),
+          paymentStatus: excluded('payment_status'),
+          invoiceDate: excluded('invoice_date'),
+          invoiceStatus: excluded('invoice_status'),
+          completedAt: excluded('completed_at'),
+        },
+      });
+    return true;
+  } catch (e) {
+    console.error('[DB] upsertEpisodes:', e instanceof Error ? e.message : e);
+    return false;
+  }
+}
+
+export async function upsertEpisode(
+  episode: Episode & { projectId: string }
+): Promise<boolean> {
+  // 자체 게이트 불필요 — upsertEpisodes 내부에서 적용됨.
+  return upsertEpisodes([episode]);
+}
+
+export async function deleteEpisode(id: string): Promise<boolean> {
+  // 쓰기 → vimo_team만.
+  const u = await currentUser();
+  if (!u || !(await hasErpAccess(u.id))) return false;
+  try {
+    await db.delete(episodes).where(eq(episodes.id, id));
+    return true;
+  } catch (e) {
+    console.error('[DB] deleteEpisode:', e instanceof Error ? e.message : e);
+    return false;
+  }
+}
+
+export async function deleteProjectEpisodes(projectId: string): Promise<boolean> {
+  // 쓰기 → vimo_team만.
+  const u = await currentUser();
+  if (!u || !(await hasErpAccess(u.id))) return false;
+  try {
+    await db.delete(episodes).where(eq(episodes.projectId, projectId));
+    return true;
+  } catch (e) {
+    console.error('[DB] deleteProjectEpisodes:', e instanceof Error ? e.message : e);
+    return false;
+  }
 }
 
 export async function updateEpisodeFields(
   id: string,
   fields: Partial<Episode>
 ): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from('episodes')
-    .update(episodeToUpdate(fields))
-    .eq('id', id);
-  if (error) console.error('[DB] updateEpisodeFields:', error.message);
-  return !error;
-}
-
-// ─── CRUD ────────────────────────────────────────────────────
-
-export async function getAllEpisodes(): Promise<(Episode & { projectId: string })[]> {
-  return cachedFetch('episodes:all', async () => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('episodes')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) { console.error('[DB] getAllEpisodes:', error.message); return []; }
-    if (!data) return [];
-    return (data as EpisodeRow[]).map(episodeFromRow);
-  });
-}
-
-export async function getProjectEpisodes(
-  projectId: string
-): Promise<(Episode & { projectId: string })[]> {
-  return cachedFetch(`episodes:project:${projectId}`, async () => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('episodes')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('episode_number', { ascending: false });
-    if (error) { console.error('[DB] getProjectEpisodes:', error.message); return []; }
-    if (!data) return [];
-    return (data as EpisodeRow[]).map(episodeFromRow);
-  });
-}
-
-export async function upsertEpisodes(
-  episodes: (Episode & { projectId: string })[]
-): Promise<boolean> {
-  if (episodes.length === 0) return true;
-  const supabase = createClient();
-  const { error } = await supabase
-    .from('episodes')
-    .upsert(episodes.map(episodeToInsert), { onConflict: 'id' });
-  if (error) console.error('[DB] upsertEpisodes:', error.message);
-  return !error;
-}
-
-export async function upsertEpisode(
-  episode: Episode & { projectId: string }
-): Promise<boolean> {
-  return upsertEpisodes([episode]);
-}
-
-export async function deleteEpisode(id: string): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase.from('episodes').delete().eq('id', id);
-  if (error) console.error('[DB] deleteEpisode:', error.message);
-  return !error;
-}
-
-export async function deleteProjectEpisodes(projectId: string): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from('episodes')
-    .delete()
-    .eq('project_id', projectId);
-  if (error) console.error('[DB] deleteProjectEpisodes:', error.message);
-  return !error;
+  // 쓰기 → vimo_team만. (10개 'use client' 호출 핫패스 — 시그니처 절대 유지)
+  const u = await currentUser();
+  if (!u || !(await hasErpAccess(u.id))) return false;
+  try {
+    await db.update(episodes).set(episodeToUpdate(fields)).where(eq(episodes.id, id));
+    return true;
+  } catch (e) {
+    console.error('[DB] updateEpisodeFields:', e instanceof Error ? e.message : e);
+    return false;
+  }
 }
