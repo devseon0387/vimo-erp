@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, UserPlus, Link2, X, Search, Mail, Phone, AlertTriangle, Check, Eye } from 'lucide-react';
 import {
   getPendingPartnerSignups, mapToExistingPartner, createAndMapNewPartner, rejectPartnerSignup,
-  type PendingPartnerSignup,
 } from '@/lib/supabase/db/partner_signups';
+import type { PendingPartnerSignup } from '@/lib/supabase/db/partner_signups.types';
 import { getPartners } from '@/lib/supabase/db';
 import type { Partner } from '@/types';
 import { useToast } from '@/contexts/ToastContext';

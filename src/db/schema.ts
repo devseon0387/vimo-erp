@@ -392,6 +392,7 @@ export const partners = pgTable("partners", {
 	bank: text(),
 	bankAccount: text("bank_account"),
 	profileImage: text("profile_image"),
+	kakaoChatId: text("kakao_chat_id"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	position: text().default('partner'),
 	jobTitle: text("job_title"),

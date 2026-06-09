@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, Search, Check, X as XIcon, ArrowLeft, Loader2 } from 'lucide-react';
 import { getMyProfile } from '@/lib/supabase/db';
-import { listUsersWithAccess, grantAppAccess, suspendAppAccess, type UserWithAccess, type AppCode } from '@/lib/supabase/db/app_access';
+import { listUsersWithAccess, grantAppAccess, suspendAppAccess } from '@/lib/supabase/db/app_access';
+import type { UserWithAccess, AppCode } from '@/lib/supabase/db/app_access.types';
 import { useToast } from '@/contexts/ToastContext';
 
 const APPS: { code: AppCode; label: string; tone: string }[] = [

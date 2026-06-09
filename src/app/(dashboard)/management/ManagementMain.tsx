@@ -6,10 +6,10 @@ import {
   getProjects, getPartners, getClients, getAllEpisodes,
   getMyChecklists, insertChecklist, updateChecklist, deleteChecklist,
   insertProject, insertClient, upsertEpisodes, updateEpisodeFields,
-  ChecklistRow,
 } from '@/lib/supabase/db';
+import type { ChecklistRow } from '@/lib/supabase/db/users.types';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
-import { Calendar, Plus, Bell, X, Link2, Search, ChevronLeft, ChevronRight, User, FolderOpen, Building2 } from 'lucide-react';
+import { Calendar, Plus, Bell, Clock, X, Link2, Search, ChevronLeft, ChevronRight, User, FolderOpen, Building2 } from 'lucide-react';
 import { Project, Episode, Partner, Client, WorkContentType, WorkStep } from '@/types';
 import Link from 'next/link';
 import ProjectWizardModal from '@/components/ProjectWizardModal';
@@ -584,10 +584,10 @@ export default function ManagementMain() {
                       <span className="text-[12px] font-medium block truncate">{item.text}</span>
                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                         {item.reminderTime && (
-                          <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded"><Clock className="inline align-middle w-2.5 h-2.5" /> {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                         )}
                         {item.linkedProjectTitle && (
-                          <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
+                          <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded"><FolderOpen className="inline align-middle w-2.5 h-2.5" /> {item.linkedProjectTitle}</span>
                         )}
                       </div>
                     </div>
@@ -885,7 +885,7 @@ export default function ManagementMain() {
                     )}
                     {formLink.projectId && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
-                        📁 {formLink.projectTitle}
+                        <FolderOpen className="inline align-middle w-2.5 h-2.5" /> {formLink.projectTitle}
                         {!formLink.episodeId && <button onClick={() => clearLink('project')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>}
                       </span>
                     )}
@@ -1214,7 +1214,7 @@ export default function ManagementMain() {
                             <span className={`text-[13px] font-medium ${item.completed ? 'line-through text-[var(--color-ink-400)]' : ''}`}>{item.text}</span>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               {item.reminderTime && (
-                                <span className="text-[10px] text-brand-500">🔔 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[10px] text-brand-500"><Bell className="inline align-middle w-2.5 h-2.5" /> {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                               )}
                               {item.repeatType && item.repeatType !== 'none' && (
                                 <span className="text-[10px] text-brand-500 bg-orange-100 px-1.5 py-0.5 rounded-full">
