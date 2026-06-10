@@ -6,17 +6,18 @@
  *
  * 토큰: HS256 + VIBOX_SSO_SECRET, 5초 만료, issuer='vimo-erp', audience='vibox'
  *
- * ★ Phase 2b: profiles / vimo_staff .from() → 자체 PG(Drizzle) db. 인증 게이트(getUser)는 불변.
- *   주의: vimo_staff 테이블에는 role 컬럼이 없음(schema = profile_id/department/position/hire_date).
- *   원본은 .select('role')로 존재하지 않는 컬럼을 읽어 staff.role이 항상 undefined → 'member'로 귀결.
- *   충실 번역으로 동일 동작 보존(존재 게이트 + role='member'). 아래 concerns FLAG 참조.
+ * ★ Phase 2b: profiles / vimo_staff .from() → 자체 PG(Drizzle) db.
+ * ★ Phase 3 하드닝: role 클레임 소스 교정 — 원본은 vimo_staff.role(미존재 컬럼)을 읽어 항상
+ *   'member'로 귀결되던 선재 버그. vibox SSO는 'admin'을 화이트리스트에 두고 클레임대로 자기
+ *   users.role을 동기화하므로, ERP admin(app_access vimo_erp role=admin = isVimoAdmin)을
+ *   'admin'으로 전달하도록 수정(설계 의도 복원).
  */
 import { NextRequest } from 'next/server';
 import { SignJWT } from 'jose';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { profiles, vimoStaff } from '@/db/schema';
-import { currentUser } from '@/lib/authz';
+import { currentUser, isVimoAdmin } from '@/lib/authz';
 
 const TOKEN_TTL_SECONDS = 5;
 
@@ -52,8 +53,8 @@ export async function POST(_req: NextRequest) {
     return Response.json({ error: 'not a vimo team member' }, { status: 403 });
   }
 
-  // 원본의 staff.role은 존재하지 않는 컬럼이라 항상 undefined → 'member'. 동작 보존.
-  const role: 'admin' | 'member' = 'member';
+  // ERP admin(app_access vimo_erp role=admin) → vibox 'admin', 그 외 'member'.
+  const role: 'admin' | 'member' = (await isVimoAdmin(user.id)) ? 'admin' : 'member';
 
   // audit — 운영 logs 에 핸드오프 발급 기록. P2 차원의 가벼운 추적, 정식 audit 테이블은 후속.
   const ip = _req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';

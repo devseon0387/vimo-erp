@@ -5,7 +5,7 @@
  */
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { appAccess, profiles, userProfiles } from '@/db/schema';
+import { appAccess, partnerMeta, profiles, userProfiles } from '@/db/schema';
 import { auth } from '@/auth';
 
 /** 현재 로그인 사용자 (Auth.js 세션). 없으면 null. */
@@ -73,4 +73,18 @@ export async function isProfileAdmin(userId: string): Promise<boolean> {
     .where(and(eq(userProfiles.id, userId), eq(userProfiles.role, 'admin')))
     .limit(1);
   return rows.length > 0;
+}
+
+/**
+ * 현재 사용자의 legacy 파트너 매핑 — RLS의 public.my_legacy_partner_id_text() 재현.
+ * partner_meta.legacy_partner_id(→ partners.id). 매핑 없으면 null.
+ * Phase 3 파트너 SELECT 분기(projects/episodes/clients/partners)의 행 필터 키.
+ */
+export async function myLegacyPartnerId(userId: string): Promise<string | null> {
+  const rows = await db
+    .select({ legacy: partnerMeta.legacyPartnerId })
+    .from(partnerMeta)
+    .where(eq(partnerMeta.profileId, userId))
+    .limit(1);
+  return rows[0]?.legacy ?? null;
 }

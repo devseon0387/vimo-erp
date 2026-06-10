@@ -4,15 +4,15 @@
  * ★ 기존: 브라우저 클라이언트가 직접 쿼리(RLS가 보호) + cachedFetch.
  * ★ 변경: 'use server' 서버 액션에서 Drizzle로 쿼리 + 서버에서 권한 검사.
  *   - vimo_team_episodes RLS(is_vimo_team = vimo_erp active = hasErpAccess) → 쓰기는 hasErpAccess 게이트.
- *   - 읽기는 충실번역 최소층(currentUser 로그인 게이트). partner_self_episodes_select(파트너=본인
- *     assignee 회차만 read-only)는 현 DAL이 전체 회차를 반환하므로 미반영 → Phase 3 하드닝으로 분리.
- *   인증(currentUser)은 Phase 4까지 Supabase Auth 유지. 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
+ *   - 읽기(Phase 3 하드닝 완료): vimo_team(전체) OR partner_self_episodes_select(legacy 매핑
+ *     파트너=본인 assignee 회차만 read) — 원본 RLS permissive OR 재현(라이브 pg_policies 대조).
+ *   인증 = Auth.js 세션 (Phase 4 전환). 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
  * ★ cachedFetch 제거: 서버 액션은 브라우저측 cache/realtime invalidate와 무관(portfolio.ts와 동일하게 캐시 미사용).
  */
-import { eq, desc, sql, type SQL } from 'drizzle-orm';
+import { and, eq, desc, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db';
 import { episodes } from '@/db/schema';
-import { currentUser, hasErpAccess } from '@/lib/authz';
+import { currentUser, hasErpAccess, myLegacyPartnerId } from '@/lib/authz';
 import type { Episode, WorkContentType } from '@/types';
 
 // onConflictDoUpdate set 절: Supabase upsert(onConflict:'id')의 "충돌 시 제공 컬럼 전체 덮어쓰기"를
@@ -125,12 +125,21 @@ function episodeToUpdate(fields: Partial<Episode>): Partial<typeof episodes.$inf
 // ─── CRUD ────────────────────────────────────────────────────
 
 export async function getAllEpisodes(): Promise<(Episode & { projectId: string })[]> {
-  // 충실번역 최소층: 로그인 필수. (partner read-only subset은 Phase 3 하드닝)
-  if (!(await currentUser())) return [];
+  // 읽기 = vimo_team(전체) OR 파트너 self 분기(본인 assignee 회차만, 원본 RLS permissive OR 재현).
+  const u = await currentUser();
+  if (!u) return [];
   try {
+    const isTeam = await hasErpAccess(u.id);
+    let where: SQL | undefined;
+    if (!isTeam) {
+      const legacy = await myLegacyPartnerId(u.id);
+      if (!legacy) return [];
+      where = eq(episodes.assignee, legacy);
+    }
     const rows = await db
       .select()
       .from(episodes)
+      .where(where)
       .orderBy(desc(episodes.createdAt));
     return rows.map(episodeFromRow);
   } catch (e) {
@@ -142,12 +151,21 @@ export async function getAllEpisodes(): Promise<(Episode & { projectId: string }
 export async function getProjectEpisodes(
   projectId: string
 ): Promise<(Episode & { projectId: string })[]> {
-  if (!(await currentUser())) return [];
+  // 읽기 = vimo_team(전체) OR 파트너 self 분기(본인 assignee 회차만).
+  const u = await currentUser();
+  if (!u) return [];
   try {
+    const isTeam = await hasErpAccess(u.id);
+    let where: SQL = eq(episodes.projectId, projectId);
+    if (!isTeam) {
+      const legacy = await myLegacyPartnerId(u.id);
+      if (!legacy) return [];
+      where = and(where, eq(episodes.assignee, legacy))!;
+    }
     const rows = await db
       .select()
       .from(episodes)
-      .where(eq(episodes.projectId, projectId))
+      .where(where)
       .orderBy(desc(episodes.episodeNumber));
     return rows.map(episodeFromRow);
   } catch (e) {

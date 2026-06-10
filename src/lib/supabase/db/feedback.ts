@@ -1,15 +1,14 @@
 'use server';
 /**
  * Feedback CRUD — Supabase → Baseon 자체 PG(Drizzle) 이전 (Phase 2).
- * ★ 기존: 브라우저 클라이언트가 직접 쿼리(feedback 테이블은 RLS 부재 = anon 키로 사실상 public).
- * ★ 변경: 서버 액션에서 Drizzle로 쿼리 + 서버에서 인증 게이트(충실번역: 가장 가벼운 require-auth).
- *   인증(currentUser)은 Phase 4까지 Supabase Auth 유지. 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
+ * ★ 변경: 서버 액션에서 Drizzle로 쿼리 + 서버에서 인증 게이트(require-auth).
+ *   인증 = Auth.js 세션 (Phase 4 전환). 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
  *
- * 권한 주석:
- *   - 원본 feedback 테이블엔 RLS 정책·enable이 전무(마이그레이션에 정의 없음) → 현재 anon 키로 read/insert/update 모두 가능.
- *   - Phase 2 충실번역 원칙상 권한 강화는 Phase 3로 미루되, 최소 게이트로 require-auth(로그인 필수)를 적용.
- *   - 모든 호출부(feedback/page.tsx · FeedbackModal.tsx)가 (dashboard) 인증 영역 내부라 require-auth가 현 시나리오에 무영향.
- *   - FLAG: insertFeedback은 RLS 부재로 원래 비로그인(anon) 제출이 기술적으로 가능했음. 비로그인 제출 의도였다면 Phase 3에서 anon 허용으로 완화 필요(PO 결정).
+ * 권한 주석 (Phase 3 정정 — 2026-06-10 라이브 Supabase pg_policies 실측):
+ *   - 옛 FLAG("RLS 부재 = anon 가능")는 오진. 실제 운영 DB는 feedback에 RLS enabled +
+ *     "Allow authenticated read/insert/update" 3정책(전부 TO authenticated, USING true)이 존재
+ *     (마이그레이션 파일엔 없고 대시보드에서 생성된 것). 즉 원본도 anon 불가·로그인 필수.
+ *   - 따라서 현 require-auth 게이트 = 원본과 정확한 패리티. anon 완화 결정 불필요(해소).
  */
 import { eq, desc } from 'drizzle-orm';
 import { db } from '@/db';
@@ -41,7 +40,7 @@ export async function getFeedbacks(): Promise<Feedback[]> {
 }
 
 export async function insertFeedback(content: string, pagePath: string): Promise<Feedback | null> {
-  // FLAG: 원본은 RLS 부재라 anon insert가 사실상 허용. 충실번역 보수안으로 require-auth 적용(현 호출부는 인증 영역 내부).
+  // 원본 RLS "Allow authenticated insert"(TO authenticated) = 로그인 필수 — 정확한 패리티(라이브 대조).
   if (!(await currentUser())) return null;
   const [row] = await db
     .insert(feedback)

@@ -4,21 +4,38 @@
  * ★ 기존: 브라우저 클라이언트가 직접 쿼리(RLS가 보호) + cachedFetch.
  * ★ 변경: 'use server' 서버 액션에서 Drizzle로 쿼리 + 서버에서 권한 검사.
  *   - projects RLS(is_vimo_team = vimo_erp active = hasErpAccess) → 쓰기는 hasErpAccess 게이트.
- *   - 읽기는 충실번역 최소층(currentUser 로그인 게이트, require-auth 베이스라인).
- *     PHASE3: 파트너 owner SELECT 분기(파트너=본인 owner_partner_id 행만 read)는 현 DAL이
- *     전체 프로젝트를 반환하므로 미반영 → Phase 3 하드닝으로 분리.
- *   인증(currentUser)은 Phase 4까지 Supabase Auth 유지. 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
+ *   - 읽기(Phase 3 하드닝 완료): vimo_team_projects(hasErpAccess=전체) OR
+ *     partner_self_projects_select(legacy 매핑 파트너=본인 partner_id 또는 본인 assignee 회차가
+ *     있는 프로젝트만 read) — 원본 RLS 2정책의 permissive OR를 분기로 재현(라이브 pg_policies 대조).
+ *   인증 = Auth.js 세션 (Phase 4 전환). 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
  * ★ cachedFetch 제거: 서버 액션은 브라우저측 cache/realtime invalidate와 무관(portfolio.ts·episodes.ts와 동일).
  * ★ 매퍼/ProjectRow 내부화: projectFromRow/projectToInsert/projectToUpdate/ProjectRow 외부 import 0 재확인
  *   (trash.ts는 동일 로직을 Drizzle로 인라인 재구현, 코드 import 아님) → 'use server' 규칙상 non-export 강등.
  * ★ numeric 컬럼(total_amount/partner_payment/management_fee/margin_rate)은 Drizzle에서 string으로 반환
  *   → fromRow에서 Number() 캐스트, insert/update에서 String() 직렬화.
  */
-import { eq, desc } from 'drizzle-orm';
+import { and, eq, desc, exists, or, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { currentUser, hasErpAccess } from '@/lib/authz';
+import { episodes, projects } from '@/db/schema';
+import { currentUser, hasErpAccess, myLegacyPartnerId } from '@/lib/authz';
 import type { Project, WorkContentType } from '@/types';
+
+// partner_self_projects_select RLS 재현: 본인 partner_id 프로젝트 OR 본인 assignee 회차 보유 프로젝트.
+// (원본: COALESCE(partner_id,'')=legacy OR EXISTS(episodes e WHERE e.project_id=projects.id::text
+//  AND COALESCE(e.assignee,'')=legacy) — legacy는 non-null이라 coalesce 생략 동치.)
+function partnerSelfProjectsFilter(legacy: string): SQL {
+  return or(
+    eq(projects.partnerId, legacy),
+    exists(
+      db.select({ one: sql`1` })
+        .from(episodes)
+        .where(and(
+          eq(episodes.projectId, sql`${projects.id}::text`),
+          eq(episodes.assignee, legacy),
+        )),
+    ),
+  )!;
+}
 
 // ─── Mappers (내부 helper — 외부 미사용, 'use server'라 export 금지) ──────────
 
@@ -120,13 +137,24 @@ function projectToUpdate(project: Partial<Project>): Partial<typeof projects.$in
 // ─── CRUD ────────────────────────────────────────────────────
 
 export async function getProjects(): Promise<Project[]> {
-  // 충실번역 최소층: 로그인 필수(require-auth 베이스라인).
-  // PHASE3: 파트너 owner SELECT 분기(본인 owner_partner_id 행만) 하드닝.
-  if (!(await currentUser())) return [];
+  // 읽기 = vimo_team(전체) OR 파트너 self 분기(원본 RLS permissive OR 재현).
+  const u = await currentUser();
+  if (!u) return [];
   try {
+    if (await hasErpAccess(u.id)) {
+      const rows = await db
+        .select()
+        .from(projects)
+        .orderBy(desc(projects.createdAt));
+      return rows.map(projectFromRow);
+    }
+    // 파트너 분기: legacy 매핑 있을 때만 본인 행 subset.
+    const legacy = await myLegacyPartnerId(u.id);
+    if (!legacy) return [];
     const rows = await db
       .select()
       .from(projects)
+      .where(partnerSelfProjectsFilter(legacy))
       .orderBy(desc(projects.createdAt));
     return rows.map(projectFromRow);
   } catch (e) {
@@ -136,13 +164,21 @@ export async function getProjects(): Promise<Project[]> {
 }
 
 export async function getProjectById(id: string): Promise<Project | null> {
-  // PHASE3: 파트너 owner SELECT 분기 하드닝.
-  if (!(await currentUser())) return null;
+  // 읽기 = vimo_team(전체) OR 파트너 self 분기(원본 RLS permissive OR 재현).
+  const u = await currentUser();
+  if (!u) return null;
   try {
+    const isTeam = await hasErpAccess(u.id);
+    let where: SQL = eq(projects.id, id);
+    if (!isTeam) {
+      const legacy = await myLegacyPartnerId(u.id);
+      if (!legacy) return null;
+      where = and(where, partnerSelfProjectsFilter(legacy))!;
+    }
     const rows = await db
       .select()
       .from(projects)
-      .where(eq(projects.id, id))
+      .where(where)
       .limit(1);
     const row = rows[0];
     return row ? projectFromRow(row) : null;

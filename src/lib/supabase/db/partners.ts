@@ -11,16 +11,18 @@
  *     읽은 뒤, !(await isProfileAdmin(user.id)) 이면 email·phone·bank·bank_account 4개 컬럼을 NULL로
  *     덮어 반환. (DB 뷰 차원 마스킹 → 앱계층 마스킹으로 이전.)
  *
- *   인증(currentUser)은 Phase 4까지 Supabase Auth 유지. 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
+ *   인증 = Auth.js 세션 (Phase 4 전환). 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
  * ★ cachedFetch 제거: 서버 액션은 브라우저측 cache/realtime invalidate와 무관(portfolio.ts와 동일).
  *
- * PHASE3: 파트너 본인(owner) 분기 — 파트너가 자기 자신 행만 read/write, 자체 거래처 분리 등은 미구현.
- *   현 동작(staff 게이트)만 충실 번역.
+ * Phase 3 하드닝 완료: partner_self_partners_select RLS 재현 — legacy 매핑 파트너는
+ *   getPartners/getPartnerById에서 **본인 partners 행만** read(민감컬럼 마스킹 동일 적용).
+ *   partner_history/partner_issues는 원본도 staff 전용(라이브 pg_policies 대조)이라 분기 없음.
+ *   파트너 자체 거래처 분리(owner_partner_id)는 파트너 ERP 본격화 시 별도.
  */
 import { eq, asc, desc } from 'drizzle-orm';
 import { db } from '@/db';
 import { partners, partnerHistory, partnerIssues } from '@/db/schema';
-import { currentUser, isVimoStaff, isProfileAdmin } from '@/lib/authz';
+import { currentUser, isVimoStaff, isProfileAdmin, myLegacyPartnerId } from '@/lib/authz';
 import type { Partner } from '@/types';
 
 // ─── Mappers (내부 helper — 'use server'라 export 금지) ──────────────────────
@@ -101,18 +103,29 @@ function partnerToUpdate(partner: Partial<Partner>): Partial<typeof partners.$in
 // ─── CRUD (partners) ─────────────────────────────────────────
 
 export async function getPartners(): Promise<Partner[]> {
-  // 행 게이트: staff 만. (partners_safe 뷰는 is_vimo_staff RLS 위에 있었음)
+  // 행 게이트: staff = 전체 OR 파트너 self 분기(본인 행만, partner_self_partners_select 재현).
   const u = await currentUser();
-  if (!u || !(await isVimoStaff(u.id))) return [];
+  if (!u) return [];
   try {
+    if (await isVimoStaff(u.id)) {
+      const rows = await db
+        .select()
+        .from(partners)
+        .orderBy(desc(partners.createdAt));
+      // ★ 민감 컬럼 마스킹: admin 아니면 email/phone/bank/bank_account → NULL.
+      const isAdmin = await isProfileAdmin(u.id);
+      const safe = isAdmin ? rows : rows.map(maskSensitive);
+      return safe.map(partnerFromRow);
+    }
+    // 파트너 분기: legacy 매핑 본인 행만, 마스킹 적용(partners_safe 비-admin 동일).
+    const legacy = await myLegacyPartnerId(u.id);
+    if (!legacy) return [];
     const rows = await db
       .select()
       .from(partners)
-      .orderBy(desc(partners.createdAt));
-    // ★ 민감 컬럼 마스킹: admin 아니면 email/phone/bank/bank_account → NULL.
-    const isAdmin = await isProfileAdmin(u.id);
-    const safe = isAdmin ? rows : rows.map(maskSensitive);
-    return safe.map(partnerFromRow);
+      .where(eq(partners.id, legacy))
+      .limit(1);
+    return rows.map(maskSensitive).map(partnerFromRow);
   } catch (e) {
     console.error('[DB] getPartners:', e instanceof Error ? e.message : e);
     return [];
@@ -120,9 +133,21 @@ export async function getPartners(): Promise<Partner[]> {
 }
 
 export async function getPartnerById(id: string): Promise<Partner | null> {
+  // 행 게이트: staff = 임의 행 OR 파트너 self 분기(본인 행만).
   const u = await currentUser();
-  if (!u || !(await isVimoStaff(u.id))) return null;
+  if (!u) return null;
   try {
+    if (!(await isVimoStaff(u.id))) {
+      // 파트너 분기: 본인 legacy 행만 허용(타 파트너 id 조회는 null), 마스킹 적용.
+      const legacy = await myLegacyPartnerId(u.id);
+      if (!legacy || legacy !== id) return null;
+      const [row] = await db
+        .select()
+        .from(partners)
+        .where(eq(partners.id, id))
+        .limit(1);
+      return row ? partnerFromRow(maskSensitive(row)) : null;
+    }
     const [row] = await db
       .select()
       .from(partners)
