@@ -225,7 +225,7 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	userId: uuid("user_id").notNull(),
 	endpoint: text().notNull(),
-	p256Dh: text().notNull(),
+	p256Dh: text("p256dh").notNull(),
 	auth: text().notNull(),
 	userAgent: text("user_agent"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
