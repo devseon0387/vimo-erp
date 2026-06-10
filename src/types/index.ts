@@ -19,6 +19,7 @@ export interface Partner {
   bankAccount?: string; // 계좌번호
   createdAt: string;
   profileImage?: string;
+  kakaoChatId?: string; // 카카오톡 톡방 ID (비봇 파트너 모니터링/알림용)
 }
 
 // 프로젝트 상태
