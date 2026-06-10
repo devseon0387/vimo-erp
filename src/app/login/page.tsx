@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
-import { createClient } from '@/lib/supabase/client';
+import { signIn } from 'next-auth/react';
 import { APP_VERSION_LABEL } from '@/config/version';
 
 export default function LoginPage() {
@@ -29,33 +29,12 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) {
-        setError(authError.message);
-        toast.error('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
-        setIsLoading(false);
-        return;
-      }
-
-      // 관리자 승인 여부 확인
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('approved, role, needs_password_change')
-        .eq('email', email)
-        .single();
-
-      if (profileError || !profile) {
-        await supabase.auth.signOut();
-        setError('프로필 정보를 가져올 수 없습니다. 관리자에게 문의하세요.');
-        setIsLoading(false);
-        return;
-      }
-
-      if (profile.role !== 'admin' && profile.approved !== true) {
-        await supabase.auth.signOut();
-        setError('관리자 승인 대기 중입니다. 승인 후 로그인할 수 있습니다.');
-        toast.error('관리자 승인 대기 중입니다.');
+      // Auth.js Credentials 로그인 (authorize에서 비번 검증 + 승인/역할 게이트).
+      // 미승인/오인증은 보안상 모두 동일 에러로 반환됨.
+      const res = await signIn('credentials', { email, password, redirect: false });
+      if (!res || res.error) {
+        setError('로그인에 실패했습니다. 이메일/비밀번호 또는 승인 상태를 확인해주세요.');
+        toast.error('로그인에 실패했습니다.');
         setIsLoading(false);
         return;
       }
@@ -65,12 +44,8 @@ export default function LoginPage() {
       sessionStorage.setItem('vm_active_session', '1');
       sessionStorage.setItem('vm_just_logged_in', '1');
 
-      // 비밀번호 변경 필요 여부 확인
-      if (profile.needs_password_change === true) {
-        window.location.href = '/change-password';
-      } else {
-        window.location.href = '/management';
-      }
+      // needs_password_change 인 경우 미들웨어가 /change-password 로 보냄.
+      window.location.href = '/management';
     } catch (err) {
       setError(String(err));
       setIsLoading(false);

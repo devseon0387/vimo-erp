@@ -1,10 +1,10 @@
 // Phase 2b: Supabase service_role .from() → 자체 PG(Drizzle) 이전.
 // ★ 기존 인증 게이트는 불변:
-//   - GET: authorizeRead(비봇 CLI 키 OR 로그인 세션) — auth.getUser는 Supabase Auth 유지(Phase4).
+//   - GET: authorizeRead(비봇 CLI 키 OR 로그인 세션) — Phase 4에서 Auth.js 세션으로 전환.
 //   - POST: requireAdmin(admin 세션) — service_role 우회를 admin 게이트로 차단하던 의미 보존.
 // 본 PG는 RLS가 없어 app_vimoerp가 풀 액세스 → 기존 service_role 읽기/쓰기 범위가 그대로 재현됨.
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createServerClient } from '@/lib/supabase/server';
+import { currentUser } from '@/lib/authz';
 import { requireAdmin } from '@/lib/auth/admin';
 import { db } from '@/db';
 import { projects, episodes, clients, partners } from '@/db/schema';
@@ -23,9 +23,7 @@ async function authorizeRead(req: NextRequest): Promise<boolean> {
   const key = req.headers.get('x-bibot-key');
   if (process.env.BIBOT_API_KEY && key === process.env.BIBOT_API_KEY) return true;
   try {
-    const supa = await createServerClient();
-    const { data: { user } } = await supa.auth.getUser();
-    return !!user;
+    return !!(await currentUser());
   } catch {
     return false;
   }

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { signIn } from 'next-auth/react';
+import { partnerSignup } from '@/lib/auth/partner';
 
 export default function PartnerSignupPage() {
   const router = useRouter();
@@ -31,35 +32,21 @@ export default function PartnerSignupPage() {
     if (!canSubmit) return;
     setIsLoading(true);
 
-    const supabase = createClient();
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          app_source: 'partner_erp',
-          name: name.trim(),
-        },
-      },
-    });
-
-    if (signUpError) {
-      // 메시지 한글화
-      const msg = signUpError.message.toLowerCase();
-      if (msg.includes('already registered') || msg.includes('user already')) {
-        setError('이미 가입된 이메일입니다. 로그인해주세요.');
-      } else if (msg.includes('password')) {
-        setError('비밀번호가 조건을 충족하지 않습니다. 8자 이상으로 다시 입력해주세요.');
-      } else if (msg.includes('email')) {
-        setError('이메일 형식이 올바르지 않습니다.');
-      } else {
-        setError(`가입에 실패했습니다. ${signUpError.message}`);
-      }
+    // 1) 파트너 프로필 생성 (Drizzle + bcrypt)
+    const res = await partnerSignup({ email, password, name: name.trim() });
+    if (!res.ok) {
+      setError(res.error ?? '가입에 실패했습니다.');
       setIsLoading(false);
       return;
     }
 
-    // 이메일 확인 OFF 설정이면 즉시 세션이 생성됨 → 환영 페이지로
+    // 2) 자동 로그인 (Auth.js) → 세션 확립 후 환영 페이지로
+    const login = await signIn('credentials', { email, password, redirect: false });
+    if (!login || login.error) {
+      // 가입은 됐으나 자동로그인 실패 — 로그인 페이지로 안내
+      router.push('/login');
+      return;
+    }
     router.push('/welcome');
   };
 

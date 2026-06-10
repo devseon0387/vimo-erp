@@ -16,7 +16,7 @@ import { SignJWT } from 'jose';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { profiles, vimoStaff } from '@/db/schema';
-import { createClient } from '@/lib/supabase/server';
+import { currentUser } from '@/lib/authz';
 
 const TOKEN_TTL_SECONDS = 5;
 
@@ -27,8 +27,7 @@ function getSecret(): Uint8Array {
 }
 
 export async function POST(_req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await currentUser();
   if (!user) return Response.json({ error: 'unauthorized' }, { status: 401 });
 
   // 1차 검증: profiles.user_type = 'staff' (universe 차원의 staff 표식)

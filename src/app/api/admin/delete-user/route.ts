@@ -1,28 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth/admin';
+import { db } from '@/db';
+import { userProfiles } from '@/db/schema';
 
+// 사용자 삭제 — user_profiles 행 삭제 (Supabase auth.admin.deleteUser 대체).
 export async function POST(req: NextRequest) {
   try {
     const guard = await requireAdmin();
     if (!guard.ok) return guard.response;
-    const { user, admin: adminSupabase } = guard;
 
     const { userId } = await req.json();
-    if (!userId || userId === user.id) {
+    if (!userId || userId === guard.user.id) {
       return NextResponse.json({ error: '자기 자신은 삭제할 수 없습니다' }, { status: 400 });
     }
 
-    // user_profiles 삭제
-    const { error: profileError } = await adminSupabase.from('user_profiles').delete().eq('id', userId);
-    if (profileError) {
-      return NextResponse.json({ error: '프로필 삭제 실패: ' + profileError.message }, { status: 500 });
-    }
-
-    // auth.users 삭제
-    const { error } = await adminSupabase.auth.admin.deleteUser(userId);
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    await db.delete(userProfiles).where(eq(userProfiles.id, userId));
 
     return NextResponse.json({ ok: true });
   } catch (err) {

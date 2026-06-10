@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { changeMyPassword } from '@/lib/auth/password';
 
 export default function ChangePasswordPage() {
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -16,6 +17,10 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setError('');
 
+    if (!currentPassword) {
+      setError('현재 비밀번호를 입력해주세요.');
+      return;
+    }
     if (newPassword.length < 6) {
       setError('비밀번호는 6자 이상이어야 합니다.');
       return;
@@ -27,25 +32,13 @@ export default function ChangePasswordPage() {
 
     setLoading(true);
     try {
-      const supabase = createClient();
-
-      // 비밀번호 변경
-      const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
-      if (pwError) {
-        setError(pwError.message);
+      // Auth.js + bcrypt: 현재비번 검증 후 user_profiles.password_hash 갱신 + needs_password_change=false
+      const res = await changeMyPassword(currentPassword, newPassword);
+      if (!res.ok) {
+        setError(res.error ?? '비밀번호 변경에 실패했습니다.');
         setLoading(false);
         return;
       }
-
-      // needs_password_change = false 업데이트
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('user_profiles')
-          .update({ needs_password_change: false })
-          .eq('id', user.id);
-      }
-
       window.location.href = '/management';
     } catch {
       setError('비밀번호 변경 중 오류가 발생했습니다.');
@@ -70,6 +63,19 @@ export default function ChangePasswordPage() {
 
           {/* 폼 */}
           <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">현재 비밀번호</label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                className="w-full px-4 py-3 border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent"
+                placeholder="로그인에 사용한 비밀번호"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">새 비밀번호</label>
               <div className="relative">

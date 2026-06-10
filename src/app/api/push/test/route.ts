@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/db';
 import { pushSubscriptions } from '@/db/schema';
-import { createClient } from '@/lib/supabase/server';
+import { currentUser } from '@/lib/authz';
 import { getWebPush } from '@/lib/push';
 
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await currentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let subs: { endpoint: string; p256dh: string; auth: string }[];

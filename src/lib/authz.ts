@@ -1,18 +1,18 @@
 /**
  * 앱 계층 권한 백본 — Supabase RLS → 자체 PG(Drizzle) 이전용.
- * ★ 서버 전용 모듈 (Drizzle + next/headers cookies에 의존). 'use server' DAL/액션에서만 import.
- * 인증(getUser)은 Phase 4까지 Supabase Auth 유지.
+ * ★ 서버 전용 모듈 (Drizzle + Auth.js 세션에 의존). 'use server' DAL/액션에서만 import.
+ * 인증 = Auth.js v5 JWT 세션 (Phase 4에서 Supabase Auth 대체).
  */
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { appAccess, profiles, userProfiles } from '@/db/schema';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@/auth';
 
-/** 현재 로그인 사용자. 없으면 null. */
+/** 현재 로그인 사용자 (Auth.js 세션). 없으면 null. */
 export async function currentUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  return session.user;
 }
 
 /**

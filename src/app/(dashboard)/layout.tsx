@@ -22,8 +22,9 @@ import UpdateNoticeModal from '@/components/UpdateNoticeModal';
 import { APP_VERSION, APP_LAST_UPDATED } from '@/config/version';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
-import { getMyProfile, getProjectById, getProjectEpisodes } from '@/lib/supabase/db';
+import { signOut } from 'next-auth/react';
+import { getSessionUser } from '@/lib/auth/session-info';
+import { getProjectById, getProjectEpisodes } from '@/lib/supabase/db';
 
 // ── 타입 정의
 type NavLink    = { type: 'link';    href: string; label: string; icon: React.ElementType; badge?: string; sub?: SubLink[] };
@@ -200,48 +201,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const checkAuth = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login'); return; }
+      // 1차 게이트는 미들웨어(proxy)가 처리. 여기선 UI용 세션정보 로드 + 세션-only 만료 처리.
       const stay    = localStorage.getItem('vm_stay_logged_in');
       const session = sessionStorage.getItem('vm_active_session');
-      if (!stay && !session) { await supabase.auth.signOut(); router.push('/login'); return; }
-      setUserEmail(user.email ?? '');
-
-      // 프로필 캐싱 (sessionStorage + 5분 TTL)
-      const PROFILE_TTL_MS = 5 * 60 * 1000;
-      const cached = sessionStorage.getItem('vm_profile');
-      const cachedAt = Number(sessionStorage.getItem('vm_profile_at') ?? 0);
-      const cacheFresh = cached && Date.now() - cachedAt < PROFILE_TTL_MS;
-      if (cached) {
-        try {
-          const p = JSON.parse(cached);
-          if (!p || (p.role !== 'admin' && p.approved !== true)) {
-            supabase.auth.signOut();
-            router.push('/login');
-            return;
-          }
-          setMyRole(p.role);
-        } catch { /* 캐시 파싱 실패 시 서버에서 다시 로드 */ }
+      if (!stay && !session) {
+        // "로그인 유지" 미체크 + 브라우저 세션 종료 → 로그아웃
+        invalidateAll();
+        await signOut({ redirect: false });
+        router.push('/login');
+        return;
       }
-      // 캐시가 신선하면 서버 fetch 생략 (네비마다 호출 방지)
-      if (cacheFresh) return;
-      getMyProfile().then(p => {
-        if (p) {
-          sessionStorage.setItem('vm_profile', JSON.stringify(p));
-          sessionStorage.setItem('vm_profile_at', String(Date.now()));
-          if (p.role !== 'admin' && p.approved !== true) {
-            sessionStorage.removeItem('vm_profile');
-            sessionStorage.removeItem('vm_profile_at');
-            supabase.auth.signOut();
-            router.push('/login');
-            return;
-          }
-          setMyRole(p.role);
-        }
-      }).catch(() => {
-        // 네트워크 에러 등 — 캐시된 프로필로 유지, 다음 요청에서 재시도
-      });
+
+      const u = await getSessionUser();
+      if (!u) { router.push('/login'); return; }
+      if (u.role !== 'admin' && u.approved !== true) {
+        await signOut({ redirect: false });
+        router.push('/login');
+        return;
+      }
+      setUserEmail(u.email ?? '');
+      setMyRole(u.role);
     };
     checkAuth();
   }, [router]);
@@ -253,7 +232,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     sessionStorage.removeItem('vm_profile');
     sessionStorage.removeItem('vm_profile_at');
     invalidateAll();
-    await createClient().auth.signOut();
+    await signOut({ redirect: false });
     window.location.href = '/login';
   };
 

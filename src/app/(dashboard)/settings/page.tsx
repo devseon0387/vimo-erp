@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { Palette, ClipboardList, CheckCircle, AlertCircle } from 'lucide-react';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
 import PushNotificationSetup from '@/components/PushNotificationSetup';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { getSessionUser } from '@/lib/auth/session-info';
+import { updateMyProfile } from '@/lib/auth/account';
+import { changeMyPassword } from '@/lib/auth/password';
 
 export default function SettingsPage() {
   const [name, setName] = useState('');
@@ -27,12 +28,10 @@ export default function SettingsPage() {
   const [notifMsg, setNotifMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
-      const user = data.user;
-      if (user) {
-        setEmail(user.email ?? '');
-        setName((user.user_metadata?.name as string | undefined) ?? '');
+    getSessionUser().then((u) => {
+      if (u) {
+        setEmail(u.email ?? '');
+        setName(u.name ?? '');
       }
     });
     // 알림 설정 불러오기
@@ -51,14 +50,10 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setProfileLoading(true);
     setProfileMsg(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({
-      email,
-      data: { name },
-    });
+    const res = await updateMyProfile({ email, name });
     setProfileLoading(false);
-    if (error) {
-      setProfileMsg({ type: 'error', text: error.message });
+    if (!res.ok) {
+      setProfileMsg({ type: 'error', text: res.error ?? '저장에 실패했습니다.' });
     } else {
       setProfileMsg({ type: 'success', text: '저장되었습니다.' });
     }
@@ -93,11 +88,10 @@ export default function SettingsPage() {
       return;
     }
     setPasswordLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const res = await changeMyPassword(currentPassword, newPassword);
     setPasswordLoading(false);
-    if (error) {
-      setPasswordMsg({ type: 'error', text: error.message });
+    if (!res.ok) {
+      setPasswordMsg({ type: 'error', text: res.error ?? '비밀번호 변경에 실패했습니다.' });
     } else {
       setPasswordMsg({ type: 'success', text: '비밀번호가 변경되었습니다.' });
       setCurrentPassword('');

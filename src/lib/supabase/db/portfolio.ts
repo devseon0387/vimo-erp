@@ -3,19 +3,17 @@
  * Portfolio CRUD — Supabase → Baseon 자체 PG(Drizzle) 이전 (Phase 2 패턴 1호).
  * ★ 기존: 브라우저 클라이언트가 직접 쿼리(RLS가 보호).
  * ★ 변경: 서버 액션에서 Drizzle로 쿼리 + 서버에서 권한 검사(RLS 'to authenticated' 대체).
- *   인증(getUser)은 Phase 4까지 Supabase Auth 유지. 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
+ *   인증 = Auth.js 세션 (Phase 4 전환). 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
  */
 import { eq, desc } from 'drizzle-orm';
 import { db } from '@/db';
 import { portfolioItems } from '@/db/schema';
-import { createClient } from '../server';
+import { currentUser } from '@/lib/authz';
 import type { PortfolioItem } from '@/types';
 
 // ─── 인증 가드 (RLS의 'to authenticated' = 로그인 필수를 앱계층으로) ───
 async function getUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  return currentUser();
 }
 
 // ─── Drizzle row → 도메인 타입 ───
