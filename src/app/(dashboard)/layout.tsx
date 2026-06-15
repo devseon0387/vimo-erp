@@ -303,8 +303,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         [data-rail-tip]:hover::after { opacity: 1; }
         @media (max-width: 768px) {
           .vm-rail, .vm-panel { display: none !important; }
-          .vm-header { left: 0 !important; }
-          .vm-main { margin-left: 0 !important; }
+          .vm-header { left: 0 !important; right: 0 !important; }
+          .vm-main { margin-left: 0 !important; margin-right: 0 !important; }
           .vm-hamburger { display: flex !important; }
         }
         /* 비봇 사이드바 모드일 때 메인 컨텐츠를 왼쪽으로 밀기 */
@@ -713,12 +713,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             setMobileMenu(v => !v);
           }}
           style={{
-            display:    'none',
-            background: 'none',
-            border:     'none',
-            cursor:     'pointer',
-            color:      'var(--color-ink-700)',
-            padding:    '4px',
+            display:        'none',
+            alignItems:     'center',
+            justifyContent: 'center',
+            width:          '40px',
+            height:         '40px',
+            marginLeft:     '-8px',
+            background:      'none',
+            border:         'none',
+            cursor:         'pointer',
+            color:          'var(--color-ink-700)',
+            flexShrink:     0,
           }}
         >
           <Menu size={20} />
@@ -731,13 +736,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const found = { href: matchedNav.href, label: matchedNav.label };
             const isProjectSubpage = found.label === '프로젝트' && pathname !== '/projects';
             return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', minWidth: 0, overflow: 'hidden' }}>
                     <button
                       onClick={() => setActiveSection(activeSection === sec.key ? null : sec.key)}
                       style={{
                         background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                         color: 'var(--color-ink-400)', fontWeight: 500, fontSize: '14px',
-                        transition: 'color 0.15s',
+                        transition: 'color 0.15s', flexShrink: 0, whiteSpace: 'nowrap',
                       }}
                       onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
                       onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-ink-400)'; }}
@@ -757,23 +762,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     )}
                     {isProjectSubpage && breadcrumbProject && !breadcrumbEpisode && (
                       <>
-                        <span style={{ color: '#d6cec8' }}>/</span>
-                        <span style={{ fontWeight: 600, color: 'var(--color-ink-900)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}>{breadcrumbProject}</span>
+                        <span style={{ color: '#d6cec8', flexShrink: 0 }}>/</span>
+                        <span style={{ fontWeight: 600, color: 'var(--color-ink-900)', maxWidth: 'min(180px, 45vw)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle', minWidth: 0 }}>{breadcrumbProject}</span>
                       </>
                     )}
                     {isProjectSubpage && breadcrumbEpisode && (
                       <>
-                        <span style={{ color: '#d6cec8' }}>/</span>
                         {breadcrumbProject && (
-                          <Link href={`/projects/${pathname.match(/^\/projects\/([^/]+)/)?.[1]}`} style={{ color: 'var(--color-ink-400)', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}
-                            onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-ink-400)'; }}
-                          >
-                            {breadcrumbProject}
-                          </Link>
+                          <>
+                            <span style={{ color: '#d6cec8', flexShrink: 0 }} className="hidden sm:inline">/</span>
+                            <Link href={`/projects/${pathname.match(/^\/projects\/([^/]+)/)?.[1]}`} style={{ color: 'var(--color-ink-400)', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', minWidth: 0 }} className="hidden sm:inline-block"
+                              onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-ink-400)'; }}
+                            >
+                              {breadcrumbProject}
+                            </Link>
+                          </>
                         )}
-                        <span style={{ color: '#d6cec8' }} className="hidden sm:inline">/</span>
-                        <span style={{ fontWeight: 600, color: 'var(--color-ink-900)', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle' }} className="hidden sm:inline-block">{breadcrumbEpisode}</span>
+                        <span style={{ color: '#d6cec8', flexShrink: 0 }}>/</span>
+                        <span style={{ fontWeight: 600, color: 'var(--color-ink-900)', maxWidth: 'min(220px, 50vw)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle', display: 'inline-block', minWidth: 0 }}>{breadcrumbEpisode}</span>
                       </>
                     )}
                   </div>
@@ -793,7 +800,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           return null;
         })()}
         <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <NotificationDropdown />
         </div>
       </header>

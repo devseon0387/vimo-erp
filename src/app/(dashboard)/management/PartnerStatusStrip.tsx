@@ -46,7 +46,7 @@ export default function PartnerStatusStrip({ partners, allEpisodes, thisWeekStar
           const hasWork = total > 0;
           const isExec = p.position === 'executive';
           return (
-            <div key={p.id} className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] transition-colors ${
+            <div key={p.id} className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] max-w-full min-w-0 transition-colors ${
               isExec
                 ? hasWork ? 'bg-purple-50' : 'bg-[var(--color-ink-50)]'
                 : hasWork ? 'bg-[var(--color-brand-50)]' : 'bg-[var(--color-ink-50)]'
@@ -58,8 +58,8 @@ export default function PartnerStatusStrip({ partners, allEpisodes, thisWeekStar
               }`}>
                 {p.name.charAt(0)}
               </div>
-              <span className={hasWork ? 'font-semibold text-[var(--color-ink-900)]' : 'text-[var(--color-ink-400)]'}>{p.name}</span>
-              <span className={`font-bold ml-0.5 ${
+              <span className={`truncate min-w-0 ${hasWork ? 'font-semibold text-[var(--color-ink-900)]' : 'text-[var(--color-ink-400)]'}`}>{p.name}</span>
+              <span className={`font-bold ml-0.5 flex-shrink-0 ${
                 isExec
                   ? hasWork ? 'text-purple-500' : 'text-[var(--color-ink-300)]'
                   : hasWork ? 'text-brand-500' : 'text-[var(--color-ink-300)]'

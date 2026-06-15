@@ -138,7 +138,7 @@ export function ClientMasterList({ clients, selectedId, onSelect, searchQuery, o
 
   return (
     <div
-      className="flex flex-col gap-2 p-2 h-full overflow-hidden"
+      className="flex flex-col gap-2 p-2 h-[70vh] md:h-full overflow-hidden"
       style={{ background: 'white', border: '1px solid var(--color-ink-200)', borderRadius: 12 }}
     >
       {/* 검색 + 새 추가 */}
@@ -152,7 +152,7 @@ export function ClientMasterList({ clients, selectedId, onSelect, searchQuery, o
         <button
           type="button"
           onClick={onAdd}
-          className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-white"
+          className="w-9 h-9 sm:w-8 sm:h-8 shrink-0 rounded-lg inline-flex items-center justify-center text-white"
           style={{ background: 'var(--color-brand-500)' }}
           title="새 클라이언트"
         >

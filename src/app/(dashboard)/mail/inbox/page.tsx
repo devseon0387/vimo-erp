@@ -238,7 +238,7 @@ function InboxView() {
   );
 
   return (
-    <div className="flex flex-col md:h-full md:min-h-0">
+    <div className="flex flex-col md:h-[calc(100dvh-9rem)] md:min-h-0">
       {/* ══ 모바일 헤더 + 폴더 칩 (md 미만) ══ */}
       <div className="md:hidden">
         <div className="flex items-center gap-3 px-1 pt-1 pb-3">
@@ -341,7 +341,7 @@ function InboxView() {
                 }
               />
             ) : (
-              <ul>
+              <ul className="pb-24 md:pb-0">
                 {filtered.map((email) => {
                   const unread = !seen.has(email.uid);
                   const sel = selected?.uid === email.uid;
@@ -444,7 +444,7 @@ function InboxView() {
       {/* ══ 모바일: 플로팅 메일 쓰기 ══ */}
       <Link
         href="/mail/compose"
-        className="md:hidden fixed right-5 bottom-24 z-40 w-[54px] h-[54px] rounded-[18px] bg-orange-500 text-white flex items-center justify-center shadow-[0_10px_24px_-8px_rgba(249,115,22,0.55)]"
+        className="md:hidden fixed right-5 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] z-40 w-[54px] h-[54px] rounded-[18px] bg-orange-500 text-white flex items-center justify-center shadow-[0_10px_24px_-8px_rgba(249,115,22,0.55)]"
         aria-label="메일 쓰기"
       >
         <PenLine size={21} />

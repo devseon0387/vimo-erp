@@ -560,14 +560,14 @@ export default function PortfolioPage() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => {
               setBulkItems(Array.from({ length: 5 }, () => ({ _uid: crypto.randomUUID(), title: '', client: '', category: '기타', youtubeUrl: '' })));
               setIsBulkModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 text-[13px] font-semibold transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 text-[13px] font-semibold transition-colors"
           >
             <List size={14} />
             일괄 추가
@@ -575,7 +575,7 @@ export default function PortfolioPage() {
           <button
             type="button"
             onClick={() => openAddForm()}
-            className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[13px] font-semibold transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[13px] font-semibold transition-colors"
           >
             <Plus size={14} />
             포트폴리오 추가
@@ -623,12 +623,12 @@ export default function PortfolioPage() {
 
       {/* 컨트롤 바 — 검색 / 필터 / 정렬 / 뷰모드 */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3 flex-wrap flex-1">
+        <div className="flex items-center gap-3 flex-wrap flex-1 min-w-0">
           <SearchInput
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="제목, 클라이언트, 태그 검색..."
-            className="flex-1 min-w-[200px] max-w-md"
+            className="w-full sm:flex-1 sm:min-w-[200px] sm:max-w-md"
           />
           <TabBar<FilterType>
             items={[
@@ -1137,7 +1137,7 @@ export default function PortfolioPage() {
                   onChange={(e) => setFormItem({ ...formItem, description: e.target.value })}
                   rows={3}
                 />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FloatingLabelInput
                     label="클라이언트"
                     required
@@ -1326,8 +1326,8 @@ export default function PortfolioPage() {
                 </button>
               </div>
               <div className="p-4 max-h-[65vh] overflow-y-auto">
-                {/* 헤더 */}
-                <div className="grid grid-cols-[1fr_1fr_140px_1fr_36px] gap-2 mb-2 px-1">
+                {/* 헤더 — 데스크탑만 (모바일은 행 카드에 라벨 내장) */}
+                <div className="hidden md:grid grid-cols-[1fr_1fr_140px_1fr_36px] gap-2 mb-2 px-1">
                   <span className="text-xs font-medium text-[#78716c]">제목 *</span>
                   <span className="text-xs font-medium text-[#78716c]">클라이언트 *</span>
                   <span className="text-xs font-medium text-[#78716c]">카테고리</span>
@@ -1335,9 +1335,23 @@ export default function PortfolioPage() {
                   <span />
                 </div>
                 {/* 행 목록 */}
-                <div className="space-y-2">
+                <div className="space-y-3 md:space-y-2">
                   {bulkItems.map((item, index) => (
-                    <div key={item._uid} className="grid grid-cols-[1fr_1fr_140px_1fr_36px] gap-2 items-center">
+                    <div
+                      key={item._uid}
+                      className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_140px_1fr_36px] md:items-center md:gap-2 rounded-lg border border-divider p-3 md:border-0 md:p-0 md:rounded-none"
+                    >
+                      <div className="flex items-center justify-between md:hidden">
+                        <span className="text-xs font-semibold text-[#78716c]">항목 {index + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeBulkRow(index)}
+                          disabled={bulkItems.length <= 1}
+                          className="p-2 -mr-1 text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={item.title}
@@ -1374,7 +1388,7 @@ export default function PortfolioPage() {
                         type="button"
                         onClick={() => removeBulkRow(index)}
                         disabled={bulkItems.length <= 1}
-                        className="p-2 text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="hidden md:block p-2 text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <X size={16} />
                       </button>
@@ -1519,22 +1533,22 @@ export default function PortfolioPage() {
 
       {/* 다중 선택 floating action bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#1c1917] text-white rounded-2xl shadow-2xl shadow-black/30 px-5 py-3 flex items-center gap-3 animate-portfolio-modal">
-          <span className="text-[13px] font-semibold">
+        <div className="fixed bottom-4 sm:bottom-6 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-40 bg-[#1c1917] text-white rounded-2xl shadow-2xl shadow-black/30 px-4 sm:px-5 py-3 flex items-center gap-x-2.5 gap-y-2 sm:gap-3 flex-wrap justify-center animate-portfolio-modal">
+          <span className="text-[13px] font-semibold flex-shrink-0">
             <span className="tabular-nums">{selectedIds.size}</span>개 선택됨
           </span>
           <button
             type="button"
             onClick={selectAllVisible}
-            className="text-[11px] font-semibold text-orange-300 hover:text-orange-200"
+            className="text-[11px] font-semibold text-orange-300 hover:text-orange-200 flex-shrink-0"
           >
             전체 선택 ({sortedItems.length})
           </button>
-          <span className="w-px h-5 bg-white/20" />
+          <span className="hidden sm:block w-px h-5 bg-white/20" />
           <button
             type="button"
             onClick={() => bulkSetPublished(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 text-[12px] font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 text-[12px] font-semibold transition-colors flex-shrink-0"
           >
             <Eye size={13} />
             공개로
@@ -1542,12 +1556,12 @@ export default function PortfolioPage() {
           <button
             type="button"
             onClick={() => bulkSetPublished(false)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white/80 hover:bg-white/20 text-[12px] font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white/80 hover:bg-white/20 text-[12px] font-semibold transition-colors flex-shrink-0"
           >
             <EyeOff size={13} />
             비공개로
           </button>
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <button
               type="button"
               onClick={() => setBulkCatPickerOpen(v => !v)}
@@ -1578,16 +1592,16 @@ export default function PortfolioPage() {
           <button
             type="button"
             onClick={bulkDelete}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 text-[12px] font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 text-[12px] font-semibold transition-colors flex-shrink-0"
           >
             <Trash2 size={13} />
             삭제
           </button>
-          <span className="w-px h-5 bg-white/20" />
+          <span className="hidden sm:block w-px h-5 bg-white/20" />
           <button
             type="button"
             onClick={clearSelection}
-            className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
             aria-label="선택 해제"
           >
             <X size={14} />

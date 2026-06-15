@@ -172,24 +172,26 @@ export default function PaymentsPage() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-[#1c1917] text-sm truncate">{project?.title ?? '-'}</p>
-                        <span className="text-sm font-bold text-[#1c1917] flex-shrink-0 tabular-nums">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</span>
+                        <p className="font-medium text-[#1c1917] text-sm truncate min-w-0">{project?.title ?? '-'}</p>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${
+                            isOverdue ? 'bg-red-100 text-red-700' : isPending ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'
+                          }`}>
+                            {isOverdue ? '연체' : isPending ? '대기' : '완료'}
+                          </span>
+                          <span className="text-sm font-bold text-[#1c1917] tabular-nums">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-[#78716c]">
-                        <span className="font-medium">{episode.episodeNumber}회차</span>
-                        <span className="text-gray-300">·</span>
-                        <span className="truncate">{episode.client ?? project?.client ?? '-'}</span>
+                        <span className="font-medium flex-shrink-0">{episode.episodeNumber}회차</span>
+                        <span className="text-gray-300 flex-shrink-0">·</span>
+                        <span className="truncate min-w-0">{episode.client ?? project?.client ?? '-'}</span>
                         {episode.paymentDueDate && (
                           <>
-                            <span className="text-gray-300">·</span>
-                            <span className={`tabular-nums ${isOverdue ? 'text-red-600 font-semibold' : ''}`}>{episode.paymentDueDate}</span>
+                            <span className="text-gray-300 flex-shrink-0">·</span>
+                            <span className={`tabular-nums flex-shrink-0 ${isOverdue ? 'text-red-600 font-semibold' : ''}`}>{episode.paymentDueDate}</span>
                           </>
                         )}
-                        <span className={`ml-auto px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${
-                          isOverdue ? 'bg-red-100 text-red-700' : isPending ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'
-                        }`}>
-                          {isOverdue ? '연체' : isPending ? '대기' : '완료'}
-                        </span>
                       </div>
                     </div>
                   </div>

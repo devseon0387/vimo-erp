@@ -38,7 +38,8 @@ export default function ManagementPage() {
         </div>
 
         {/* 탭 + 버튼 */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
         <TabBar<Tab>
           items={tabs.map(tab => ({
             key: tab.key,
@@ -49,6 +50,7 @@ export default function ManagementPage() {
           onChange={setActiveTab}
           fullWidthMobile={false}
         />
+        </div>
           <AnimatePresence>
             {activeTab === 'main' && (
               <motion.button
@@ -57,7 +59,7 @@ export default function ManagementPage() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.15 }}
                 onClick={() => window.dispatchEvent(new CustomEvent('mgmt:new-project'))}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-500 text-white rounded-xl text-sm font-semibold hover:bg-brand-600 transition-colors"
+                className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 px-4 py-2 bg-brand-500 text-white rounded-xl text-sm font-semibold hover:bg-brand-600 transition-colors"
               >
                 <Plus size={16} /> 새 프로젝트
               </motion.button>

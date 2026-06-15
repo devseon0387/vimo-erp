@@ -1182,7 +1182,7 @@ export default function ProjectDetailPage() {
               {/* 작업별 비용 */}
               <div className="pt-3 border-t border-divider">
                 <p className="text-sm font-medium text-gray-700 mb-3">작업별 비용</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                   {/* 롱폼 */}
                   <div className={`rounded-lg p-3 ${workTypeCosts['롱폼'].partnerCost === 0 && workTypeCosts['롱폼'].managementCost === 0 ? 'bg-gray-50' : 'bg-orange-50'}`}>
                     <p className={`text-xs font-semibold mb-2 ${workTypeCosts['롱폼'].partnerCost === 0 && workTypeCosts['롱폼'].managementCost === 0 ? 'text-gray-400' : 'text-gray-600'}`}>롱폼</p>
@@ -1662,7 +1662,7 @@ export default function ProjectDetailPage() {
                           onChange={(e) => setTempEditedProject({ ...tempEditedProject, title: e.target.value })}
                         />
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {/* 프로젝트 상태 - 커스텀 드롭다운 */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
@@ -1829,7 +1829,7 @@ export default function ProjectDetailPage() {
                       </h3>
                       <div className="space-y-4">
                         {/* 분류 + 상영 채널 */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {/* 분류 */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
@@ -2048,7 +2048,7 @@ export default function ProjectDetailPage() {
                             <p className="text-sm text-gray-500">매니저를 추가해보세요</p>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {tempManagerIds.map((managerId) => {
                               const manager = allPartners.find(p => p.id === managerId);
                               return manager ? (
@@ -2062,7 +2062,7 @@ export default function ProjectDetailPage() {
                                   </div>
                                   <button
                                     onClick={() => setTempManagerIds(tempManagerIds.filter(id => id !== managerId))}
-                                    className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors sm:opacity-0 sm:group-hover:opacity-100"
+                                    className="flex-shrink-0 p-2.5 sm:p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                                   >
                                     <X size={16} />
                                   </button>
@@ -2124,7 +2124,7 @@ export default function ProjectDetailPage() {
                             <p className="text-sm text-gray-500">파트너를 추가해보세요</p>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {tempPartnerIds.map((partnerId) => {
                               const partner = allPartners.find(p => p.id === partnerId);
                               return partner ? (
@@ -2138,7 +2138,7 @@ export default function ProjectDetailPage() {
                                   </div>
                                   <button
                                     onClick={() => setTempPartnerIds(tempPartnerIds.filter(id => id !== partnerId))}
-                                    className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors sm:opacity-0 sm:group-hover:opacity-100"
+                                    className="flex-shrink-0 p-2.5 sm:p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                                   >
                                     <X size={16} />
                                   </button>
@@ -2202,7 +2202,7 @@ export default function ProjectDetailPage() {
                           type="text"
                           value={formatCurrency(tempTotalAmount)}
                           onChange={(e) => updateTempTotalAmount(e.target.value)}
-                          className="w-full px-4 py-3 pr-16 text-3xl font-bold bg-gray-50 border-2 border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-all"
+                          className="w-full px-4 py-3 pr-16 text-2xl sm:text-3xl font-bold bg-gray-50 border-2 border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder-gray-400 transition-all"
                           placeholder="0"
                         />
                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 font-medium">원</span>
@@ -2216,7 +2216,7 @@ export default function ProjectDetailPage() {
                         <Tag size={18} className="text-orange-600" />
                         작업별 비용 <span className="text-gray-400 text-xs font-normal">(선택)</span>
                       </h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* 롱폼 */}
                         <div className={`bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border-2 shadow-sm hover:shadow-md transition-all ${
                           tempWorkContent.includes('롱폼') ? 'border-divider opacity-100' : 'border-divider opacity-40'

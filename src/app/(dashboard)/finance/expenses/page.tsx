@@ -368,7 +368,7 @@ export default function ExpensesPage() {
         </div>
 
         {/* 카테고리 필터 — 모바일: 칩+금액 가로 스크롤 */}
-        <div className="sm:hidden px-4 py-2.5 border-b border-[#f0ece9] flex gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="md:hidden px-4 py-2.5 border-b border-[#f0ece9] flex gap-1.5 overflow-x-auto no-scrollbar">
           <button onClick={() => setCatFilter('all')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold transition-colors flex-shrink-0 ${catFilter === 'all' ? 'bg-[#1c1917] text-white' : 'bg-[#f5f5f4] text-[#78716c] hover:bg-[#ede9e6]'}`}>
             전체 <span className={`text-[10px] tabular-nums ${catFilter === 'all' ? 'opacity-70' : 'opacity-50'}`}>{totalMonthExpense.toLocaleString()}</span>
           </button>
@@ -380,7 +380,7 @@ export default function ExpensesPage() {
           ))}
         </div>
         {/* 카테고리 필터 — 데스크탑 */}
-        <div className="hidden sm:block px-5 py-2.5 border-b border-[#f0ece9]">
+        <div className="hidden md:block px-5 py-2.5 border-b border-[#f0ece9]">
           <TabBar<ExpenseCategory | 'all'>
             items={[
               { key: 'all', label: '전체' },
@@ -393,7 +393,7 @@ export default function ExpensesPage() {
         </div>
 
         {/* 모바일 카드 리스트 */}
-        <div className="sm:hidden">
+        <div className="md:hidden">
           {filtered.length === 0 ? (
             <EmptyState
               icon={CreditCard}
@@ -425,10 +425,10 @@ export default function ExpensesPage() {
                         {isExpected && <StatusBadge tone="info" className="flex-shrink-0">예정</StatusBadge>}
                         {!isExpected && statusBadge(expense)}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[#a8a29e]">
-                        <span className="tabular-nums">{isExpected ? (expense.nextRenewalDate?.slice(5).replace('-', '/') ?? '예정') : expense.expenseDate.slice(5).replace('-', '/')}</span>
-                        <span className={`px-1.5 py-0.5 rounded-md font-semibold ${CATEGORY_COLORS[expense.category].bg} ${CATEGORY_COLORS[expense.category].text}`}>{expense.category}</span>
-                        <span className={`px-1.5 py-0.5 rounded-md font-semibold ${PAYMENT_COLORS[expense.paymentType].bg} ${PAYMENT_COLORS[expense.paymentType].text}`}>{paymentLabel(expense.paymentType)}</span>
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-1 text-[10px] text-[#a8a29e]">
+                        <span className="tabular-nums flex-shrink-0">{isExpected ? (expense.nextRenewalDate?.slice(5).replace('-', '/') ?? '예정') : expense.expenseDate.slice(5).replace('-', '/')}</span>
+                        <span className={`px-1.5 py-0.5 rounded-md font-semibold flex-shrink-0 ${CATEGORY_COLORS[expense.category].bg} ${CATEGORY_COLORS[expense.category].text}`}>{expense.category}</span>
+                        <span className={`px-1.5 py-0.5 rounded-md font-semibold flex-shrink-0 ${PAYMENT_COLORS[expense.paymentType].bg} ${PAYMENT_COLORS[expense.paymentType].text}`}>{paymentLabel(expense.paymentType)}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-3">
@@ -447,7 +447,7 @@ export default function ExpensesPage() {
         </div>
 
         {/* 데스크탑 테이블 */}
-        <div className="hidden sm:block" style={{ overflowX: 'clip' }}>
+        <div className="hidden md:block" style={{ overflowX: 'clip' }}>
           <div>
             <div className="grid grid-cols-[60px_1fr_80px_70px_115px_28px] gap-2 px-5 py-2 text-[10px] font-semibold text-[#a8a29e] border-b border-[#f0ece9]">
               <span>날짜</span><span>내용</span><span>카테고리</span><span>유형</span><span className="text-right">금액</span><span />

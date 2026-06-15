@@ -161,7 +161,7 @@ export function PartnerMasterList({ partners, selectedId, onSelect, searchQuery,
         <button
           type="button"
           onClick={onAdd}
-          className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-white"
+          className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg inline-flex items-center justify-center text-white flex-shrink-0"
           style={{ background: 'var(--color-brand-500)' }}
           title="새 파트너"
         >

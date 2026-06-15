@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Save, Sparkles, Check, CheckCircle, ChevronDown, ChevronUp, User, Search } from 'lucide-react';
+import { AlertTriangle, Save, Sparkles, Check, CheckCircle, ChevronDown, ChevronUp, User, Search, ChevronRight } from 'lucide-react';
 import { Project, Partner, Episode } from '@/types';
 import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
@@ -540,27 +541,79 @@ export default function BatchSettlementPage() {
           </div>
         </div>
 
-        {/* 모바일 안내 — 인라인 편집 10컬럼 그리드라 가로 스크롤 발생.
-            해당 회차 상세 페이지(/projects/[id]/episodes/[episodeId])에서 개별 편집을 권장. */}
+        {/* 모바일 안내 — 인라인 편집 10컬럼 그리드는 데스크탑 전용.
+            모바일은 아래 카드 리스트에서 항목을 누르면 회차 상세(/projects/[id]/episodes/[episodeId])로 이동해 개별 편집. */}
         <div className="sm:hidden mb-3 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[12px] text-amber-800">
-          <p className="font-semibold mb-0.5">데스크탑에서 사용하는 것을 권장합니다</p>
-          <p className="text-[11px] text-amber-700">이 페이지는 10개 열의 일괄 편집 그리드라 모바일에선 가로 스크롤 필요. 회차 1개씩 편집은 회차 상세 페이지가 빠릅니다.</p>
+          <p className="font-semibold mb-0.5">일괄 편집은 데스크탑에서 사용하세요</p>
+          <p className="text-[11px] text-amber-700">모바일에선 항목을 눌러 회차 상세에서 하나씩 입력할 수 있습니다.</p>
         </div>
 
-        {/* 테이블 */}
+        {/* 모바일 카드 리스트 — 읽기 전용 + 회차 상세로 이동 */}
+        <div className="sm:hidden">
+          {loading ? (
+            <LoadingState size="compact" />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              icon={CheckCircle}
+              title="미입력 항목이 없습니다"
+              description="모든 에피소드의 정보가 입력되었습니다"
+              size="compact"
+              iconColor="text-green-500"
+              iconBgColor="bg-green-50"
+            />
+          ) : (
+            <div className="divide-y divide-[#f8f7f6]">
+              {filtered.map(row => {
+                const ep = row.episode;
+                const missLabels = [
+                  row.missing.cost && '파트너 비용',
+                  row.missing.date && '정산일',
+                  row.missing.assignee && '담당 파트너',
+                  row.missing.manager && '담당 매니저',
+                  row.missing.startDate && '시작일',
+                  row.missing.dueDate && '마감일',
+                ].filter((v): v is string => Boolean(v));
+                return (
+                  <Link
+                    key={ep.id}
+                    href={`/projects/${ep.projectId}/episodes/${ep.id}`}
+                    className="flex items-center gap-2 px-4 py-3 hover:bg-[#fafaf9] transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] text-[#a8a29e] font-medium truncate">{row.project?.title ?? ''}</div>
+                      <div className="text-[14px] text-[#1c1917] font-medium truncate">{ep.title || `${ep.episodeNumber}회차`}</div>
+                      <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                        {missLabels.map(label => (
+                          <span key={label} className="px-1.5 py-0.5 rounded-md bg-[#fff7ed] text-orange-500 text-[10px] font-semibold flex-shrink-0">
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-[#d6cec8] flex-shrink-0" />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 데스크탑 테이블 */}
         {loading ? (
-          <LoadingState size="compact" />
+          <div className="hidden sm:block"><LoadingState size="compact" /></div>
         ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={CheckCircle}
-            title="미입력 항목이 없습니다"
-            description="모든 에피소드의 정보가 입력되었습니다"
-            size="compact"
-            iconColor="text-green-500"
-            iconBgColor="bg-green-50"
-          />
+          <div className="hidden sm:block">
+            <EmptyState
+              icon={CheckCircle}
+              title="미입력 항목이 없습니다"
+              description="모든 에피소드의 정보가 입력되었습니다"
+              size="compact"
+              iconColor="text-green-500"
+              iconBgColor="bg-green-50"
+            />
+          </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden sm:block overflow-x-auto">
             {/* 헤더 */}
             <div className="grid grid-cols-[32px_1fr_120px_110px_110px_120px_100px_100px_100px_70px] gap-1.5 px-4 py-2.5 text-[10px] font-semibold text-[#a8a29e] border-b border-[#f0ece9] bg-[#fafaf9] min-w-[1080px] uppercase tracking-wide">
               <div className="flex items-center justify-center">

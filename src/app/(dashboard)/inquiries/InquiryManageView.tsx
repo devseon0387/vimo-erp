@@ -242,14 +242,14 @@ export default function InquiryManageView() {
       `}</style>
 
       {/* 컨트롤 바 */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:flex-wrap">
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="이름, 연락처, 프로젝트 유형 검색..."
-          className="flex-1 min-w-[200px] max-w-md"
+          className="w-full sm:flex-1 sm:min-w-[200px] sm:max-w-md"
         />
-        <div className="flex-1 sm:flex-none">
+        <div className="w-full sm:w-auto sm:flex-none min-w-0">
           <TabBar<FilterStatus>
             items={[
               { key: 'all', label: '전체' },
@@ -298,7 +298,49 @@ export default function InquiryManageView() {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-ink-100 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* 모바일 카드뷰 */}
+          <ul className="sm:hidden divide-y divide-[#f8f7f6]">
+            {filteredInquiries.map((inquiry) => {
+              const statusConfig = STATUS_CONFIG[inquiry.status];
+              return (
+                <li
+                  key={inquiry.id}
+                  onClick={() => openDetail(inquiry)}
+                  className="px-4 py-3 hover:bg-[#fafaf9] transition-colors cursor-pointer"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User size={13} className="text-orange-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[13px] font-semibold text-[#1c1917] truncate">{inquiry.name}</p>
+                        <div className="flex-shrink-0">
+                          <StatusBadge tone={statusConfig.tone} dot>
+                            {statusConfig.label}
+                          </StatusBadge>
+                        </div>
+                      </div>
+                      {inquiry.email && (
+                        <p className="text-[11px] text-[var(--color-ink-400)] truncate">{inquiry.email}</p>
+                      )}
+                      <div className="flex items-center gap-x-2 gap-y-0.5 mt-1 text-[11px] text-[#44403c] flex-wrap">
+                        <span className="truncate min-w-0 max-w-full">{inquiry.projectType}</span>
+                        <span className="text-[var(--color-ink-300)]">·</span>
+                        <span className="flex-shrink-0">{inquiry.phone}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 mt-1 text-[11px] text-[var(--color-ink-400)]">
+                        <span className="truncate min-w-0">{formatBudget(inquiry.budget)}</span>
+                        <span className="flex-shrink-0">{formatDate(inquiry.createdAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {/* 데스크탑 테이블 */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-[#fafaf9] border-b border-[#f8f7f6]">
@@ -372,7 +414,7 @@ export default function InquiryManageView() {
                     {STATUS_CONFIG[selectedInquiry.status].label}
                   </StatusBadge>
                 </div>
-                <button type="button" onClick={() => setIsDetailModalOpen(false)} className="p-1.5 hover:bg-[#fafaf9] rounded-lg transition-colors" aria-label="닫기">
+                <button type="button" onClick={() => setIsDetailModalOpen(false)} className="p-2 sm:p-1.5 hover:bg-[#fafaf9] rounded-lg transition-colors flex-shrink-0" aria-label="닫기">
                   <X size={16} className="text-[var(--color-ink-400)]" />
                 </button>
               </div>
@@ -595,7 +637,7 @@ export default function InquiryManageView() {
               <div className="px-6 py-4 border-t border-divider flex items-center justify-between">
                 <div>
                   {showDeleteConfirm ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap gap-y-1">
                       <span className="text-sm text-red-600 font-medium">정말 삭제하시겠습니까?</span>
                       <button
                         type="button"

@@ -106,12 +106,12 @@ export default function VimoPartnersPage() {
       {/* 탭 + 파트너 목록 */}
       <div className="bg-white rounded-2xl border border-divider overflow-hidden">
         {/* 탭 */}
-        <div className="flex items-center border-b border-divider px-6 gap-1">
+        <div className="flex items-center border-b border-divider px-4 sm:px-6 gap-1 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => (
             <button
               key={String(tab.key)}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`px-4 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab.key
                   ? 'border-ink-900 text-ink-900'
                   : 'border-transparent text-ink-500 hover:text-ink-700'

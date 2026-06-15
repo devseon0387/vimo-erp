@@ -271,7 +271,7 @@ function ClientSettlementTab({
         style={{ border: '1px solid var(--color-ink-200)' }}
       >
         <div
-          className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider"
+          className="hidden sm:grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider"
           style={{ background: 'var(--color-ink-50)', color: 'var(--color-ink-500)' }}
         >
           <div>프로젝트</div>
@@ -288,7 +288,7 @@ function ClientSettlementTab({
             <Link
               key={r.project.id}
               href={`/projects/${r.project.id}`}
-              className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-4 py-3 items-center hover:bg-[var(--color-ink-50)] transition-colors"
+              className="block sm:grid sm:grid-cols-[1fr_auto_auto_auto] sm:gap-3 px-4 py-3 sm:items-center hover:bg-[var(--color-ink-50)] transition-colors"
               style={{ borderTop: '1px solid var(--color-ink-200)' }}
             >
               <div className="min-w-0">
@@ -301,17 +301,23 @@ function ClientSettlementTab({
                   </div>
                 )}
               </div>
-              <div className="text-[12px] tabular-nums" style={{ color: 'var(--color-ink-700)' }}>
+              {/* 모바일 카드뷰: 라벨:값 한 줄 */}
+              <div className="flex sm:hidden items-center gap-x-4 gap-y-1 flex-wrap mt-1.5 text-[11.5px] tabular-nums" style={{ color: 'var(--color-ink-600)' }}>
+                <span>완료 <b style={{ color: 'var(--color-ink-800)' }}>{r.completedEp} / {r.totalEp}</b></span>
+                <span>입금 <b style={{ color: r.completedEp > 0 && r.paidEp === r.completedEp ? 'var(--color-ok-600)' : 'var(--color-ink-800)' }}>{r.completedEp > 0 ? `${r.paidEp} / ${r.completedEp}` : '-'}</b></span>
+                <span>청구 <b style={{ color: 'var(--color-ink-900)' }}>₩{(r.completedAmt / 10000).toFixed(0)}만</b></span>
+              </div>
+              <div className="hidden sm:block text-[12px] tabular-nums" style={{ color: 'var(--color-ink-700)' }}>
                 {r.completedEp} / {r.totalEp}
               </div>
-              <div className="text-[12px] tabular-nums" style={{ color: 'var(--color-ink-700)' }}>
+              <div className="hidden sm:block text-[12px] tabular-nums" style={{ color: 'var(--color-ink-700)' }}>
                 {r.completedEp > 0 ? (
                   <span style={{ color: r.paidEp === r.completedEp ? 'var(--color-ok-600)' : 'var(--color-ink-500)' }}>
                     {r.paidEp} / {r.completedEp}
                   </span>
                 ) : '-'}
               </div>
-              <div className="text-[12.5px] font-semibold tabular-nums" style={{ color: 'var(--color-ink-900)' }}>
+              <div className="hidden sm:block text-[12.5px] font-semibold tabular-nums" style={{ color: 'var(--color-ink-900)' }}>
                 ₩{(r.completedAmt / 10000).toFixed(0)}만
               </div>
             </Link>
@@ -319,9 +325,9 @@ function ClientSettlementTab({
         )}
       </div>
 
-      <div className="flex items-center justify-between text-[11.5px]" style={{ color: 'var(--color-ink-500)' }}>
-        <span>상세 정산 내역 · 월별 추이는 아래 링크에서 확인</span>
-        <div className="flex gap-3">
+      <div className="flex items-center justify-between gap-x-3 gap-y-1.5 flex-wrap text-[11.5px]" style={{ color: 'var(--color-ink-500)' }}>
+        <span className="min-w-0">상세 정산 내역 · 월별 추이는 아래 링크에서 확인</span>
+        <div className="flex gap-3 shrink-0">
           <Link href="/settlement" className="inline-flex items-center gap-0.5 hover:underline" style={{ color: 'var(--color-brand-600)' }}>월별 손익 <ArrowRight size={12} /></Link>
           <Link href="/finance/invoices" className="inline-flex items-center gap-0.5 hover:underline" style={{ color: 'var(--color-brand-600)' }}>세금계산서 <ArrowRight size={12} /></Link>
         </div>
@@ -377,7 +383,7 @@ export function ClientDetailView({ client, projects, episodes, onEdit, onDelete,
 
   return (
     <div
-      className="rounded-xl p-4 md:p-5 h-full overflow-y-auto"
+      className="rounded-xl p-4 md:p-5 md:h-full md:overflow-y-auto"
       style={{ background: 'white', border: '1px solid var(--color-ink-200)' }}
     >
       {/* Header */}
@@ -415,7 +421,7 @@ export function ClientDetailView({ client, projects, episodes, onEdit, onDelete,
           <button
             type="button"
             onClick={() => onEdit(client)}
-            className="w-8 h-8 rounded-md inline-flex items-center justify-center"
+            className="w-9 h-9 sm:w-8 sm:h-8 rounded-md inline-flex items-center justify-center"
             style={{ border: '1px solid var(--color-ink-300)', color: 'var(--color-ink-600)' }}
             title="편집"
           >
@@ -424,7 +430,7 @@ export function ClientDetailView({ client, projects, episodes, onEdit, onDelete,
           <button
             type="button"
             onClick={() => onDelete(client)}
-            className="w-8 h-8 rounded-md inline-flex items-center justify-center"
+            className="w-9 h-9 sm:w-8 sm:h-8 rounded-md inline-flex items-center justify-center"
             style={{ border: '1px solid var(--color-ink-300)', color: '#b91c1c' }}
             title="삭제"
           >
@@ -433,10 +439,11 @@ export function ClientDetailView({ client, projects, episodes, onEdit, onDelete,
           <button
             type="button"
             onClick={() => onNewProject(client)}
-            className="px-3 h-8 rounded-md text-[12px] font-semibold text-white inline-flex items-center gap-1.5"
+            className="w-9 h-9 sm:w-auto sm:px-3 sm:h-8 rounded-md text-[12px] font-semibold text-white inline-flex items-center justify-center sm:gap-1.5"
             style={{ background: 'var(--color-brand-500)' }}
+            title="새 프로젝트"
           >
-            <Plus size={13} /> 새 프로젝트
+            <Plus size={13} /> <span className="hidden sm:inline">새 프로젝트</span>
           </button>
         </div>
       </div>
@@ -444,27 +451,27 @@ export function ClientDetailView({ client, projects, episodes, onEdit, onDelete,
       {/* Contact row */}
       {(client.email || client.phone || client.address) && (
         <div
-          className="rounded-lg p-3 mb-4 flex items-center gap-4 flex-wrap text-[12px]"
+          className="rounded-lg p-3 mb-4 flex items-center gap-x-4 gap-y-1.5 flex-wrap text-[12px] min-w-0"
           style={{ background: 'var(--color-ink-50)', color: 'var(--color-ink-600)' }}
         >
           {client.email && (
-            <a href={`mailto:${client.email}`} className="inline-flex items-center gap-1.5 hover:text-[var(--color-brand-600)]">
-              <Mail size={12} /> {client.email}
+            <a href={`mailto:${client.email}`} className="inline-flex items-center gap-1.5 min-w-0 max-w-full hover:text-[var(--color-brand-600)]">
+              <Mail size={12} className="shrink-0" /> <span className="truncate">{client.email}</span>
             </a>
           )}
           {client.phone && (
-            <a href={`tel:${client.phone}`} className="inline-flex items-center gap-1.5 hover:text-[var(--color-brand-600)]">
-              <Phone size={12} /> {formatPhoneNumber(client.phone)}
+            <a href={`tel:${client.phone}`} className="inline-flex items-center gap-1.5 shrink-0 hover:text-[var(--color-brand-600)]">
+              <Phone size={12} className="shrink-0" /> {formatPhoneNumber(client.phone)}
             </a>
           )}
           {client.address && (
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin size={12} /> {client.address}
+            <span className="inline-flex items-center gap-1.5 min-w-0 max-w-full">
+              <MapPin size={12} className="shrink-0" /> <span className="truncate">{client.address}</span>
             </span>
           )}
           {client.company && (
-            <span className="inline-flex items-center gap-1.5">
-              <Building2 size={12} /> {client.company}
+            <span className="inline-flex items-center gap-1.5 min-w-0 max-w-full">
+              <Building2 size={12} className="shrink-0" /> <span className="truncate">{client.company}</span>
             </span>
           )}
         </div>

@@ -353,15 +353,9 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* 마스터-디테일 — lg 이상에선 분할, 모바일에선 선택 시 디테일 전환 */}
-      <div
-        className="grid gap-3 lg:grid-cols-[300px_1fr]"
-        style={{
-          height: 'calc(100vh - 180px)',
-          minHeight: '480px',
-        }}
-      >
-        <div className={`${selectedId ? 'hidden lg:flex' : 'flex'} flex-col overflow-hidden`}>
+      {/* 마스터-디테일 — md(768) 이상에선 분할, 모바일에선 선택 시 디테일 전환 */}
+      <div className="grid gap-3 md:grid-cols-[260px_1fr] md:h-[calc(100vh-180px)] md:min-h-[480px]">
+        <div className={`${selectedId ? 'hidden md:flex' : 'flex'} flex-col overflow-hidden`}>
           <ClientMasterList
             clients={filteredClients}
             selectedId={selectedId}
@@ -372,12 +366,12 @@ export default function ClientsPage() {
           />
         </div>
 
-        <div className={`${selectedId ? 'flex' : 'hidden lg:flex'} flex-col overflow-hidden`}>
+        <div className={`${selectedId ? 'flex' : 'hidden md:flex'} flex-col overflow-hidden`}>
           {selectedClient && (
             <button
               type="button"
               onClick={() => setSelectedId(null)}
-              className="lg:hidden mb-2 inline-flex items-center gap-1.5 self-start text-sm font-medium text-stone-600 hover:text-stone-900"
+              className="md:hidden mb-2 inline-flex items-center gap-1.5 self-start text-sm font-medium text-stone-600 hover:text-stone-900"
             >
               <ArrowLeft size={14} /> 목록으로
             </button>
@@ -568,7 +562,7 @@ export default function ClientsPage() {
                   휴지통으로 이동되며, 30일 이내에 복구할 수 있습니다.
                 </p>
               </div>
-              <div className="px-6 py-4 border-t border-divider flex justify-end space-x-3">
+              <div className="px-6 py-4 border-t border-divider flex flex-wrap justify-end gap-2">
                 <button onClick={() => { setIsDeleteModalOpen(false); setClientToDelete(null); }}
                   className="px-4 py-2 text-[#44403c] hover:bg-[#f5f5f4] rounded-lg transition-colors active:scale-[0.97]">취소</button>
                 <button onClick={handleDeactivateClient}

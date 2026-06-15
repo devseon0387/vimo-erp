@@ -392,15 +392,15 @@ export default function PartnersPage() {
         </Link>
       )}
 
-      {/* 마스터-디테일 — lg 이상에선 분할, 모바일에선 선택 시 디테일 전환 */}
+      {/* 마스터-디테일 — md(태블릿) 이상에선 분할, 모바일에선 선택 시 디테일 전환 */}
       <div
-        className="grid gap-3 lg:grid-cols-[300px_1fr]"
+        className="grid gap-3 md:grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr]"
         style={{
           height: pendingSignupsCount > 0 ? 'calc(100vh - 272px)' : 'calc(100vh - 180px)',
           minHeight: '480px',
         }}
       >
-        <div className={`${selectedId ? 'hidden lg:flex' : 'flex'} flex-col overflow-hidden`}>
+        <div className={`${selectedId ? 'hidden md:flex' : 'flex'} flex-col overflow-hidden`}>
           <PartnerMasterList
             partners={filteredPartners}
             selectedId={selectedId}
@@ -411,12 +411,12 @@ export default function PartnersPage() {
           />
         </div>
 
-        <div className={`${selectedId ? 'flex' : 'hidden lg:flex'} flex-col overflow-hidden`}>
+        <div className={`${selectedId ? 'flex' : 'hidden md:flex'} flex-col overflow-hidden`}>
           {selectedPartner && (
             <button
               type="button"
               onClick={() => setSelectedId(null)}
-              className="lg:hidden mb-2 inline-flex items-center gap-1.5 self-start text-sm font-medium text-stone-600 hover:text-stone-900"
+              className="md:hidden mb-2 inline-flex items-center gap-1.5 self-start text-sm font-medium text-stone-600 hover:text-stone-900"
             >
               <ArrowLeft size={14} /> 목록으로
             </button>
@@ -462,7 +462,7 @@ export default function PartnersPage() {
           <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4">
             <div className="relative bg-white rounded-t-xl sm:rounded-xl shadow-2xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
               <div className="px-6 sm:px-8 pt-8 pb-6">
-                <button onClick={() => setIsAddModalOpen(false)} className="absolute right-6 top-6 p-2 hover:bg-[#f5f5f4] rounded-full transition-colors">
+                <button onClick={() => setIsAddModalOpen(false)} className="absolute right-4 top-4 sm:right-6 sm:top-6 p-2.5 sm:p-2 hover:bg-[#f5f5f4] rounded-full transition-colors">
                   <X size={24} className="text-[#a8a29e]" />
                 </button>
                 <h2 className="text-base font-bold text-[#1c1917] mb-2">새 파트너를<br />추가할게요</h2>
@@ -503,7 +503,7 @@ export default function PartnersPage() {
                           <ChevronDown size={13} className="text-[#a8a29e] flex-shrink-0 ml-auto" />
                         </button>
                         {isBankDropdownOpen && (
-                          <div className="absolute z-30 left-0 top-full mt-2 bg-white border-2 border-divider rounded-2xl shadow-2xl p-3" style={{ width: '320px' }}>
+                          <div className="absolute z-30 left-0 top-full mt-2 bg-white border-2 border-divider rounded-2xl shadow-2xl p-3" style={{ width: 'min(320px, calc(100vw - 48px))' }}>
                             <p className="text-xs text-[#a8a29e] font-medium mb-2 px-1">은행 선택</p>
                             <div className="grid grid-cols-5 gap-1.5">
                               {KR_BANKS.map((bank) => {
@@ -693,14 +693,14 @@ function InvitePartnerModal({ partners, onClose }: { partners: Partner[]; onClos
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" onClick={onClose}>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4">
         <div
-          className="relative bg-[#fafaf9] rounded-lg shadow-xl max-w-md w-full p-4"
+          className="relative bg-[#fafaf9] rounded-t-xl sm:rounded-lg shadow-xl max-w-md w-full p-4"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[16px] font-bold">파트너 초대</h3>
-            <button onClick={onClose} className="p-1.5 hover:bg-[#f5f5f4] rounded-lg text-[#78716c]">
+            <button onClick={onClose} className="p-2.5 sm:p-1.5 hover:bg-[#f5f5f4] rounded-lg text-[#78716c]">
               <X size={16} />
             </button>
           </div>

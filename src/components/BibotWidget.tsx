@@ -201,12 +201,20 @@ export default function BibotWidget() {
     try { localStorage.setItem(MODE_KEY, mode); } catch {}
   }, [mode]);
 
-  // 사이드바 모드일 때 메인 컨텐츠가 가려지지 않도록 CSS 변수 설정
+  // 사이드바 모드일 때 메인 컨텐츠가 가려지지 않도록 CSS 변수 설정.
+  // 단, 데스크탑 레일이 숨겨지는 좁은 화면(≤900px)에서는 사이드바 pad를 적용하지 않는다.
+  // (모바일에서 pad가 남으면 헤더/플로팅 버블이 화면 밖으로 밀림 — shell @media 가드와 짝)
   useEffect(() => {
     const root = document.documentElement;
-    const active = isOpen && mode === 'sidebar';
-    root.style.setProperty('--bibot-pad', active ? '400px' : '0px');
+    const mql = typeof window !== 'undefined' ? window.matchMedia('(min-width: 900px)') : null;
+    const apply = () => {
+      const active = isOpen && mode === 'sidebar' && (mql ? mql.matches : true);
+      root.style.setProperty('--bibot-pad', active ? '400px' : '0px');
+    };
+    apply();
+    mql?.addEventListener('change', apply);
     return () => {
+      mql?.removeEventListener('change', apply);
       root.style.setProperty('--bibot-pad', '0px');
     };
   }, [isOpen, mode]);

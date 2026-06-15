@@ -305,17 +305,19 @@ export default function UsersSettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       {/* 헤더 */}
-      <div className="flex items-start gap-3">
-        <div className="p-3 bg-orange-100 rounded-xl">
-          <Shield size={24} className="text-orange-600" />
-        </div>
-        <div className="flex-1">
-          <h1 className="text-page">계정 관리</h1>
-          <p className="text-sm text-ink-500 mt-1">대표만 접근 가능한 페이지입니다</p>
+      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="p-3 bg-orange-100 rounded-xl flex-shrink-0">
+            <Shield size={24} className="text-orange-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-page">계정 관리</h1>
+            <p className="text-sm text-ink-500 mt-1">대표만 접근 가능한 페이지입니다</p>
+          </div>
         </div>
         <a
           href="/settings/app-access"
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-divider bg-white text-ink-700 hover:border-orange-500 hover:text-orange-600 transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-divider bg-white text-ink-700 hover:border-orange-500 hover:text-orange-600 transition-colors flex-shrink-0 w-full sm:w-auto"
         >
           앱 권한 관리 →
         </a>
@@ -328,7 +330,7 @@ export default function UsersSettingsPage() {
           <h2 className="text-base font-semibold text-ink-900">새 계정 생성</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-ink-700 mb-1.5">이름</label>
               <input
@@ -350,7 +352,7 @@ export default function UsersSettingsPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-ink-700 mb-1.5">역할</label>
               <select
@@ -577,7 +579,7 @@ export default function UsersSettingsPage() {
                         </div>
                         <button
                           onClick={() => openEditModal(profile)}
-                          className="p-1.5 rounded-lg text-ink-300 hover:text-orange-500 hover:bg-orange-50 transition-all"
+                          className="p-2.5 sm:p-1.5 rounded-lg text-ink-300 hover:text-orange-500 hover:bg-orange-50 transition-all"
                           title="계정 수정"
                         >
                           <Pencil size={14} />
@@ -585,7 +587,7 @@ export default function UsersSettingsPage() {
                         <button
                           onClick={() => handleDeleteUser(profile.id, profile.name)}
                           disabled={deletingId === profile.id}
-                          className="p-1.5 rounded-lg text-ink-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
+                          className="p-2.5 sm:p-1.5 rounded-lg text-ink-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
                           title="계정 삭제"
                         >
                           <Trash2 size={14} />

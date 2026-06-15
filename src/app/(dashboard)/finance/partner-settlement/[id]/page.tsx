@@ -252,7 +252,7 @@ export default function PartnerSettlementDetailPage() {
       </div>
 
       {/* 월 이동 + 모두 정산 완료 */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 bg-white border border-divider rounded-[10px] px-1 py-1 w-fit">
           <button onClick={prevMonth} disabled={isMinMonth} className={`p-1.5 rounded-lg transition-colors ${isMinMonth ? 'invisible' : 'hover:bg-[#f5f5f4]'}`}>
             <ChevronLeft size={14} className="text-[#a8a29e]" />
@@ -487,21 +487,21 @@ export default function PartnerSettlementDetailPage() {
         {allItems.length > 0 && (
           <div className="sm:hidden px-4 py-3.5 border-t border-[#f0ece9] bg-[#fafaf9]">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[12px] font-semibold text-[#78716c]">합계</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[12px] font-semibold text-[#78716c] flex-shrink-0">합계</span>
                 {partner.bank && partner.bankAccount ? (
-                  <button onClick={copyAccount} className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 bg-white border border-divider rounded-lg hover:border-[#d6d3d1] transition-colors">
-                    <Landmark size={10} className="text-[#a8a29e]" />
-                    <span className="text-[#78716c]">{partner.bank} {partner.bankAccount}</span>
-                    {copiedId ? <Check size={10} className="text-green-500" /> : <Copy size={10} className="text-[#d6d3d1]" />}
+                  <button onClick={copyAccount} className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 bg-white border border-divider rounded-lg hover:border-[#d6d3d1] transition-colors min-w-0">
+                    <Landmark size={10} className="text-[#a8a29e] flex-shrink-0" />
+                    <span className="text-[#78716c] truncate">{partner.bank} {partner.bankAccount}</span>
+                    {copiedId ? <Check size={10} className="text-green-500 flex-shrink-0" /> : <Copy size={10} className="text-[#d6d3d1] flex-shrink-0" />}
                   </button>
                 ) : (
-                  <Link href="/partners" className="text-[10px] px-2 py-0.5 bg-orange-50 text-orange-500 rounded-lg hover:bg-orange-100 transition-colors">
+                  <Link href="/partners" className="text-[10px] px-2 py-0.5 bg-orange-50 text-orange-500 rounded-lg hover:bg-orange-100 transition-colors flex-shrink-0">
                     계좌 미등록
                   </Link>
                 )}
               </div>
-              <span className="text-[11px] text-[#a8a29e] tabular-nums">{totalAmount.toLocaleString()} {partner.partnerType === 'business' ? '+' : '−'} {Math.abs(totalNetAmount - totalAmount).toLocaleString()}</span>
+              <span className="text-[11px] text-[#a8a29e] tabular-nums flex-shrink-0 ml-2">{totalAmount.toLocaleString()} {partner.partnerType === 'business' ? '+' : '−'} {Math.abs(totalNetAmount - totalAmount).toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between px-3.5 py-2.5 bg-white rounded-[10px] border border-[#f0ece9]">
               <span className="text-[12px] font-semibold text-[#78716c]">실 지급액</span>

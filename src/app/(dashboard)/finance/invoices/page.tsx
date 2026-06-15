@@ -159,22 +159,24 @@ export default function InvoicesPage() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-[#1c1917] text-sm truncate">{project?.title ?? '-'}</p>
-                        <span className="text-sm font-bold text-[#1c1917] flex-shrink-0 tabular-nums">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</span>
+                        <p className="font-medium text-[#1c1917] text-sm truncate min-w-0">{project?.title ?? '-'}</p>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <StatusBadge tone={isPending ? 'warn' : 'ok'}>
+                            {isPending ? '미발행' : '발행완료'}
+                          </StatusBadge>
+                          <span className="text-sm font-bold text-[#1c1917] tabular-nums">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-[#78716c]">
-                        <span className="font-medium">{episode.episodeNumber}회차</span>
-                        <span className="text-gray-300">·</span>
-                        <span className="truncate">{episode.client ?? project?.client ?? '-'}</span>
+                        <span className="font-medium flex-shrink-0">{episode.episodeNumber}회차</span>
+                        <span className="text-gray-300 flex-shrink-0">·</span>
+                        <span className="truncate min-w-0">{episode.client ?? project?.client ?? '-'}</span>
                         {episode.invoiceDate && (
                           <>
-                            <span className="text-gray-300">·</span>
-                            <span className="tabular-nums">{episode.invoiceDate}</span>
+                            <span className="text-gray-300 flex-shrink-0">·</span>
+                            <span className="tabular-nums flex-shrink-0">{episode.invoiceDate}</span>
                           </>
                         )}
-                        <StatusBadge tone={isPending ? 'warn' : 'ok'} className="ml-auto">
-                          {isPending ? '미발행' : '발행완료'}
-                        </StatusBadge>
                       </div>
                     </div>
                   </div>

@@ -287,10 +287,10 @@ export default function ProjectsPage() {
       `}</style>
 
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-page">프로젝트</h1>
-          <p className="text-ink-500 mt-1 text-sm">진행 중인 프로젝트를 한눈에 관리하세요</p>
+          <p className="text-ink-500 mt-1 text-sm hidden sm:block">진행 중인 프로젝트를 한눈에 관리하세요</p>
         </div>
         <button
           data-tour="tour-proj-new"
@@ -336,7 +336,7 @@ export default function ProjectsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'recent' | 'amount' | 'name')}
-              className="appearance-none bg-transparent pl-3 pr-7 py-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 text-[12.5px] text-ink-600 cursor-pointer"
+              className="appearance-none bg-transparent pl-3 pr-7 py-2.5 sm:py-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 text-[12.5px] text-ink-600 cursor-pointer"
             >
               <option value="recent">일정순</option>
               <option value="amount">금액순</option>
@@ -448,17 +448,17 @@ export default function ProjectsPage() {
 
                     return (
                       <div className="pt-2 border-t border-divider space-y-1 text-[11px]">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                           <span className="w-1 h-1 rounded-full bg-green-500 flex-shrink-0" />
-                          <span className="text-ink-500">작업 진행 중</span>
-                          <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">롱폼 {inProgressLong}개</span>
-                          <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">숏폼 {inProgressShort}개</span>
+                          <span className="text-ink-500 truncate min-w-0">작업 진행 중</span>
+                          <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium flex-shrink-0">롱폼 {inProgressLong}개</span>
+                          <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium flex-shrink-0">숏폼 {inProgressShort}개</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                           <span className="w-1 h-1 rounded-full bg-ink-300 flex-shrink-0" />
-                          <span className="text-ink-400">누적 작업 수</span>
-                          <span className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-500 font-medium">롱폼 {totalLong}개</span>
-                          <span className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-500 font-medium">숏폼 {totalShort}개</span>
+                          <span className="text-ink-400 truncate min-w-0">누적 작업 수</span>
+                          <span className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-500 font-medium flex-shrink-0">롱폼 {totalLong}개</span>
+                          <span className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-500 font-medium flex-shrink-0">숏폼 {totalShort}개</span>
                         </div>
                       </div>
                     );

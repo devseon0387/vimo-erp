@@ -80,7 +80,7 @@ export default function AllMailPage() {
 
       {/* 메일 목록 카드 */}
       <div className="bg-white rounded-2xl border border-ink-100">
-        <div className="flex items-center gap-2 px-6 py-4 border-b border-ink-100">
+        <div className="flex items-center gap-2 px-4 sm:px-6 py-4 border-b border-ink-100">
           <Archive size={16} className="text-orange-500" />
           <h2 className="text-section">전체 메일</h2>
           {!loading && emails.length > 0 && (
@@ -103,7 +103,7 @@ export default function AllMailPage() {
               <li key={email.type === 'received' ? `r-${email.uid}` : `s-${email.id}`}>
                 <button
                   onClick={() => setSelected(email)}
-                  className={`w-full flex items-start gap-3 px-6 py-3.5 text-left hover:bg-ink-50 transition-colors ${
+                  className={`w-full flex items-start gap-3 px-4 sm:px-6 py-3.5 text-left hover:bg-ink-50 transition-colors ${
                     idx < emails.length - 1 ? 'border-b border-ink-100' : ''
                   }`}
                 >
@@ -159,7 +159,7 @@ export default function AllMailPage() {
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-ink-100">
+            <div className="flex items-start justify-between gap-3 px-4 sm:px-6 py-4 border-b border-ink-100">
               <div className="min-w-0">
                 <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md mb-2 ${
                   selected.type === 'received'
@@ -171,7 +171,7 @@ export default function AllMailPage() {
                 <h3 className="text-[16px] font-semibold text-ink-900 break-words">
                   {selected.subject}
                 </h3>
-                <div className="mt-2 text-[12px] text-ink-500 space-y-0.5">
+                <div className="mt-2 text-[12px] text-ink-500 space-y-0.5 break-words">
                   {selected.type === 'received' ? (
                     <>
                       <p><strong className="font-semibold">보낸 사람:</strong> {selected.fromName ? `${selected.fromName} <${selected.from}>` : selected.from}</p>
@@ -192,14 +192,14 @@ export default function AllMailPage() {
               </div>
               <button
                 onClick={() => setSelected(null)}
-                className="text-ink-400 hover:text-ink-700 p-1 flex-shrink-0"
+                className="text-ink-400 hover:text-ink-700 p-2 sm:p-1 flex-shrink-0"
                 aria-label="닫기"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-auto px-6 py-5">
+            <div className="flex-1 overflow-auto px-4 sm:px-6 py-5">
               {selected.type === 'received' ? (
                 selected.html ? (
                   <div
@@ -219,7 +219,7 @@ export default function AllMailPage() {
               )}
             </div>
 
-            <div className="flex justify-end px-6 py-3 border-t border-ink-100">
+            <div className="flex justify-end px-4 sm:px-6 py-3 border-t border-ink-100">
               <button
                 onClick={() => setSelected(null)}
                 className="px-4 py-1.5 rounded-lg border border-divider bg-white text-[12px] font-medium text-ink-700 hover:bg-ink-50"

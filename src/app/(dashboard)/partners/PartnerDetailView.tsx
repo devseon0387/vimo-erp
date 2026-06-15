@@ -312,10 +312,10 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
         <div className="flex items-center gap-3 min-w-0">
           <Avatar business={isBusinessPartner(partner)} inactive={partner.computedStatus === 'inactive'} />
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-page truncate">
-                {partner.name}
-              </h2>
+            <h2 className="text-lg md:text-page truncate">
+              {partner.name}
+            </h2>
+            <div className="flex items-center gap-1.5 flex-wrap mt-1">
               <Badge
                 label={PARTNER_STATUS_LABEL[partner.computedStatus]}
                 color={statusBadgeColor(partner.computedStatus)}
@@ -338,11 +338,11 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
             </div>
           </div>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex gap-3 md:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => onEdit(partner)}
-            className="w-8 h-8 rounded-md inline-flex items-center justify-center"
+            className="w-9 h-9 md:w-8 md:h-8 rounded-md inline-flex items-center justify-center"
             style={{ border: '1px solid var(--color-ink-300)', color: 'var(--color-ink-600)' }}
             title="편집"
           >
@@ -351,7 +351,7 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
           <button
             type="button"
             onClick={() => onDelete(partner)}
-            className="w-8 h-8 rounded-md inline-flex items-center justify-center"
+            className="w-9 h-9 md:w-8 md:h-8 rounded-md inline-flex items-center justify-center"
             style={{ border: '1px solid var(--color-ink-300)', color: '#b91c1c' }}
             title="삭제"
           >
@@ -367,18 +367,18 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
           style={{ background: 'var(--color-ink-50)', color: 'var(--color-ink-600)' }}
         >
           {partner.email && (
-            <a href={`mailto:${partner.email}`} className="inline-flex items-center gap-1.5 hover:text-[var(--color-brand-600)]">
-              <Mail size={12} /> {partner.email}
+            <a href={`mailto:${partner.email}`} className="inline-flex items-center gap-1.5 min-w-0 max-w-full hover:text-[var(--color-brand-600)]">
+              <Mail size={12} className="shrink-0" /> <span className="truncate">{partner.email}</span>
             </a>
           )}
           {partner.phone && (
-            <a href={`tel:${partner.phone}`} className="inline-flex items-center gap-1.5 hover:text-[var(--color-brand-600)]">
-              <Phone size={12} /> {formatPhoneNumber(partner.phone)}
+            <a href={`tel:${partner.phone}`} className="inline-flex items-center gap-1.5 shrink-0 hover:text-[var(--color-brand-600)]">
+              <Phone size={12} className="shrink-0" /> {formatPhoneNumber(partner.phone)}
             </a>
           )}
           {(partner.bank || partner.bankAccount) && (
-            <span className="inline-flex items-center gap-1.5">
-              <DollarSign size={12} /> {partner.bank}{partner.bankAccount && ` · ${partner.bankAccount}`}
+            <span className="inline-flex items-center gap-1.5 min-w-0 max-w-full">
+              <DollarSign size={12} className="shrink-0" /> <span className="truncate">{partner.bank}{partner.bankAccount && ` · ${partner.bankAccount}`}</span>
             </span>
           )}
         </div>

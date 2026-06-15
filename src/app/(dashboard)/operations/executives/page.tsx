@@ -119,7 +119,7 @@ export default function ExecutivesPage() {
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-5 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-colors shadow-lg shadow-orange-500/30 font-semibold flex items-center gap-2 text-sm"
+          className="w-full sm:w-auto justify-center px-5 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-colors shadow-lg shadow-orange-500/30 font-semibold flex items-center gap-2 text-sm"
         >
           <Plus size={18} />
           임원 추가
@@ -127,7 +127,7 @@ export default function ExecutivesPage() {
       </div>
 
       {/* 통계 */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <KPICard label="전체" value={executives.length} />
         <KPICard label="활성" value={executives.filter((p) => p.status === 'active').length} tone="ok" />
         <KPICard label="비활성" value={executives.filter((p) => p.status !== 'active').length} />
@@ -172,7 +172,7 @@ export default function ExecutivesPage() {
                 >
                   <X size={24} className="text-ink-400" />
                 </button>
-                <h2 className="text-page mb-2">새 임원을<br />추가할게요</h2>
+                <h2 className="text-page mb-2">새 임원을 추가할게요</h2>
                 <p className="text-sm text-ink-500">임원 정보를 입력해주세요</p>
               </div>
 
@@ -263,16 +263,16 @@ export default function ExecutivesPage() {
                   휴지통으로 이동되며, 30일 이내에 복구할 수 있습니다.
                 </p>
               </div>
-              <div className="px-6 py-4 border-t border-divider flex justify-end gap-3">
+              <div className="px-6 py-4 border-t border-divider flex flex-wrap justify-end gap-3">
                 <button
                   onClick={() => setDeleteTarget(null)}
-                  className="px-4 py-2 text-ink-700 hover:bg-ink-100 rounded-lg transition-colors text-sm font-medium"
+                  className="px-4 py-2.5 text-ink-700 hover:bg-ink-100 rounded-lg transition-colors text-sm font-medium"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                  className="px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
                 >
                   삭제
                 </button>

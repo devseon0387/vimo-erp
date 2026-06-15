@@ -221,76 +221,128 @@ export default function MailAddressesPage() {
             size="compact"
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="text-left text-[11px] font-semibold text-[#a8a29e] border-b border-[#f8f7f6]">
-                  <th className="px-6 py-2.5">주소</th>
-                  <th className="px-4 py-2.5">유형</th>
-                  <th className="px-4 py-2.5">소유 · 담당</th>
-                  <th className="px-4 py-2.5">라벨</th>
-                  <th className="px-6 py-2.5 text-right">상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                {addresses.map((a) => (
-                  <tr key={a.id} className="border-b border-[#f8f7f6] last:border-0">
-                    <td className={`px-6 py-3 font-semibold ${a.active ? 'text-[#1c1917]' : 'text-[#a8a29e] line-through'}`}>
-                      {a.address}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+          <>
+            {/* 모바일: 카드 리스트 */}
+            <div className="sm:hidden divide-y divide-[#f8f7f6]">
+              {addresses.map((a) => {
+                const assignees = a.type === 'personal'
+                  ? (a.ownerName ? [a.ownerName] : [])
+                  : a.members.map((m) => m.name || '이름없음');
+                const empty = assignees.length === 0;
+                return (
+                  <div key={a.id} className="px-4 py-3.5 space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-[14px] font-semibold truncate ${a.active ? 'text-[#1c1917]' : 'text-[#a8a29e] line-through'}`}>
+                          {a.address}
+                        </p>
+                        <p className="text-[11px] text-[#78716c] truncate mt-0.5">
+                          {empty ? (a.type === 'personal' ? '소유자 미지정' : '담당자 미지정') : assignees.join(' · ')}
+                          {a.label ? ` · ${a.label}` : ''}
+                        </p>
+                      </div>
+                      <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold flex-shrink-0 ${
                         a.type === 'personal' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
                       }`}>
                         {a.type === 'personal' ? '개인' : '공용'}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {(() => {
-                        const assignees = a.type === 'personal'
-                          ? (a.ownerName ? [a.ownerName] : [])
-                          : a.members.map((m) => m.name || '이름없음');
-                        const empty = assignees.length === 0;
-                        return (
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setEditing(a)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[40px] rounded-lg border border-divider bg-white text-[12px] font-semibold text-[#44403c] hover:bg-[#fafaf9] hover:text-orange-600 transition-colors"
+                      >
+                        <Pencil size={13} />
+                        담당 변경
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(a)}
+                        className={`flex-1 inline-flex items-center justify-center min-h-[40px] rounded-lg text-[12px] font-semibold border transition-colors ${
+                          a.active
+                            ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                            : 'bg-[#fafaf9] text-[#a8a29e] border-divider hover:bg-[#f5f4f2]'
+                        }`}
+                      >
+                        {a.active ? '활성' : '비활성'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 데스크탑: 테이블 */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="text-left text-[11px] font-semibold text-[#a8a29e] border-b border-[#f8f7f6]">
+                    <th className="px-6 py-2.5">주소</th>
+                    <th className="px-4 py-2.5">유형</th>
+                    <th className="px-4 py-2.5">소유 · 담당</th>
+                    <th className="px-4 py-2.5">라벨</th>
+                    <th className="px-6 py-2.5 text-right">상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {addresses.map((a) => (
+                    <tr key={a.id} className="border-b border-[#f8f7f6] last:border-0">
+                      <td className={`px-6 py-3 font-semibold ${a.active ? 'text-[#1c1917]' : 'text-[#a8a29e] line-through'}`}>
+                        {a.address}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                          a.type === 'personal' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
+                        }`}>
+                          {a.type === 'personal' ? '개인' : '공용'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {(() => {
+                          const assignees = a.type === 'personal'
+                            ? (a.ownerName ? [a.ownerName] : [])
+                            : a.members.map((m) => m.name || '이름없음');
+                          const empty = assignees.length === 0;
+                          return (
+                            <button
+                              onClick={() => setEditing(a)}
+                              className={`group inline-flex items-center gap-1.5 text-left max-w-[260px] ${empty ? 'text-[#a8a29e]' : 'text-[#44403c]'} hover:text-orange-600 transition-colors`}
+                              title="담당 변경"
+                            >
+                              <span className="truncate">{empty ? (a.type === 'personal' ? '소유자 지정' : '담당자 지정') : assignees.join(' · ')}</span>
+                              <Pencil size={11} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-orange-500 transition-opacity" />
+                            </button>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-4 py-3 text-[#78716c]">{a.label || '—'}</td>
+                      <td className="px-6 py-3 text-right">
+                        <div className="inline-flex items-center gap-1.5">
                           <button
                             onClick={() => setEditing(a)}
-                            className={`group inline-flex items-center gap-1.5 text-left max-w-[260px] ${empty ? 'text-[#a8a29e]' : 'text-[#44403c]'} hover:text-orange-600 transition-colors`}
+                            className="w-7 h-7 rounded-lg border border-divider bg-white text-[#78716c] hover:bg-[#fafaf9] hover:text-orange-600 flex items-center justify-center transition-colors"
                             title="담당 변경"
+                            aria-label="담당 변경"
                           >
-                            <span className="truncate">{empty ? (a.type === 'personal' ? '소유자 지정' : '담당자 지정') : assignees.join(' · ')}</span>
-                            <Pencil size={11} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-orange-500 transition-opacity" />
+                            <Pencil size={13} />
                           </button>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-4 py-3 text-[#78716c]">{a.label || '—'}</td>
-                    <td className="px-6 py-3 text-right">
-                      <div className="inline-flex items-center gap-1.5">
-                        <button
-                          onClick={() => setEditing(a)}
-                          className="w-7 h-7 rounded-lg border border-divider bg-white text-[#78716c] hover:bg-[#fafaf9] hover:text-orange-600 flex items-center justify-center transition-colors"
-                          title="담당 변경"
-                          aria-label="담당 변경"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <button
-                          onClick={() => handleToggleActive(a)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
-                            a.active
-                              ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                              : 'bg-[#fafaf9] text-[#a8a29e] border-divider hover:bg-[#f5f4f2]'
-                          }`}
-                        >
-                          {a.active ? '활성' : '비활성'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                          <button
+                            onClick={() => handleToggleActive(a)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                              a.active
+                                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                                : 'bg-[#fafaf9] text-[#a8a29e] border-divider hover:bg-[#f5f4f2]'
+                            }`}
+                          >
+                            {a.active ? '활성' : '비활성'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

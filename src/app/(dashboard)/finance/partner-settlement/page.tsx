@@ -321,15 +321,15 @@ export default function SettlementPage() {
                             <User size={16} className="text-white" />
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-center gap-[6px]">
-                              <span className="text-[15px] font-bold text-[#1c1917]">{row.person.name}</span>
+                            <div className="flex items-center gap-[6px] min-w-0">
+                              <span className="text-[15px] font-bold text-[#1c1917] truncate min-w-0">{row.person.name}</span>
                               <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${
                                 row.type === 'manager' ? 'bg-purple-50 text-purple-600' : 'bg-[#fff7ed] text-orange-500'
                               }`}>
                                 {row.type === 'manager' ? '매니저' : '파트너'}
                               </span>
                             </div>
-                            <span className="text-[11px] text-[#a8a29e]">
+                            <span className="text-[11px] text-[#a8a29e] block truncate">
                               {row.episodeCount > 0 && `${row.episodeCount}회차`}{row.episodeCount > 0 && projLabel && ' · '}{projLabel}
                             </span>
                           </div>

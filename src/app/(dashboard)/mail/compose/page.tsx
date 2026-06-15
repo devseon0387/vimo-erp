@@ -144,12 +144,12 @@ export default function ComposeMailPage() {
 
       {/* 작성 폼 카드 */}
       <div className="bg-white rounded-2xl border border-ink-100">
-        <div className="flex items-center gap-2 px-6 py-4 border-b border-[#f8f7f6]">
+        <div className="flex items-center gap-2 px-4 sm:px-6 py-4 border-b border-[#f8f7f6]">
           <Mail size={16} className="text-orange-500" />
           <h2 className="text-section">이메일 작성</h2>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-4 sm:px-6 py-5 space-y-4">
           {/* 보내는 주소 — 부여된 개인 주소 + 담당 공용함 */}
           {senderOptions.length > 0 && (
             <div>
@@ -178,11 +178,11 @@ export default function ComposeMailPage() {
             </label>
             <div className="flex flex-wrap gap-1.5 px-3 py-2 border border-divider rounded-lg min-h-[40px] items-center focus-within:border-orange-400">
               {to.map(email => (
-                <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 text-orange-500 text-[12px]">
-                  {email}
+                <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 text-orange-500 text-[12px] max-w-full min-w-0">
+                  <span className="truncate min-w-0">{email}</span>
                   <button
                     onClick={() => removeEmail(to, setTo, email)}
-                    className="text-orange-500 hover:text-orange-700"
+                    className="text-orange-500 hover:text-orange-700 flex-shrink-0"
                     aria-label="제거"
                   >
                     <X size={12} />
@@ -196,7 +196,7 @@ export default function ComposeMailPage() {
                 onKeyDown={e => handleKeyDown(e, to, setTo, toInput, setToInput)}
                 onBlur={() => { if (toInput.trim()) addEmail(to, setTo, toInput, setToInput); }}
                 placeholder={to.length === 0 ? '이메일 주소 입력 후 Enter' : ''}
-                className="flex-1 min-w-[150px] text-[13px] outline-none bg-transparent"
+                className="flex-1 min-w-[120px] sm:min-w-[150px] text-[13px] outline-none bg-transparent"
               />
             </div>
             {!showCc && (
@@ -217,11 +217,11 @@ export default function ComposeMailPage() {
               </label>
               <div className="flex flex-wrap gap-1.5 px-3 py-2 border border-divider rounded-lg min-h-[40px] items-center focus-within:border-orange-400">
                 {cc.map(email => (
-                  <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--color-ink-100)] text-[#44403c] text-[12px]">
-                    {email}
+                  <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--color-ink-100)] text-[#44403c] text-[12px] max-w-full min-w-0">
+                    <span className="truncate min-w-0">{email}</span>
                     <button
                       onClick={() => removeEmail(cc, setCc, email)}
-                      className="text-[#78716c] hover:text-[#44403c]"
+                      className="text-[#78716c] hover:text-[#44403c] flex-shrink-0"
                       aria-label="제거"
                     >
                       <X size={12} />
@@ -235,7 +235,7 @@ export default function ComposeMailPage() {
                   onKeyDown={e => handleKeyDown(e, cc, setCc, ccInput, setCcInput)}
                   onBlur={() => { if (ccInput.trim()) addEmail(cc, setCc, ccInput, setCcInput); }}
                   placeholder={cc.length === 0 ? '참조 이메일 입력 후 Enter' : ''}
-                  className="flex-1 min-w-[150px] text-[13px] outline-none bg-transparent"
+                  className="flex-1 min-w-[120px] sm:min-w-[150px] text-[13px] outline-none bg-transparent"
                 />
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function ComposeMailPage() {
         </div>
 
         {/* 미리보기 / 발송 버튼 */}
-        <div className="flex justify-end gap-2 px-6 py-3 border-t border-[#f8f7f6]">
+        <div className="flex justify-end gap-2 px-4 sm:px-6 py-3 border-t border-[#f8f7f6]">
           <button
             onClick={() => setShowPreview(true)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-divider bg-white text-[13px] font-semibold text-[#44403c] hover:bg-[#fafaf9]"
@@ -294,7 +294,7 @@ export default function ComposeMailPage() {
             onClick={e => e.stopPropagation()}
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#f8f7f6]">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#f8f7f6]">
               <div className="flex items-center gap-2">
                 <Eye size={16} className="text-orange-500" />
                 <span className="text-[14px] font-semibold text-[#1c1917]">메일 미리보기</span>
@@ -308,8 +308,8 @@ export default function ComposeMailPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5">
-              <div className="space-y-1 text-[12px] text-[#57534e] mb-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
+              <div className="space-y-1 text-[12px] text-[#57534e] mb-4 break-words">
                 <div><strong className="font-semibold text-[#44403c]">보낸 사람:</strong> {senderName ? `${senderName} <${senderEmail}>` : senderEmail || <span className="text-[#a8a29e]">알 수 없음</span>}</div>
                 <div><strong className="font-semibold text-[#44403c]">받는 사람:</strong> {to.length > 0 ? to.join(', ') : <span className="text-[#a8a29e]">없음</span>}</div>
                 <div><strong className="font-semibold text-[#44403c]">참조:</strong> {cc.length > 0 ? cc.join(', ') : <span className="text-[#a8a29e]">없음</span>}</div>
@@ -324,7 +324,7 @@ export default function ComposeMailPage() {
               />
             </div>
 
-            <div className="flex justify-end px-6 py-3 border-t border-[#f8f7f6]">
+            <div className="flex justify-end px-4 sm:px-6 py-3 border-t border-[#f8f7f6]">
               <button
                 onClick={() => setShowPreview(false)}
                 className="px-4 py-1.5 rounded-lg border border-divider bg-white text-[12px] font-semibold text-[#44403c] hover:bg-[#fafaf9]"
