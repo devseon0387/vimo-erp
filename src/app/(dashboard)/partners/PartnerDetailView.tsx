@@ -6,6 +6,9 @@ import Link from 'next/link';
 import type { Partner, Project, Episode } from '@/types';
 import { formatPhoneNumber } from '@/lib/utils';
 import { isBusinessPartner, PARTNER_STATUS_LABEL, type EnrichedPartner, type PartnerGroupStatus } from './PartnerMasterList';
+import { TabBar } from '@/components/TabBar';
+import { KPICard } from '@/components/KPICard';
+import { StatusBadge, type StatusTone } from '@/components/StatusBadge';
 
 interface Props {
   partner: EnrichedPartner;
@@ -24,86 +27,34 @@ function statusBadgeColor(status: PartnerGroupStatus): 'ok' | 'brand' | 'warn' |
   return 'muted';
 }
 
+// 공용 StatusBadge로 위임 — 로컬 색 사전 제거(전 페이지 상태칩 통일).
+const BADGE_TONE: Record<'ok' | 'brand' | 'warn' | 'bad' | 'muted', StatusTone> = {
+  ok: 'ok',
+  brand: 'brand',
+  warn: 'warn',
+  bad: 'danger',
+  muted: 'neutral',
+};
+
 function Badge({ label, color = 'muted' }: { label: string; color?: 'ok' | 'brand' | 'warn' | 'bad' | 'muted' }) {
-  const bg: Record<string, { background: string; color: string }> = {
-    ok:    { background: 'var(--color-ok-50)',    color: 'var(--color-ok-600)' },
-    brand: { background: 'var(--color-brand-50)', color: 'var(--color-brand-600)' },
-    warn:  { background: 'var(--color-warn-50)',  color: '#b45309' },
-    bad:   { background: 'var(--color-bad-50)',   color: '#b91c1c' },
-    muted: { background: 'var(--color-ink-100)',  color: 'var(--color-ink-600)' },
-  };
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-      style={bg[color]}
-    >
-      {label}
-    </span>
-  );
+  return <StatusBadge tone={BADGE_TONE[color]}>{label}</StatusBadge>;
 }
 
 function Avatar({ business, inactive = false, size = 52 }: { business: boolean; inactive?: boolean; size?: number }) {
-  const bg = inactive
-    ? 'linear-gradient(135deg, #d6d3d1, #a8a29e)'
+  const tint = inactive
+    ? { bg: 'var(--color-ink-100)', fg: 'var(--color-ink-400)' }
     : business
-      ? 'linear-gradient(135deg, #60a5fa, #2563eb)'
-      : 'linear-gradient(135deg, var(--color-brand-400), var(--color-brand-600))';
+      ? { bg: '#eff6ff', fg: '#2563eb' }
+      : { bg: 'var(--color-brand-50)', fg: 'var(--color-brand-600)' };
   const Icon = business ? Briefcase : User;
   return (
     <div
-      style={{ width: size, height: size, borderRadius: 14, background: bg }}
-      className="shrink-0 text-white inline-flex items-center justify-center select-none"
+      style={{ width: size, height: size, borderRadius: 14, background: tint.bg, color: tint.fg }}
+      className="shrink-0 inline-flex items-center justify-center select-none"
       title={business ? '사업자' : '프리랜서'}
     >
       <Icon size={Math.round(size * 0.52)} strokeWidth={2.2} />
     </div>
-  );
-}
-
-function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'ok' | 'bad' | 'warn' }) {
-  const valueColor =
-    tone === 'ok' ? 'var(--color-ok-600)' :
-    tone === 'bad' ? 'var(--color-bad-500)' :
-    tone === 'warn' ? '#b45309' :
-    'var(--color-ink-900)';
-  return (
-    <div
-      className="rounded-xl p-3"
-      style={{ background: 'white', border: '1px solid var(--color-ink-200)' }}
-    >
-      <div className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-ink-400)' }}>
-        {label}
-      </div>
-      <div className="text-[17px] font-bold mt-1" style={{ color: valueColor }}>
-        {value}
-      </div>
-      {sub && <div className="text-[10.5px] mt-0.5" style={{ color: 'var(--color-ink-500)' }}>{sub}</div>}
-    </div>
-  );
-}
-
-function TabButton({ active, onClick, icon: Icon, label, count }: { active: boolean; onClick: () => void; icon: React.ElementType; label: string; count?: number }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="px-3 py-2 text-[12.5px] font-semibold inline-flex items-center gap-1.5"
-      style={{
-        borderBottom: active ? '2px solid var(--color-brand-500)' : '2px solid transparent',
-        color: active ? 'var(--color-brand-600)' : 'var(--color-ink-500)',
-      }}
-    >
-      <Icon size={13} />
-      {label}
-      {count !== undefined && count > 0 && (
-        <span
-          className="text-[10px] px-1.5 py-0.5 rounded"
-          style={{ background: active ? 'var(--color-brand-100)' : 'var(--color-ink-100)' }}
-        >
-          {count}
-        </span>
-      )}
-    </button>
   );
 }
 
@@ -225,24 +176,24 @@ function SettlementTab({ partner, episodes, projects }: { partner: EnrichedPartn
   return (
     <div className="space-y-4">
       {/* KPI */}
-      <div className="grid grid-cols-4 gap-2">
-        <Kpi
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <KPICard
           label="이번 달 완료"
           value={`${thisMonth.length}건`}
           sub={thisMonthAmount > 0 ? `₩${(thisMonthAmount / 10000).toFixed(0)}만` : undefined}
         />
-        <Kpi
+        <KPICard
           label="누적 정산액"
           value={totalEarned > 0 ? `₩${(totalEarned / 10000).toFixed(0)}만` : '-'}
           sub={`완료 ${completedEps.length}건`}
         />
-        <Kpi
+        <KPICard
           label="미지급"
           value={unpaidAmount > 0 ? `₩${(unpaidAmount / 10000).toFixed(0)}만` : '-'}
           sub={unpaidEps.length > 0 ? `${unpaidEps.length}건 미지급` : '전부 지급 완료'}
           tone={unpaidAmount > 0 ? 'bad' : 'ok'}
         />
-        <Kpi
+        <KPICard
           label="이번 달 지급예정"
           value={thisMonthAmount > 0 ? `₩${(thisMonthAmount / 10000).toFixed(0)}만` : '-'}
           sub={thisMonth.length > 0 ? `${thisMonth.length}건 완료분` : '완료 건 없음'}
@@ -353,7 +304,7 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
 
   return (
     <div
-      className="rounded-xl p-5 md:p-6 h-full overflow-y-auto"
+      className="rounded-xl p-4 md:p-5 h-full overflow-y-auto"
       style={{ background: 'white', border: '1px solid var(--color-ink-200)' }}
     >
       {/* Header */}
@@ -362,7 +313,7 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
           <Avatar business={isBusinessPartner(partner)} inactive={partner.computedStatus === 'inactive'} />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-[20px] font-bold truncate" style={{ color: 'var(--color-ink-900)' }}>
+              <h2 className="text-page truncate">
                 {partner.name}
               </h2>
               <Badge
@@ -412,7 +363,7 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
       {/* Contact row */}
       {(partner.email || partner.phone) && (
         <div
-          className="rounded-lg p-3 mb-4 flex items-center gap-4 flex-wrap text-[12px]"
+          className="rounded-lg p-3 mb-4 flex items-center gap-3 flex-wrap text-[12px]"
           style={{ background: 'var(--color-ink-50)', color: 'var(--color-ink-600)' }}
         >
           {partner.email && (
@@ -434,21 +385,21 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
       )}
 
       {/* KPI row */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        <Kpi
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        <KPICard
           label="진행 중 회차"
           value={String(partner.activeEpisodeCount)}
           sub={completedEpisodesCount > 0 ? `완료 ${completedEpisodesCount}건` : undefined}
         />
-        <Kpi
+        <KPICard
           label="참여 프로젝트"
           value={String(partner.projectCount)}
         />
-        <Kpi
+        <KPICard
           label="이번 달 정산"
           value={partner.thisMonthRevenue > 0 ? `₩${(partner.thisMonthRevenue / 10000).toFixed(0)}만` : '-'}
         />
-        <Kpi
+        <KPICard
           label="최근 활동"
           value={lastActivity}
           tone={activityTone}
@@ -456,10 +407,16 @@ export function PartnerDetailView({ partner, projects, episodes, onEdit, onDelet
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4" style={{ borderBottom: '1px solid var(--color-ink-200)' }}>
-        <TabButton active={activeTab === 'episodes'} onClick={() => setActiveTab('episodes')} icon={Film} label="회차" count={episodes.length} />
-        <TabButton active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} icon={FolderOpen} label="프로젝트" count={projects.length} />
-        <TabButton active={activeTab === 'settlement'} onClick={() => setActiveTab('settlement')} icon={Receipt} label="정산" />
+      <div className="mb-4">
+        <TabBar
+          items={[
+            { key: 'episodes', label: '회차', icon: Film, count: episodes.length },
+            { key: 'projects', label: '프로젝트', icon: FolderOpen, count: projects.length },
+            { key: 'settlement', label: '정산', icon: Receipt },
+          ]}
+          active={activeTab}
+          onChange={setActiveTab}
+        />
       </div>
 
       {/* Tab content */}

@@ -438,7 +438,7 @@ export default function ProjectWizardModal({
                             <motion.div
                               className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-colors ${startType === 'project-only' ? 'bg-orange-100' : 'bg-gray-100'}`}
                             >
-                              ⚡
+                              <Zap className={startType === 'project-only' ? 'text-white' : 'text-gray-600'} size={24} />
                             </motion.div>
                             <div className="flex-1">
                               <h4 className="text-sm font-bold text-gray-900">프로젝트만 빠르게</h4>

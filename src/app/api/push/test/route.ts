@@ -1,18 +1,31 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { eq, inArray } from 'drizzle-orm';
+import { db } from '@/db';
+import { pushSubscriptions } from '@/db/schema';
+import { currentUser } from '@/lib/authz';
 import { getWebPush } from '@/lib/push';
 
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await currentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: subs, error } = await supabase
-    .from('push_subscriptions')
-    .select('endpoint, p256dh, auth')
-    .eq('user_id', user.id);
+  let subs: { endpoint: string; p256dh: string; auth: string }[];
+  try {
+    subs = await db
+      .select({
+        endpoint: pushSubscriptions.endpoint,
+        p256dh: pushSubscriptions.p256Dh,
+        auth: pushSubscriptions.auth,
+      })
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.userId, user.id));
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : String(e) },
+      { status: 500 }
+    );
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!subs || subs.length === 0) {
     return NextResponse.json({ error: '구독된 기기가 없습니다' }, { status: 404 });
   }
@@ -43,7 +56,7 @@ export async function POST() {
     }
   });
   if (stale.length) {
-    await supabase.from('push_subscriptions').delete().in('endpoint', stale);
+    await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.endpoint, stale));
   }
 
   const sent = results.filter((r) => r.status === 'fulfilled').length;

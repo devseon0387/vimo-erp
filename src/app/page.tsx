@@ -3,20 +3,15 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
+import { getSessionUser } from '@/lib/auth/session-info';
 
 export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
     const checkSession = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        router.push('/management');
-      } else {
-        router.push('/login');
-      }
+      const u = await getSessionUser();
+      router.push(u ? '/management' : '/login');
     };
     checkSession();
   }, [router]);

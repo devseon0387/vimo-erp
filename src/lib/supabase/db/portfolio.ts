@@ -1,123 +1,102 @@
+'use server';
 /**
- * Portfolio CRUD
+ * Portfolio CRUD — Supabase → Baseon 자체 PG(Drizzle) 이전 (Phase 2 패턴 1호).
+ * ★ 기존: 브라우저 클라이언트가 직접 쿼리(RLS가 보호).
+ * ★ 변경: 서버 액션에서 Drizzle로 쿼리 + 서버에서 권한 검사(RLS 'to authenticated' 대체).
+ *   인증 = Auth.js 세션 (Phase 4 전환). 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
  */
-import { createClient } from '../client';
+import { eq, desc } from 'drizzle-orm';
+import { db } from '@/db';
+import { portfolioItems } from '@/db/schema';
+import { currentUser } from '@/lib/authz';
 import type { PortfolioItem } from '@/types';
 
-// ─── Row Types (Supabase snake_case) ─────────────────────────
-
-export interface PortfolioItemRow {
-  id: string;
-  title: string;
-  description: string | null;
-  client: string | null;
-  partner_id: string | null;
-  category: string | null;
-  display_order: number | null;
-  completed_at: string | null;
-  tags: string[] | null;
-  youtube_url: string | null;
-  is_published: boolean;
-  created_at: string;
-  updated_at: string;
+// ─── 인증 가드 (RLS의 'to authenticated' = 로그인 필수를 앱계층으로) ───
+async function getUser() {
+  return currentUser();
 }
 
-// ─── Mappers ─────────────────────────────────────────────────
-
-export function portfolioItemFromRow(row: PortfolioItemRow): PortfolioItem {
+// ─── Drizzle row → 도메인 타입 ───
+type Row = typeof portfolioItems.$inferSelect;
+function fromRow(r: Row): PortfolioItem {
   return {
-    id: row.id,
-    title: row.title,
-    description: row.description ?? '',
-    client: row.client ?? '',
-    partnerId: row.partner_id ?? undefined,
-    category: row.category ?? '기타',
-    displayOrder: row.display_order ?? 0,
-    completedAt: row.completed_at ?? '',
-    tags: row.tags ?? [],
-    youtubeUrl: row.youtube_url ?? '',
-    isPublished: row.is_published,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    id: r.id,
+    title: r.title,
+    description: r.description ?? '',
+    client: r.client ?? '',
+    partnerId: r.partnerId ?? undefined,
+    category: r.category ?? '기타',
+    displayOrder: r.displayOrder ?? 0,
+    completedAt: r.completedAt ?? '',
+    tags: r.tags ?? [],
+    youtubeUrl: r.youtubeUrl ?? '',
+    isPublished: r.isPublished ?? false,
+    createdAt: r.createdAt ?? '',
+    updatedAt: r.updatedAt ?? '',
   };
 }
 
-export function portfolioItemToInsert(item: Omit<PortfolioItem, 'id' | 'createdAt' | 'updatedAt'>) {
-  return {
-    title: item.title,
-    description: item.description,
-    client: item.client,
-    partner_id: item.partnerId ?? null,
-    category: item.category ?? '기타',
-    display_order: item.displayOrder ?? 0,
-    completed_at: item.completedAt || null,
-    tags: item.tags ?? [],
-    youtube_url: item.youtubeUrl,
-    is_published: item.isPublished,
-  };
-}
-
-export function portfolioItemToUpdate(item: Partial<PortfolioItem>) {
-  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (item.title !== undefined) row.title = item.title;
-  if (item.description !== undefined) row.description = item.description;
-  if (item.client !== undefined) row.client = item.client;
-  if (item.partnerId !== undefined) row.partner_id = item.partnerId;
-  if (item.category !== undefined) row.category = item.category;
-  if (item.displayOrder !== undefined) row.display_order = item.displayOrder;
-  if (item.completedAt !== undefined) row.completed_at = item.completedAt;
-  if (item.tags !== undefined) row.tags = item.tags;
-  if (item.youtubeUrl !== undefined) row.youtube_url = item.youtubeUrl;
-  if (item.isPublished !== undefined) row.is_published = item.isPublished;
-  return row;
-}
-
-// ─── CRUD ────────────────────────────────────────────────────
-
+// ─── CRUD ───
 export async function getPortfolioItems(publishedOnly?: boolean): Promise<PortfolioItem[]> {
-  const supabase = createClient();
-  let query = supabase.from('portfolio_items').select('*').order('created_at', { ascending: false });
-  if (publishedOnly) query = query.eq('is_published', true);
-  const { data, error } = await query;
-  if (error) { console.error('[DB] getPortfolioItems:', error.message); return []; }
-  if (!data) return [];
-  return (data as PortfolioItemRow[]).map(portfolioItemFromRow);
+  if (!(await getUser())) return [];
+  const rows = await db
+    .select()
+    .from(portfolioItems)
+    .where(publishedOnly ? eq(portfolioItems.isPublished, true) : undefined)
+    .orderBy(desc(portfolioItems.createdAt));
+  return rows.map(fromRow);
 }
 
 export async function insertPortfolioItem(
   item: Omit<PortfolioItem, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<PortfolioItem | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('portfolio_items')
-    .insert([portfolioItemToInsert(item)])
-    .select()
-    .single();
-  if (error) { console.error('[DB] insertPortfolioItem:', error.message); return null; }
-  if (!data) return null;
-  return portfolioItemFromRow(data as PortfolioItemRow);
+  if (!(await getUser())) return null;
+  const [row] = await db
+    .insert(portfolioItems)
+    .values({
+      title: item.title,
+      description: item.description,
+      client: item.client,
+      partnerId: item.partnerId ?? null,
+      category: item.category ?? '기타',
+      displayOrder: item.displayOrder ?? 0,
+      completedAt: item.completedAt || null,
+      tags: item.tags ?? [],
+      youtubeUrl: item.youtubeUrl,
+      isPublished: item.isPublished,
+    })
+    .returning();
+  return row ? fromRow(row) : null;
 }
 
 export async function updatePortfolioItem(id: string, updates: Partial<PortfolioItem>): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from('portfolio_items')
-    .update(portfolioItemToUpdate(updates))
-    .eq('id', id);
-  return !error;
+  if (!(await getUser())) return false;
+  const patch: Partial<typeof portfolioItems.$inferInsert> = { updatedAt: new Date().toISOString() };
+  if (updates.title !== undefined) patch.title = updates.title;
+  if (updates.description !== undefined) patch.description = updates.description;
+  if (updates.client !== undefined) patch.client = updates.client;
+  if (updates.partnerId !== undefined) patch.partnerId = updates.partnerId ?? null;
+  if (updates.category !== undefined) patch.category = updates.category;
+  if (updates.displayOrder !== undefined) patch.displayOrder = updates.displayOrder;
+  if (updates.completedAt !== undefined) patch.completedAt = updates.completedAt;
+  if (updates.tags !== undefined) patch.tags = updates.tags;
+  if (updates.youtubeUrl !== undefined) patch.youtubeUrl = updates.youtubeUrl;
+  if (updates.isPublished !== undefined) patch.isPublished = updates.isPublished;
+  await db.update(portfolioItems).set(patch).where(eq(portfolioItems.id, id));
+  return true;
 }
 
 export async function deletePortfolioItem(id: string): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase.from('portfolio_items').delete().eq('id', id);
-  return !error;
+  if (!(await getUser())) return false;
+  await db.delete(portfolioItems).where(eq(portfolioItems.id, id));
+  return true;
 }
 
 export async function togglePortfolioPublished(id: string, isPublished: boolean): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from('portfolio_items')
-    .update({ is_published: isPublished, updated_at: new Date().toISOString() })
-    .eq('id', id);
-  return !error;
+  if (!(await getUser())) return false;
+  await db
+    .update(portfolioItems)
+    .set({ isPublished, updatedAt: new Date().toISOString() })
+    .where(eq(portfolioItems.id, id));
+  return true;
 }

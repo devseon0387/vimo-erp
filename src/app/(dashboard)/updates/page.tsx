@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
+import { Inbox } from 'lucide-react';
+import { TabBar } from '@/components/TabBar';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
+import { getAppUpdates } from '@/lib/supabase/db/app-updates';
 import type { ChangeType } from './data';
 
 type Tab = 'erp' | 'bibot';
@@ -92,13 +96,8 @@ export default function UpdatesPage() {
 
   const loadUpdates = useCallback(async (app: string) => {
     setLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('app_updates')
-      .select('*')
-      .eq('app', app)
-      .order('date', { ascending: false });
-    setUpdates((data as UpdateEntry[]) || []);
+    const data = await getAppUpdates(app);
+    setUpdates((data as unknown as UpdateEntry[]) || []);
     setLoading(false);
   }, []);
 
@@ -134,34 +133,18 @@ export default function UpdatesPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-page">업데이트</h1>
-        <p className="text-gray-500 mt-1 text-sm">ERP와 비봇의 최신 변경 사항을 확인하세요</p>
+        <p className="text-[#78716c] mt-1 text-sm">ERP와 비봇의 최신 변경 사항을 확인하세요</p>
       </div>
 
-      <div className="inline-flex gap-1 p-1 bg-white border border-divider rounded-xl">
-        {tabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => { setTab(t.key); setActiveVersion(null); }}
-            className="relative px-5 py-2.5 rounded-lg text-[14px] font-semibold"
-          >
-            {tab === t.key && (
-              <motion.div
-                layoutId="update-tab"
-                className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              />
-            )}
-            <span className={`relative z-10 ${tab === t.key ? 'text-white' : 'text-[#78716c]'}`}>
-              {t.label}
-            </span>
-          </button>
-        ))}
-      </div>
+      <TabBar
+        items={tabs}
+        active={tab}
+        onChange={(key) => { setTab(key); setActiveVersion(null); }}
+        fullWidthMobile={false}
+      />
 
       {loading ? (
-        <div className="flex items-center justify-center h-40">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-        </div>
+        <LoadingState />
       ) : (
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -184,9 +167,12 @@ export default function UpdatesPage() {
                 />
               ))}
               {updates.length === 0 && (
-                <div className="py-20 text-center text-[#a8a29e]">
-                  <p className="font-medium text-gray-500">업데이트 내역이 없습니다</p>
-                </div>
+                <EmptyState
+                  icon={Inbox}
+                  title="업데이트 내역이 없습니다"
+                  description="아직 등록된 변경 사항이 없습니다."
+                  size="compact"
+                />
               )}
             </div>
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Trash2, Plus, Mail, Phone, Building2, User, MapPin, FolderOpen, Receipt, MessageSquare, FileText, Paperclip } from 'lucide-react';
+import { Pencil, Trash2, Plus, Mail, Phone, Building2, User, MapPin, FolderOpen, Receipt, MessageSquare, FileText, Paperclip, Check, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import type { Client, Project, Episode } from '@/types';
 import { formatPhoneNumber } from '@/lib/utils';
+import { KPICard } from '@/components/KPICard';
 import { isCorporateClient, STATUS_LABEL, type EnrichedClient, type ClientGroupStatus } from './ClientMasterList';
 
 interface Props {
@@ -45,39 +46,17 @@ function Badge({ label, color = 'muted' }: { label: string; color?: 'ok' | 'bran
 }
 
 function Avatar({ corporate, size = 52 }: { corporate: boolean; size?: number }) {
-  const bg = corporate
-    ? 'linear-gradient(135deg, #60a5fa, #2563eb)'
-    : 'linear-gradient(135deg, var(--color-brand-400), var(--color-brand-600))';
+  const tint = corporate
+    ? { bg: '#eff6ff', fg: '#2563eb' }
+    : { bg: 'var(--color-brand-50)', fg: 'var(--color-brand-600)' };
   const Icon = corporate ? Building2 : User;
   return (
     <div
-      style={{ width: size, height: size, borderRadius: 14, background: bg }}
-      className="shrink-0 text-white inline-flex items-center justify-center select-none"
+      style={{ width: size, height: size, borderRadius: 14, background: tint.bg, color: tint.fg }}
+      className="shrink-0 inline-flex items-center justify-center select-none"
       title={corporate ? '기업' : '개인'}
     >
       <Icon size={Math.round(size * 0.52)} strokeWidth={2.2} />
-    </div>
-  );
-}
-
-function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'ok' | 'bad' | 'warn' }) {
-  const valueColor =
-    tone === 'ok' ? 'var(--color-ok-600)' :
-    tone === 'bad' ? 'var(--color-bad-500)' :
-    tone === 'warn' ? '#b45309' :
-    'var(--color-ink-900)';
-  return (
-    <div
-      className="rounded-xl p-3"
-      style={{ background: 'white', border: '1px solid var(--color-ink-200)' }}
-    >
-      <div className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-ink-400)' }}>
-        {label}
-      </div>
-      <div className="text-[17px] font-bold mt-1" style={{ color: valueColor }}>
-        {value}
-      </div>
-      {sub && <div className="text-[10.5px] mt-0.5" style={{ color: 'var(--color-ink-500)' }}>{sub}</div>}
     </div>
   );
 }
@@ -87,7 +66,7 @@ function TabButton({ active, onClick, icon: Icon, label, count }: { active: bool
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-2 text-[12.5px] font-semibold inline-flex items-center gap-1.5"
+      className="px-3 py-2 text-[12.5px] font-semibold inline-flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
       style={{
         borderBottom: active ? '2px solid var(--color-brand-500)' : '2px solid transparent',
         color: active ? 'var(--color-brand-600)' : 'var(--color-ink-500)',
@@ -190,8 +169,12 @@ function MemoTab({
         }}
       />
       <div className="flex items-center justify-between mt-2">
-        <div className="text-[11px]" style={{ color: 'var(--color-ink-400)' }}>
-          {savedAt && !dirty && '저장됨 ✓'}
+        <div className="text-[11px] flex items-center gap-1" style={{ color: 'var(--color-ink-400)' }}>
+          {savedAt && !dirty && (
+            <>
+              <Check size={12} /> 저장됨
+            </>
+          )}
           {dirty && !saving && '저장되지 않은 변경사항'}
         </div>
         <button
@@ -265,20 +248,20 @@ function ClientSettlementTab({
   return (
     <div className="space-y-4">
       {/* KPI */}
-      <div className="grid grid-cols-4 gap-2">
-        <Kpi label="이번 달 매출" value={thisMonthAmount > 0 ? `₩${(thisMonthAmount / 10000).toFixed(0)}만` : '-'} sub={`${thisMonth.length}건 완료`} />
-        <Kpi label="누적 매출" value={totalRevenue > 0 ? `₩${(totalRevenue / 10000).toFixed(0)}만` : '-'} sub={`${completedEps.length}건`} />
-        <Kpi
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <KPICard label="이번 달 매출" value={thisMonthAmount > 0 ? `₩${(thisMonthAmount / 10000).toFixed(0)}만` : '-'} sub={`${thisMonth.length}건 완료`} />
+        <KPICard label="누적 매출" value={totalRevenue > 0 ? `₩${(totalRevenue / 10000).toFixed(0)}만` : '-'} sub={`${completedEps.length}건`} />
+        <KPICard
           label="미수금"
           value={unpaidAmount > 0 ? `₩${(unpaidAmount / 10000).toFixed(0)}만` : '-'}
           sub={unpaidEps.length > 0 ? `${unpaidEps.length}건 미입금` : '전부 입금 완료'}
-          tone={unpaidAmount > 0 ? 'bad' : undefined}
+          tone={unpaidAmount > 0 ? 'bad' : 'default'}
         />
-        <Kpi
+        <KPICard
           label="미발행"
           value={uninvoicedAmount > 0 ? `₩${(uninvoicedAmount / 10000).toFixed(0)}만` : '-'}
           sub={uninvoicedEps.length > 0 ? `${uninvoicedEps.length}건 미발행` : '전부 발행 완료'}
-          tone={uninvoicedAmount > 0 ? 'warn' : undefined}
+          tone={uninvoicedAmount > 0 ? 'warn' : 'default'}
         />
       </div>
 
@@ -339,8 +322,8 @@ function ClientSettlementTab({
       <div className="flex items-center justify-between text-[11.5px]" style={{ color: 'var(--color-ink-500)' }}>
         <span>상세 정산 내역 · 월별 추이는 아래 링크에서 확인</span>
         <div className="flex gap-3">
-          <Link href="/settlement" className="hover:underline" style={{ color: 'var(--color-brand-600)' }}>월별 정산 →</Link>
-          <Link href="/finance/invoices" className="hover:underline" style={{ color: 'var(--color-brand-600)' }}>세금계산서 →</Link>
+          <Link href="/settlement" className="inline-flex items-center gap-0.5 hover:underline" style={{ color: 'var(--color-brand-600)' }}>월별 손익 <ArrowRight size={12} /></Link>
+          <Link href="/finance/invoices" className="inline-flex items-center gap-0.5 hover:underline" style={{ color: 'var(--color-brand-600)' }}>세금계산서 <ArrowRight size={12} /></Link>
         </div>
       </div>
     </div>
@@ -394,7 +377,7 @@ export function ClientDetailView({ client, projects, episodes, onEdit, onDelete,
 
   return (
     <div
-      className="rounded-xl p-5 md:p-6 h-full overflow-y-auto"
+      className="rounded-xl p-4 md:p-5 h-full overflow-y-auto"
       style={{ background: 'white', border: '1px solid var(--color-ink-200)' }}
     >
       {/* Header */}
@@ -488,26 +471,26 @@ export function ClientDetailView({ client, projects, episodes, onEdit, onDelete,
       )}
 
       {/* KPI row */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        <Kpi
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        <KPICard
           label="활성 프로젝트"
           value={String(client.activeProjectCount)}
           sub={client.projectCount > 0 ? `전체 ${client.projectCount}건` : undefined}
         />
-        <Kpi
+        <KPICard
           label="누적 매출"
           value={client.totalRevenue > 0 ? `₩${(client.totalRevenue / 10000).toFixed(0)}만` : '-'}
         />
-        <Kpi
+        <KPICard
           label="평균 단가"
           value={avgDeal > 0 ? `₩${(avgDeal / 10000).toFixed(0)}만` : '-'}
           sub={completedCount > 0 ? `완료 ${completedCount}건` : undefined}
         />
-        <Kpi label="최근 연락" value={lastContact} tone={contactTone} />
+        <KPICard label="최근 연락" value={lastContact} tone={contactTone} />
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4" style={{ borderBottom: '1px solid var(--color-ink-200)' }}>
+      <div className="flex gap-1 mb-4 overflow-x-auto no-scrollbar" style={{ borderBottom: '1px solid var(--color-ink-200)' }}>
         <TabButton active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} icon={FolderOpen} label="프로젝트" count={projects.length} />
         <TabButton active={activeTab === 'settlement'} onClick={() => setActiveTab('settlement')} icon={Receipt} label="정산" />
         <TabButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} icon={MessageSquare} label="활동" />

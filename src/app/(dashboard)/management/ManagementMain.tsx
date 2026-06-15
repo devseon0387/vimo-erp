@@ -1,23 +1,29 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   getProjects, getPartners, getClients, getAllEpisodes,
   getMyChecklists, insertChecklist, updateChecklist, deleteChecklist,
   insertProject, insertClient, upsertEpisodes, updateEpisodeFields,
-  ChecklistRow,
 } from '@/lib/supabase/db';
+import type { ChecklistRow } from '@/lib/supabase/db/users.types';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
-import { Calendar, Plus, Bell, X, Link2, Search, ChevronLeft, ChevronRight, User, FolderOpen, Building2 } from 'lucide-react';
+import { Calendar, Plus, Bell, Clock, X, Link2, Search, ChevronLeft, ChevronRight, User, FolderOpen, Building2, Film, SearchX, Check, ArrowRight, AlertTriangle } from 'lucide-react';
 import { Project, Episode, Partner, Client, WorkContentType, WorkStep } from '@/types';
 import Link from 'next/link';
-import ProjectWizardModal from '@/components/ProjectWizardModal';
+import dynamic from 'next/dynamic';
+const ProjectWizardModal = dynamic(() => import('@/components/ProjectWizardModal'), { ssr: false });
+import PartnerStatusStrip from './PartnerStatusStrip';
+import MiniCalendar from './MiniCalendar';
+import Checklist from './Checklist';
 import EpisodeQuickViewContent from './EpisodeQuickViewContent';
 import { useToast } from '@/contexts/ToastContext';
 import DateTimePicker, { RepeatType } from '@/components/DateTimePicker';
 import { useTutorial } from '@/components/tutorial/useTutorial';
 import { APP_VERSION_LABEL } from '@/config/version';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 
 type LinkPickerType = 'episode' | 'project' | 'client' | 'partner' | null;
 
@@ -379,21 +385,28 @@ export default function ManagementMain() {
   };
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [projectsData, partnersData, clientsData, episodesData, checklistRows] = await Promise.all([
-      getProjects(),
-      getPartners(),
-      getClients(),
-      getAllEpisodes(),
-      getMyChecklists(),
-    ]);
-    setProjects(projectsData);
-    setPartners(partnersData);
-    setClients(clientsData);
-    setAllEpisodes(episodesData);
-    setChecklistItems(checklistRows.map(rowToItem));
-    setLoading(false);
+    try {
+      setLoadError(false);
+      const [projectsData, partnersData, clientsData, episodesData, checklistRows] = await Promise.all([
+        getProjects(),
+        getPartners(),
+        getClients(),
+        getAllEpisodes(),
+        getMyChecklists(),
+      ]);
+      setProjects(projectsData);
+      setPartners(partnersData);
+      setClients(clientsData);
+      setAllEpisodes(episodesData);
+      setChecklistItems(checklistRows.map(rowToItem));
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -420,7 +433,7 @@ export default function ManagementMain() {
       );
       if (itemsToNotify.length === 0) return;
       await Promise.all(itemsToNotify.map(item => {
-        new Notification('📋 Video Moment 체크리스트', {
+        new Notification('Video Moment 체크리스트', {
           body: item.text,
           icon: '/favicon.ico',
         });
@@ -431,101 +444,131 @@ export default function ManagementMain() {
     return () => clearInterval(interval);
   }, []);
 
-  // 현재 날짜 및 시간 계산
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  // 현재 날짜 및 시간 계산 — 마운트 시 고정. 페이지를 자정 넘겨 켜두면 새로고침 필요.
+  const { now, todayStart, todayEnd, thisWeekStart, thisWeekEnd, tomorrowStart, tomorrowEnd } = useMemo(() => {
+    const n = new Date();
+    const ts = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    const te = new Date(n.getFullYear(), n.getMonth(), n.getDate(), 23, 59, 59);
+    const currentDay = n.getDay();
+    const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+    const ws = new Date(n.getFullYear(), n.getMonth(), n.getDate() + mondayOffset);
+    const we = new Date(ws);
+    we.setDate(ws.getDate() + 6);
+    we.setHours(23, 59, 59);
+    const tms = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1);
+    const tme = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 23, 59, 59);
+    return { now: n, todayStart: ts, todayEnd: te, thisWeekStart: ws, thisWeekEnd: we, tomorrowStart: tms, tomorrowEnd: tme };
+  }, []);
 
-  // 이번 주 시작일과 종료일 (월요일 시작)
-  const currentDay = now.getDay();
-  const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
-  const thisWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
-  const thisWeekEnd = new Date(thisWeekStart);
-  thisWeekEnd.setDate(thisWeekStart.getDate() + 6);
-  thisWeekEnd.setHours(23, 59, 59);
+  // O(1) 조회용 Maps — `.find()` 매번 호출 패턴 제거
+  const projectsById = useMemo(() => new Map(projects.map(p => [p.id, p])), [projects]);
+  const partnersById = useMemo(() => new Map(partners.map(p => [p.id, p])), [partners]);
 
-  // 내일 시작/종료
-  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
-
-  // 오늘 마감인 회차
-  const todayDeadlines = allEpisodes.filter(ep => {
-    if (!ep.dueDate || ep.status === 'completed') return false;
-    const dueDate = new Date(ep.dueDate);
-    return dueDate >= todayStart && dueDate <= todayEnd;
-  }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-
-  // 내일 마감인 회차
-  const tomorrowDeadlines = allEpisodes.filter(ep => {
-    if (!ep.dueDate || ep.status === 'completed') return false;
-    const dueDate = new Date(ep.dueDate);
-    return dueDate >= tomorrowStart && dueDate <= tomorrowEnd;
-  }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-
-  // 오늘 검수 대기 중인 회차
-  const todayReviews = allEpisodes.filter(ep => ep.status === 'review');
-
-  // 긴급 이슈 (마감일 지난 회차)
-  const overdueEpisodes = allEpisodes.filter(ep => {
-    if (!ep.dueDate || ep.status === 'completed') return false;
-    const dueDate = new Date(ep.dueDate);
-    return dueDate < todayStart;
-  }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-
-  // 이번 주 마감 예정 회차
-  const thisWeekDeadlines = allEpisodes.filter(ep => {
-    if (!ep.dueDate || ep.status === 'completed') return false;
-    const dueDate = new Date(ep.dueDate);
-    return dueDate >= thisWeekStart && dueDate <= thisWeekEnd && dueDate > todayEnd;
-  }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-
-  // 이번 주 완료된 회차
-  const thisWeekCompleted = allEpisodes.filter(ep => {
-    if (ep.status !== 'completed' || !ep.completedAt) return false;
-    const completedDate = new Date(ep.completedAt);
-    return completedDate >= thisWeekStart && completedDate <= thisWeekEnd;
-  });
-
-  // 진행 중인 프로젝트
-  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'planning');
-
-  // 체크리스트 분류
-  const oneTimeItems = checklistItems.filter(i => !i.repeatType || i.repeatType === 'none');
-  const recurringItems = checklistItems.filter(i => i.repeatType && i.repeatType !== 'none');
-
-  // 파트너별 이번 주 작업 현황
-  const partnerWeeklyWorkload = partners.map(partner => {
-    const partnerEpisodes = allEpisodes.filter(ep => ep.assignee === partner.id);
-    const thisWeekEpisodes = partnerEpisodes.filter(ep => {
-      if (!ep.dueDate) return false;
-      const dueDate = new Date(ep.dueDate);
-      return dueDate >= thisWeekStart && dueDate <= thisWeekEnd;
-    });
-    const completed = thisWeekEpisodes.filter(ep => ep.status === 'completed').length;
-    const inProgress = thisWeekEpisodes.filter(ep => ep.status === 'in_progress').length;
-    const waiting = thisWeekEpisodes.filter(ep => ep.status === 'waiting').length;
-
+  // 회차들의 한 번 순회로 마감/검수/지연/주간 분류 — 8개 filter+sort 체인 → 1번 순회
+  const {
+    todayDeadlines, tomorrowDeadlines, todayReviews, overdueEpisodes,
+    thisWeekDeadlines, thisWeekCompleted, deadlineCountByDay,
+  } = useMemo(() => {
+    const todayMs = todayStart.getTime();
+    const todayEndMs = todayEnd.getTime();
+    const tomorrowMs = tomorrowStart.getTime();
+    const tomorrowEndMs = tomorrowEnd.getTime();
+    const weekStartMs = thisWeekStart.getTime();
+    const weekEndMs = thisWeekEnd.getTime();
+    const today: typeof allEpisodes = [];
+    const tomorrow: typeof allEpisodes = [];
+    const reviews: typeof allEpisodes = [];
+    const overdue: typeof allEpisodes = [];
+    const weekDue: typeof allEpisodes = [];
+    const weekComp: typeof allEpisodes = [];
+    const dayMap = new Map<string, number>(); // YYYY-MM-DD → count
+    for (const ep of allEpisodes) {
+      if (ep.status === 'review') reviews.push(ep);
+      if (ep.status === 'completed') {
+        if (ep.completedAt) {
+          const ms = new Date(ep.completedAt).getTime();
+          if (ms >= weekStartMs && ms <= weekEndMs) weekComp.push(ep);
+        }
+        continue;
+      }
+      if (!ep.dueDate) continue;
+      const dueMs = new Date(ep.dueDate).getTime();
+      // 캘린더용 day key (YYYY-MM-DD 첫 10자)
+      const dayKey = ep.dueDate.slice(0, 10);
+      dayMap.set(dayKey, (dayMap.get(dayKey) ?? 0) + 1);
+      if (dueMs < todayMs) overdue.push(ep);
+      else if (dueMs >= todayMs && dueMs <= todayEndMs) today.push(ep);
+      else if (dueMs >= tomorrowMs && dueMs <= tomorrowEndMs) tomorrow.push(ep);
+      if (dueMs >= weekStartMs && dueMs <= weekEndMs && dueMs > todayEndMs) weekDue.push(ep);
+    }
+    const byDueAsc = (a: typeof allEpisodes[number], b: typeof allEpisodes[number]) =>
+      new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime();
     return {
-      partner,
-      total: thisWeekEpisodes.length,
-      completed,
-      inProgress,
-      waiting,
+      todayDeadlines: today.sort(byDueAsc),
+      tomorrowDeadlines: tomorrow.sort(byDueAsc),
+      todayReviews: reviews,
+      overdueEpisodes: overdue.sort(byDueAsc),
+      thisWeekDeadlines: weekDue.sort(byDueAsc),
+      thisWeekCompleted: weekComp,
+      deadlineCountByDay: dayMap,
     };
-  }).filter(pw => pw.total > 0).sort((a, b) => b.total - a.total);
+  }, [allEpisodes, todayStart, todayEnd, tomorrowStart, tomorrowEnd, thisWeekStart, thisWeekEnd]);
 
-  // 헬퍼 함수: 회차의 프로젝트와 파트너 찾기
-  const getEpisodeDetails = (episode: Episode & { projectId: string }) => {
-    const project = projects.find(p => p.id === episode.projectId);
-    const partner = partners.find(p => p.id === episode.assignee);
+  const activeProjects = useMemo(
+    () => projects.filter(p => p.status === 'in_progress' || p.status === 'planning'),
+    [projects]
+  );
+
+  const oneTimeItems = useMemo(
+    () => checklistItems.filter(i => !i.repeatType || i.repeatType === 'none'),
+    [checklistItems]
+  );
+  const recurringItems = useMemo(
+    () => checklistItems.filter(i => i.repeatType && i.repeatType !== 'none'),
+    [checklistItems]
+  );
+
+  // 파트너별 이번 주 작업 현황 — O(partners × episodes × 4) 였던 nested filter를 1패스로
+  const partnerWeeklyWorkload = useMemo(() => {
+    const weekStartMs = thisWeekStart.getTime();
+    const weekEndMs = thisWeekEnd.getTime();
+    const acc = new Map<string, { total: number; completed: number; inProgress: number; waiting: number }>();
+    for (const ep of allEpisodes) {
+      if (!ep.dueDate || !ep.assignee) continue;
+      const dueMs = new Date(ep.dueDate).getTime();
+      if (dueMs < weekStartMs || dueMs > weekEndMs) continue;
+      const cur = acc.get(ep.assignee) ?? { total: 0, completed: 0, inProgress: 0, waiting: 0 };
+      cur.total++;
+      if (ep.status === 'completed') cur.completed++;
+      else if (ep.status === 'in_progress') cur.inProgress++;
+      else if (ep.status === 'waiting') cur.waiting++;
+      acc.set(ep.assignee, cur);
+    }
+    return partners
+      .map(partner => ({ partner, ...(acc.get(partner.id) ?? { total: 0, completed: 0, inProgress: 0, waiting: 0 }) }))
+      .filter(pw => pw.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [partners, allEpisodes, thisWeekStart, thisWeekEnd]);
+
+  // 헬퍼 함수: 회차의 프로젝트와 파트너 찾기 (Map 사용)
+  const getEpisodeDetails = useCallback((episode: Episode & { projectId: string }) => {
+    const project = projectsById.get(episode.projectId);
+    const partner = partnersById.get(episode.assignee);
     return { project, partner };
-  };
+  }, [projectsById, partnersById]);
 
   if (loading) {
+    return <LoadingState />;
+  }
+
+  if (loadError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-      </div>
+      <EmptyState
+        icon={AlertTriangle}
+        title="데이터를 불러오지 못했습니다"
+        description="네트워크 상태를 확인한 뒤 다시 시도해주세요"
+        action={{ label: '다시 시도', onClick: () => { setLoading(true); loadData(); } }}
+      />
     );
   }
 
@@ -551,6 +594,8 @@ export default function ManagementMain() {
                 {oneTimeItems.filter(i => !i.completed).map(item => (
                   <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg ${item.reminderTime ? 'bg-bad-50 border border-red-200' : ''}`}>
                     <button
+                      type="button"
+                      aria-label={`${item.text} 완료 처리`}
                       onClick={() => toggleChecklistItem(item.id)}
                       className="w-[18px] h-[18px] rounded-[5px] border-2 border-[var(--color-ink-300)] flex-shrink-0 flex items-center justify-center hover:border-brand-500 transition-colors"
                     />
@@ -558,10 +603,10 @@ export default function ManagementMain() {
                       <span className="text-[12px] font-medium block truncate">{item.text}</span>
                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                         {item.reminderTime && (
-                          <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded"><Clock className="inline align-middle w-2.5 h-2.5" /> {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                         )}
                         {item.linkedProjectTitle && (
-                          <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
+                          <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded"><FolderOpen className="inline align-middle w-2.5 h-2.5" /> {item.linkedProjectTitle}</span>
                         )}
                       </div>
                     </div>
@@ -572,7 +617,7 @@ export default function ManagementMain() {
                     <p className="text-[10px] text-[var(--color-ink-400)] mb-1">완료 · {oneTimeItems.filter(i => i.completed).length}개</p>
                     {oneTimeItems.filter(i => i.completed).map(item => (
                       <div key={item.id} className="flex items-center gap-2 p-1.5 opacity-40">
-                        <button onClick={() => toggleChecklistItem(item.id)} className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]">✓</button>
+                        <button onClick={() => toggleChecklistItem(item.id)} className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white"><Check size={11} strokeWidth={3} /></button>
                         <span className="text-[12px] line-through text-[var(--color-ink-400)]">{item.text}</span>
                       </div>
                     ))}
@@ -581,9 +626,9 @@ export default function ManagementMain() {
               </div>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-lg text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
+                className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-lg text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors inline-flex items-center justify-center gap-1"
               >
-                + 할 일 추가
+                <Plus size={12} /> 할 일 추가
               </button>
             </div>
           )}
@@ -591,14 +636,14 @@ export default function ManagementMain() {
       </div>
 
       {/* C3 레이아웃: 타임라인 + 사이드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_560px] gap-4 relative">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_560px] gap-3 relative">
         {/* 왼쪽: 타임라인 */}
-        <div className="bg-white rounded-2xl border border-ink-100 p-4 sm:p-5">
+        <div className="bg-white rounded-2xl border border-ink-100 p-4">
           {/* 지연 */}
           {overdueEpisodes.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <div className="w-2 h-2 rounded-full bg-bad-500" />
                 <span className="text-[13px] font-bold text-bad-600">지연</span>
                 <span className="text-[11px] text-bad-500 font-semibold">{overdueEpisodes.length}</span>
               </div>
@@ -625,7 +670,7 @@ export default function ManagementMain() {
               <span className="text-[13px] font-bold">오늘</span>
               <span className="text-[11px] text-brand-500 font-semibold">{todayDeadlines.length}</span>
             </div>
-            <div className="ml-4 border-l-2 border-orange-200 pl-3.5 flex flex-col gap-1.5">
+            <div className="ml-4 border-l-2 border-brand-200 pl-3.5 flex flex-col gap-1.5">
               {todayDeadlines.length === 0 ? (
                 <p className="text-[12px] text-[var(--color-ink-400)] py-2">오늘 마감인 회차가 없습니다</p>
               ) : todayDeadlines.map(ep => {
@@ -633,7 +678,7 @@ export default function ManagementMain() {
                 return (
                   <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
                     <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-ink-400)] mt-0.5"><span>{project?.title}</span><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{partner?.name?.charAt(0) || '?'}</div><span>{partner?.name || '미정'}</span></div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-ink-400)] mt-0.5"><span>{project?.title}</span><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[9px] font-bold text-[var(--color-ink-500)]">{partner?.name?.charAt(0) || '?'}</div><span>{partner?.name || '미정'}</span></div>
                   </div>
                 );
               })}
@@ -644,7 +689,7 @@ export default function ManagementMain() {
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-amber-400" />
               <span className="text-[13px] font-bold">내일</span>
-              <span className="text-[11px] text-amber-500 font-semibold">{tomorrowDeadlines.length}</span>
+              <span className="text-[11px] text-warn-500 font-semibold">{tomorrowDeadlines.length}</span>
             </div>
             <div className="ml-4 border-l-2 border-amber-200 pl-3.5 flex flex-col gap-1.5">
               {tomorrowDeadlines.length === 0 ? (
@@ -663,7 +708,7 @@ export default function ManagementMain() {
           {/* 이번 주 */}
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-gray-300" />
+              <div className="w-2 h-2 rounded-full bg-ink-300" />
               <span className="text-[13px] font-bold">이번 주</span>
               <span className="text-[11px] text-[var(--color-ink-500)] font-semibold">{thisWeekDeadlines.length}</span>
             </div>
@@ -688,7 +733,7 @@ export default function ManagementMain() {
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-ok-500" />
                 <span className="text-[13px] font-bold text-ok-600">이번 주 완료</span>
-                <span className="text-[11px] text-green-500 font-semibold">{thisWeekCompleted.length}</span>
+                <span className="text-[11px] text-ok-500 font-semibold">{thisWeekCompleted.length}</span>
               </div>
               <div className="ml-4 border-l-2 border-green-200 pl-3.5 flex flex-col gap-1.5">
                 {thisWeekCompleted.map(ep => {
@@ -705,181 +750,35 @@ export default function ManagementMain() {
           )}
         </div>
 
-        {/* 오른쪽: 파트너 현황 + 달력 + 체크리스트 (데스크탑만) */}
-        <div className="hidden lg:block relative self-start" data-tour="tour-mgmt-checklist">
+        {/* 오른쪽: 파트너 현황 + 달력 + 체크리스트
+            데스크탑: lg:grid-cols-[1fr_560px] 우측 칼럼
+            모바일: 메인 콘텐츠 아래로 자연 흐름 (시안 C) */}
+        <div className="relative self-start" data-tour="tour-mgmt-checklist">
         <div className="space-y-3">
-          {/* 파트너 현황 — 인라인 칩 */}
-          <div className="bg-white rounded-2xl border border-ink-100 p-4">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[13px] font-bold">파트너 현황</span>
-            </div>
-            <div className="flex gap-[5px] flex-wrap">
-              {(() => {
-                const activePartners = partners.filter(p => p.status === 'active');
-                const sorted = activePartners.sort((a, b) => {
-                  const aWork = allEpisodes.some(ep => ep.assignee === a.id && ep.dueDate && new Date(ep.dueDate) >= thisWeekStart && new Date(ep.dueDate) <= thisWeekEnd) ? 0 : 1;
-                  const bWork = allEpisodes.some(ep => ep.assignee === b.id && ep.dueDate && new Date(ep.dueDate) >= thisWeekStart && new Date(ep.dueDate) <= thisWeekEnd) ? 0 : 1;
-                  if (aWork !== bWork) return aWork - bWork;
-                  const aExec = a.position === 'executive' ? 1 : 0;
-                  const bExec = b.position === 'executive' ? 1 : 0;
-                  return aExec - bExec;
-                });
-                return sorted.map(p => {
-                  const weekEps = allEpisodes.filter(ep => ep.assignee === p.id && ep.dueDate && (() => {
-                    const d = new Date(ep.dueDate);
-                    return d >= thisWeekStart && d <= thisWeekEnd;
-                  })());
-                  const total = weekEps.length;
-                  const hasWork = total > 0;
-                  const isExec = p.position === 'executive';
-                  return (
-                    <div key={p.id} className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[11px] transition-colors ${
-                      isExec
-                        ? hasWork ? 'bg-purple-50' : 'bg-[var(--color-ink-50)]'
-                        : hasWork ? 'bg-[var(--color-brand-50)]' : 'bg-[var(--color-ink-50)]'
-                    }`}>
-                      <div className={`w-[20px] h-[20px] rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0 ${
-                        isExec
-                          ? hasWork ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-400'
-                          : hasWork ? 'bg-brand-500 text-white' : 'bg-[var(--color-ink-200)] text-[var(--color-ink-400)]'
-                      }`}>
-                        {p.name.charAt(0)}
-                      </div>
-                      <span className={hasWork ? 'font-semibold text-[var(--color-ink-900)]' : 'text-[var(--color-ink-400)]'}>{p.name}</span>
-                      <span className={`font-bold ml-0.5 ${
-                        isExec
-                          ? hasWork ? 'text-purple-500' : 'text-[var(--color-ink-300)]'
-                          : hasWork ? 'text-brand-500' : 'text-[var(--color-ink-300)]'
-                      }`}>{total}</span>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
+          <PartnerStatusStrip
+            partners={partners}
+            allEpisodes={allEpisodes}
+            thisWeekStart={thisWeekStart}
+            thisWeekEnd={thisWeekEnd}
+          />
 
-          {/* 미니 달력 */}
-          <div className="bg-white rounded-2xl border border-ink-100 p-4">
-            {/* 달력 헤더 */}
-            <div className="flex items-center justify-between mb-3">
-              <button onClick={() => { if (calMonth === 0) { setCalYear(calYear - 1); setCalMonth(11); } else setCalMonth(calMonth - 1); }} className="p-1 hover:bg-ink-100 rounded-lg transition-colors">
-                <ChevronLeft size={14} className="text-[var(--color-ink-400)]" />
-              </button>
-              <span className="text-[13px] font-bold">{calYear}년 {calMonth + 1}월</span>
-              <button onClick={() => { if (calMonth === 11) { setCalYear(calYear + 1); setCalMonth(0); } else setCalMonth(calMonth + 1); }} className="p-1 hover:bg-ink-100 rounded-lg transition-colors">
-                <ChevronRight size={14} className="text-[var(--color-ink-400)]" />
-              </button>
-            </div>
-            {/* 요일 */}
-            <div className="grid grid-cols-7 mb-1">
-              {['일','월','화','수','목','금','토'].map(d => (
-                <div key={d} className={`text-center text-[10px] font-semibold py-1 ${d === '일' ? 'text-red-400' : d === '토' ? 'text-blue-400' : 'text-[var(--color-ink-400)]'}`}>{d}</div>
-              ))}
-            </div>
-            {/* 날짜 그리드 */}
-            {(() => {
-              const firstDay = new Date(calYear, calMonth, 1).getDay();
-              const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-              const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-              const cells = [];
-              for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
-              for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const isToday = dateStr === todayStr;
-                const dayOfWeek = new Date(calYear, calMonth, d).getDay();
-                // 해당 날짜에 마감인 에피소드 수
-                const deadlineCount = allEpisodes.filter(ep => {
-                  if (!ep.dueDate || ep.status === 'completed') return false;
-                  return ep.dueDate.startsWith(dateStr);
-                }).length;
-                cells.push(
-                  <button
-                    key={d}
-                    onClick={() => setSelectedCalendarDay(selectedCalendarDay === dateStr ? null : dateStr)}
-                    className={`relative text-center py-1.5 rounded-lg text-[12px] font-medium transition-all ${
-                      isToday
-                        ? 'bg-brand-500 text-white font-bold'
-                        : selectedCalendarDay === dateStr
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'hover:bg-ink-50'
-                    } ${dayOfWeek === 0 ? 'text-red-400' : dayOfWeek === 6 ? 'text-blue-400' : ''} ${isToday ? '!text-white' : ''}`}
-                  >
-                    {d}
-                    {deadlineCount > 0 && !isToday && (
-                      <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-orange-400" />
-                    )}
-                  </button>
-                );
-              }
-              return <div className="grid grid-cols-7 gap-0.5">{cells}</div>;
-            })()}
-          </div>
+          <MiniCalendar
+            calYear={calYear}
+            calMonth={calMonth}
+            setCalYear={setCalYear}
+            setCalMonth={setCalMonth}
+            now={now}
+            selectedCalendarDay={selectedCalendarDay}
+            setSelectedCalendarDay={setSelectedCalendarDay}
+            deadlineCountByDay={deadlineCountByDay}
+          />
 
-          {/* 체크리스트 */}
-          <div className="bg-white rounded-2xl border border-ink-100 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[13px] font-bold">체크리스트</span>
-              <span className="text-[11px] text-brand-500 font-semibold">{checklistItems.filter(i => !i.completed).length}개 남음</span>
-            </div>
-
-            {/* 체크리스트 아이템 렌더링 */}
-            <div className="flex flex-direction:column gap-1">
-              <AnimatePresence initial={false}>
-                {oneTimeItems.filter(i => !i.completed).map(item => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className={`flex items-center gap-2 p-2 rounded-lg ${item.reminderTime ? 'bg-bad-50 border border-red-200' : 'hover:bg-[var(--color-ink-50)]'}`}>
-                      <button
-                        onClick={() => toggleChecklistItem(item.id)}
-                        className="w-[18px] h-[18px] rounded-[5px] border-2 border-[var(--color-ink-300)] flex-shrink-0 flex items-center justify-center hover:border-brand-500 transition-colors"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[12px] font-medium block truncate">{item.text}</span>
-                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                          {item.reminderTime && (
-                            <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
-                          )}
-                          {item.linkedProjectTitle && (
-                            <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
-                          )}
-                          {item.linkedEpisodeTitle && (
-                            <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">🎬 {item.linkedEpisodeNumber}편</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-
-              {/* 완료 항목 */}
-              {oneTimeItems.filter(i => i.completed).length > 0 && (
-                <div className="border-t border-[var(--color-ink-200)] pt-2 mt-2">
-                  <p className="text-[10px] text-[var(--color-ink-400)] mb-1.5">완료 · {oneTimeItems.filter(i => i.completed).length}개</p>
-                  {oneTimeItems.filter(i => i.completed).map(item => (
-                    <div key={item.id} className="flex items-center gap-2 p-1.5 opacity-40">
-                      <button
-                        onClick={() => toggleChecklistItem(item.id)}
-                        className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]"
-                      >✓</button>
-                      <span className="text-[12px] line-through text-[var(--color-ink-400)]">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-lg text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
-            >
-              + 할 일 추가
-            </button>
-          </div>
+          <Checklist
+            oneTimeItems={oneTimeItems}
+            checklistItems={checklistItems}
+            onToggle={toggleChecklistItem}
+            onAdd={() => setShowAddForm(true)}
+          />
         </div>
         </div>
 
@@ -958,7 +857,7 @@ export default function ManagementMain() {
                     if (e.key === 'Enter' && !activeLinkPicker) addChecklistItem();
                     if (e.key === 'Escape') resetInlineForm();
                   }}
-                  className="w-full text-base text-ink-900 placeholder-gray-300 focus:outline-none bg-transparent border-b-2 border-ink-100 focus:border-orange-400 pb-2 transition-colors"
+                  className="w-full text-base text-ink-900 placeholder-ink-300 focus:outline-none bg-transparent border-b-2 border-ink-100 focus:border-brand-400 pb-2 transition-colors"
                 />
               </div>
 
@@ -980,7 +879,7 @@ export default function ManagementMain() {
                     {newItemReminder && (
                       <span
                         onClick={e => { e.stopPropagation(); setNewItemReminder(''); }}
-                        className="ml-1 text-orange-400 hover:text-brand-600"
+                        className="ml-1 text-brand-400 hover:text-brand-600"
                       >
                         <X size={12} />
                       </span>
@@ -998,26 +897,26 @@ export default function ManagementMain() {
                 {(formLink.episodeId || formLink.projectId || formLink.clientName || formLink.partnerId) && (
                   <div className="flex flex-wrap gap-2">
                     {formLink.episodeId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-full text-xs font-medium border border-brand-200">
                         <Link2 size={11} /> {formLink.episodeNumber}회차 {formLink.episodeTitle}
                         <button onClick={() => clearLink('episode')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>
                       </span>
                     )}
                     {formLink.projectId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
-                        📁 {formLink.projectTitle}
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-full text-xs font-medium border border-brand-200">
+                        <FolderOpen className="inline align-middle w-2.5 h-2.5" /> {formLink.projectTitle}
                         {!formLink.episodeId && <button onClick={() => clearLink('project')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>}
                       </span>
                     )}
                     {formLink.clientName && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium border border-emerald-200">
-                        🏢 {formLink.clientName}
+                        <Building2 size={11} /> {formLink.clientName}
                         {!formLink.projectId && <button onClick={() => clearLink('client')} className="ml-0.5 hover:text-emerald-900"><X size={11} /></button>}
                       </span>
                     )}
                     {formLink.partnerId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
-                        👤 {formLink.partnerName}
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-full text-xs font-medium border border-brand-200">
+                        <User size={11} /> {formLink.partnerName}
                         {!formLink.projectId && <button onClick={() => clearLink('partner')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>}
                       </span>
                     )}
@@ -1097,10 +996,10 @@ export default function ManagementMain() {
               {/* 모달 헤더 */}
               <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div className="flex items-center gap-2">
-                  {activeLinkPicker === 'episode' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">EP</span></div>}
-                  {activeLinkPicker === 'project' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
+                  {activeLinkPicker === 'episode' && <div className="w-6 h-6 rounded-md bg-brand-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">EP</span></div>}
+                  {activeLinkPicker === 'project' && <div className="w-6 h-6 rounded-md bg-brand-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
                   {activeLinkPicker === 'client' && <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center"><span className="text-[10px] font-bold text-emerald-600">C</span></div>}
-                  {activeLinkPicker === 'partner' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
+                  {activeLinkPicker === 'partner' && <div className="w-6 h-6 rounded-md bg-brand-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
                   <h3 className="text-sm font-bold text-ink-900">
                     {activeLinkPicker === 'episode' && '회차 연결'}
                     {activeLinkPicker === 'project' && '프로젝트 연결'}
@@ -1132,7 +1031,7 @@ export default function ManagementMain() {
                     value={linkSearch}
                     onChange={e => setLinkSearch(e.target.value)}
                     onKeyDown={e => e.key === 'Escape' && (setActiveLinkPicker(null), setLinkSearch(''))}
-                    className="flex-1 text-sm bg-transparent focus:outline-none text-ink-700 placeholder-gray-400"
+                    className="flex-1 text-sm bg-transparent focus:outline-none text-ink-700 placeholder-ink-400"
                   />
                   {linkSearch && (
                     <button onClick={() => setLinkSearch('')} className="text-ink-400 hover:text-ink-600"><X size={13} /></button>
@@ -1141,7 +1040,7 @@ export default function ManagementMain() {
               </div>
 
               {/* 목록 */}
-              <div className="max-h-72 overflow-y-auto border-t border-gray-50 pb-2">
+              <div className="max-h-72 overflow-y-auto border-t border-ink-100 pb-2">
                 {activeLinkPicker === 'episode' && (() => {
                   const filtered = allEpisodes.filter(ep => !linkSearch || ep.title.includes(linkSearch) || String(ep.episodeNumber).includes(linkSearch)).slice(0, 12);
                   return filtered.length > 0 ? filtered.map(ep => {
@@ -1149,7 +1048,7 @@ export default function ManagementMain() {
                     return (
                       <button key={ep.id} onClick={() => selectEpisode(ep)}
                         className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
-                        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center">
+                        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center">
                           <span className="text-xs font-bold text-brand-600">{ep.episodeNumber}편</span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1159,13 +1058,12 @@ export default function ManagementMain() {
                       </button>
                     );
                   }) : (
-                    <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-ink-400" />
-                      </div>
-                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 회차가 없습니다'}</p>
-                      <p className="text-xs text-ink-400 mt-1">{linkSearch ? '다른 검색어를 입력해보세요' : '프로젝트에서 회차를 먼저 추가해주세요'}</p>
-                    </div>
+                    <EmptyState
+                      size="compact"
+                      icon={linkSearch ? SearchX : Film}
+                      title={linkSearch ? '검색 결과가 없습니다' : '등록된 회차가 없습니다'}
+                      description={linkSearch ? '다른 검색어를 입력해보세요' : '프로젝트에서 회차를 먼저 추가해주세요'}
+                    />
                   );
                 })()}
 
@@ -1174,7 +1072,7 @@ export default function ManagementMain() {
                   return filtered.length > 0 ? filtered.map(p => (
                     <button key={p.id} onClick={() => selectProject(p)}
                       className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
-                      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center">
                         <span className="text-xs font-bold text-brand-600">{p.title.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1183,12 +1081,12 @@ export default function ManagementMain() {
                       </div>
                     </button>
                   )) : (
-                    <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-ink-400" />
-                      </div>
-                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}</p>
-                    </div>
+                    <EmptyState
+                      size="compact"
+                      icon={linkSearch ? SearchX : FolderOpen}
+                      title={linkSearch ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}
+                      description={linkSearch ? '다른 검색어를 입력해보세요' : '프로젝트를 먼저 추가해주세요'}
+                    />
                   );
                 })()}
 
@@ -1206,12 +1104,12 @@ export default function ManagementMain() {
                       </div>
                     </button>
                   )) : (
-                    <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-ink-400" />
-                      </div>
-                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 클라이언트가 없습니다'}</p>
-                    </div>
+                    <EmptyState
+                      size="compact"
+                      icon={linkSearch ? SearchX : Building2}
+                      title={linkSearch ? '검색 결과가 없습니다' : '등록된 클라이언트가 없습니다'}
+                      description={linkSearch ? '다른 검색어를 입력해보세요' : '클라이언트를 먼저 추가해주세요'}
+                    />
                   );
                 })()}
 
@@ -1220,7 +1118,7 @@ export default function ManagementMain() {
                   return filtered.length > 0 ? filtered.map(p => (
                     <button key={p.id} onClick={() => selectPartner(p)}
                       className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
-                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center">
                         <span className="text-sm font-bold text-brand-600">{p.name.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1229,12 +1127,12 @@ export default function ManagementMain() {
                       </div>
                     </button>
                   )) : (
-                    <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-ink-400" />
-                      </div>
-                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 파트너가 없습니다'}</p>
-                    </div>
+                    <EmptyState
+                      size="compact"
+                      icon={linkSearch ? SearchX : User}
+                      title={linkSearch ? '검색 결과가 없습니다' : '등록된 파트너가 없습니다'}
+                      description={linkSearch ? '다른 검색어를 입력해보세요' : '파트너를 먼저 추가해주세요'}
+                    />
                   );
                 })()}
               </div>
@@ -1327,17 +1225,17 @@ export default function ManagementMain() {
                           <button
                             onClick={() => toggleChecklistItem(item.id)}
                             className={`w-[18px] h-[18px] rounded-[5px] border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                              item.completed ? 'bg-ok-500 border-ok-500 text-white text-[10px]' : 'border-[var(--color-ink-300)] hover:border-brand-500'
+                              item.completed ? 'bg-ok-500 border-ok-500 text-white' : 'border-[var(--color-ink-300)] hover:border-brand-500'
                             }`}
-                          >{item.completed ? '✓' : ''}</button>
+                          >{item.completed ? <Check size={11} strokeWidth={3} /> : ''}</button>
                           <div className="flex-1 min-w-0">
                             <span className={`text-[13px] font-medium ${item.completed ? 'line-through text-[var(--color-ink-400)]' : ''}`}>{item.text}</span>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               {item.reminderTime && (
-                                <span className="text-[10px] text-brand-500">🔔 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[10px] text-brand-500"><Bell className="inline align-middle w-2.5 h-2.5" /> {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                               )}
                               {item.repeatType && item.repeatType !== 'none' && (
-                                <span className="text-[10px] text-brand-500 bg-orange-100 px-1.5 py-0.5 rounded-full">
+                                <span className="text-[10px] text-brand-500 bg-brand-100 px-1.5 py-0.5 rounded-full">
                                   {item.repeatType === 'daily' ? '매일' : item.repeatType === 'weekly' ? '매주' : item.repeatDays ? ['일','월','화','수','목','금','토'].filter((_, i) => item.repeatDays!.includes(i)).join('·') : ''}
                                 </span>
                               )}
@@ -1351,9 +1249,12 @@ export default function ManagementMain() {
 
                 {/* 빈 상태 */}
                 {totalCount === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-[13px] text-[var(--color-ink-400)]">이 날에는 일정이 없습니다</p>
-                  </div>
+                  <EmptyState
+                    size="compact"
+                    icon={Calendar}
+                    title="일정이 없습니다"
+                    description="이 날에는 등록된 일정이 없습니다"
+                  />
                 )}
               </div>
 
@@ -1361,9 +1262,9 @@ export default function ManagementMain() {
               <div className="px-5 pb-4">
                 <button
                   onClick={() => { setSelectedCalendarDay(null); setShowAddForm(true); }}
-                  className="w-full p-2.5 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-xl text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
+                  className="w-full p-2.5 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-xl text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors inline-flex items-center justify-center gap-1"
                 >
-                  + 이 날짜에 할 일 추가
+                  <Plus size={12} /> 이 날짜에 할 일 추가
                 </button>
               </div>
             </motion.div>
@@ -1436,7 +1337,7 @@ export default function ManagementMain() {
                       </div>
                       <div className="flex items-center gap-1.5 mt-1 text-[11px] text-[var(--color-ink-400)]">
                         <span>{project?.title}</span>
-                        {assignee && <><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{assignee.name.charAt(0)}</div><span>{assignee.name}</span></>}
+                        {assignee && <><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[9px] font-bold text-[var(--color-ink-500)]">{assignee.name.charAt(0)}</div><span>{assignee.name}</span></>}
                         {finalDueDate && <><span className="text-[var(--color-ink-200)]">·</span><span>마감 {(() => { const d = new Date(finalDueDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
                       </div>
                     </div>
@@ -1491,7 +1392,12 @@ export default function ManagementMain() {
                 {/* 작업 타입별 체크리스트 */}
                 <div className="px-6 py-4">
                   {workTypes.length === 0 ? (
-                    <p className="text-center text-[13px] text-[var(--color-ink-400)] py-8">작업이 없습니다</p>
+                    <EmptyState
+                      size="compact"
+                      icon={Film}
+                      title="작업이 없습니다"
+                      description="이 회차에 등록된 작업이 없습니다"
+                    />
                   ) : (
                     <div className="space-y-5">
                       {workTypes.map(workType => {
@@ -1524,15 +1430,15 @@ export default function ManagementMain() {
                                           handleStepStatusChange(workType, step.id, next);
                                         }}
                                         className={`w-[20px] h-[20px] rounded-[6px] border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                                          step.status === 'completed' ? 'bg-ok-500 border-ok-500 text-white text-[10px]' : step.status === 'in_progress' ? 'border-warn-500 bg-warn-50' : 'border-[var(--color-ink-300)] hover:border-brand-500'
+                                          step.status === 'completed' ? 'bg-ok-500 border-ok-500 text-white' : step.status === 'in_progress' ? 'border-warn-500 bg-warn-50' : 'border-[var(--color-ink-300)] hover:border-brand-500'
                                         }`}
                                       >
-                                        {step.status === 'completed' ? '✓' : step.status === 'in_progress' ? <div className="w-2 h-2 rounded-full bg-warn-500" /> : ''}
+                                        {step.status === 'completed' ? <Check size={12} strokeWidth={3} /> : step.status === 'in_progress' ? <div className="w-2 h-2 rounded-full bg-warn-500" /> : ''}
                                       </button>
                                       <div className="flex-1 min-w-0">
                                         <span className={`text-[12px] font-semibold ${step.status === 'completed' ? 'line-through text-[var(--color-ink-400)]' : ''}`}>{step.label}</span>
                                         <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-[var(--color-ink-400)]">
-                                          {stepPartner && <><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{stepPartner.name.charAt(0)}</div><span>{stepPartner.name}</span></>}
+                                          {stepPartner && <><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[9px] font-bold text-[var(--color-ink-500)]">{stepPartner.name.charAt(0)}</div><span>{stepPartner.name}</span></>}
                                           {step.startDate && <><span className="text-[var(--color-ink-200)]">·</span><span>{(() => { const d = new Date(step.startDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
                                           {step.dueDate && <><span className="text-[var(--color-ink-300)]">→</span><span className="text-[var(--color-brand-600)] font-semibold">{(() => { const d = new Date(step.dueDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
                                         </div>
@@ -1558,10 +1464,10 @@ export default function ManagementMain() {
                 <div className="px-6 pb-5">
                   <Link
                     href={`/projects/${ep.projectId}/episodes/${ep.id}`}
-                    className="block w-full text-center py-2.5 bg-brand-500 text-white rounded-xl text-[13px] font-semibold hover:bg-brand-600 transition-colors"
+                    className="flex items-center justify-center gap-1 w-full text-center py-2.5 bg-brand-500 text-white rounded-xl text-[13px] font-semibold hover:bg-brand-600 transition-colors"
                     onClick={() => setQuickViewEpisode(null)}
                   >
-                    상세 보기 →
+                    상세 보기 <ArrowRight size={14} />
                   </Link>
                 </div>
               </motion.div>

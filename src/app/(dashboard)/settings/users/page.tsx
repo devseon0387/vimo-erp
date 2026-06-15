@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getMyProfile, getAllUserProfiles, updateUserRole, getCustomRoles, addCustomRole, deleteCustomRole } from '@/lib/supabase/db';
-import { Shield, Users, Crown, Plus, X, Tag, Trash2, UserCheck, Pencil, Eye, EyeOff, Copy, Check, UserPlus, RefreshCw, Clock } from 'lucide-react';
+import { Shield, Users, Crown, Plus, X, Tag, Trash2, UserCheck, Pencil, Eye, EyeOff, Copy, Check, UserPlus, RefreshCw, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 
 type UserProfile = {
   id: string;
@@ -26,7 +28,7 @@ const ROLE_BADGE_CLASSES: Record<string, string> = {
 };
 
 function getRoleBadgeClass(role: string) {
-  return ROLE_BADGE_CLASSES[role] ?? 'bg-gray-100 text-gray-600 border border-divider';
+  return ROLE_BADGE_CLASSES[role] ?? 'bg-ink-100 text-ink-600 border border-divider';
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -46,10 +48,9 @@ function formatRelativeTime(dateStr: string): string {
   return Math.floor(months / 12) + '년 전';
 }
 
-function getRoleLabel(role: string, customRoles: string[]) {
+function getRoleLabel(role: string, _customRoles: string[]) {
   if (role === 'admin') return '대표';
   if (role === 'manager') return '총괄 매니저';
-  if (customRoles.includes(role)) return role;
   return role;
 }
 
@@ -298,27 +299,23 @@ export default function UsersSettingsPage() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       {/* 헤더 */}
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3">
         <div className="p-3 bg-orange-100 rounded-xl">
           <Shield size={24} className="text-orange-600" />
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">계정 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">대표만 접근 가능한 페이지입니다</p>
+          <h1 className="text-page">계정 관리</h1>
+          <p className="text-sm text-ink-500 mt-1">대표만 접근 가능한 페이지입니다</p>
         </div>
         <a
           href="/settings/app-access"
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-divider bg-white text-gray-700 hover:border-orange-500 hover:text-orange-600 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-divider bg-white text-ink-700 hover:border-orange-500 hover:text-orange-600 transition-colors"
         >
           앱 권한 관리 →
         </a>
@@ -328,12 +325,12 @@ export default function UsersSettingsPage() {
       <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-divider flex items-center gap-2">
           <UserPlus size={18} className="text-orange-500" />
-          <h2 className="text-base font-semibold text-gray-800">새 계정 생성</h2>
+          <h2 className="text-base font-semibold text-ink-900">새 계정 생성</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">이름</label>
+              <label className="block text-sm font-medium text-ink-700 mb-1.5">이름</label>
               <input
                 type="text"
                 value={createName}
@@ -343,7 +340,7 @@ export default function UsersSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">이메일</label>
+              <label className="block text-sm font-medium text-ink-700 mb-1.5">이메일</label>
               <input
                 type="email"
                 value={createEmail}
@@ -353,9 +350,9 @@ export default function UsersSettingsPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">역할</label>
+              <label className="block text-sm font-medium text-ink-700 mb-1.5">역할</label>
               <select
                 value={createRole}
                 onChange={e => setCreateRole(e.target.value)}
@@ -367,7 +364,7 @@ export default function UsersSettingsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">임시 비밀번호</label>
+              <label className="block text-sm font-medium text-ink-700 mb-1.5">임시 비밀번호</label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <input
@@ -380,7 +377,7 @@ export default function UsersSettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreatePw(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600"
                   >
                     {showCreatePw ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
@@ -388,7 +385,7 @@ export default function UsersSettingsPage() {
                 <button
                   type="button"
                   onClick={generatePassword}
-                  className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-200 transition-colors flex-shrink-0"
+                  className="flex items-center gap-1 px-3 py-2 bg-ink-100 text-ink-600 text-xs font-medium rounded-xl hover:bg-gray-200 transition-colors flex-shrink-0"
                   title="자동 생성"
                 >
                   <RefreshCw size={13} />
@@ -413,13 +410,18 @@ export default function UsersSettingsPage() {
       {/* 역할 관리 */}
       <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-divider flex items-center gap-2">
-          <Tag size={18} className="text-gray-500" />
-          <h2 className="text-base font-semibold text-gray-800">역할 관리</h2>
+          <Tag size={18} className="text-ink-500" />
+          <h2 className="text-base font-semibold text-ink-900">역할 관리</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
+          {/* 역할은 표시용 — 실제 권한은 대표/비모 팀/파트너 단위. 오해(역할=권한 제한) 차단 안내 */}
+          <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[12.5px] text-amber-800">
+            <AlertCircle size={15} className="flex-shrink-0 mt-0.5 text-amber-500" />
+            <span>역할은 <b>표시·분류용 라벨</b>입니다. 실제 접근 권한은 역할이 아니라 <b>대표 / 비모 팀(직원) / 파트너</b> 구분으로만 적용돼요. (예: &lsquo;에디터&rsquo; 역할이라도 직원이면 동일한 권한을 가집니다.)</span>
+          </div>
           {/* 기본 역할 */}
           <div>
-            <p className="text-xs text-gray-400 font-medium mb-2">기본 역할 (변경 불가)</p>
+            <p className="text-xs text-ink-400 font-medium mb-2">기본 역할 (변경 불가)</p>
             <div className="flex flex-wrap gap-2">
               {DEFAULT_ROLES.map(r => (
                 <span key={r.value} className={`text-xs font-medium px-3 py-1.5 rounded-full ${getRoleBadgeClass(r.value)}`}>
@@ -431,13 +433,13 @@ export default function UsersSettingsPage() {
 
           {/* 커스텀 역할 */}
           <div>
-            <p className="text-xs text-gray-400 font-medium mb-2">커스텀 역할</p>
+            <p className="text-xs text-ink-400 font-medium mb-2">커스텀 역할</p>
             {customRoles.length === 0 ? (
-              <p className="text-sm text-gray-400">아직 추가된 역할이 없습니다.</p>
+              <p className="text-sm text-ink-400">아직 추가된 역할이 없습니다.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {customRoles.map(role => (
-                  <div key={role} className="flex items-center gap-1 bg-gray-100 text-gray-700 border border-divider text-xs font-medium px-3 py-1.5 rounded-full">
+                  <div key={role} className="flex items-center gap-1 bg-ink-100 text-ink-700 border border-divider text-xs font-medium px-3 py-1.5 rounded-full">
                     <span>{role}</span>
                     <button
                       onClick={() => handleDeleteRole(role)}
@@ -464,7 +466,7 @@ export default function UsersSettingsPage() {
             <button
               onClick={handleAddRole}
               disabled={addingRole || !newRoleName.trim()}
-              className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus size={15} />
               추가
@@ -476,18 +478,21 @@ export default function UsersSettingsPage() {
       {/* 등록된 계정 */}
       <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-divider flex items-center gap-2">
-          <Users size={18} className="text-gray-500" />
-          <h2 className="text-base font-semibold text-gray-800">등록된 계정</h2>
-          <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+          <Users size={18} className="text-ink-500" />
+          <h2 className="text-base font-semibold text-ink-900">등록된 계정</h2>
+          <span className="ml-auto text-xs text-ink-400 bg-ink-100 px-2 py-1 rounded-full">
             {approvedProfiles.length}명
           </span>
         </div>
 
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-ink-200">
           {approvedProfiles.length === 0 ? (
-            <div className="px-6 py-10 text-center text-gray-400 text-sm">
-              등록된 계정이 없습니다.
-            </div>
+            <EmptyState
+              icon={Users}
+              title="등록된 계정이 없습니다"
+              description="새 계정을 생성하면 여기에 표시됩니다."
+              size="compact"
+            />
           ) : (
             approvedProfiles.map(profile => {
               const isMe = profile.id === myId;
@@ -495,7 +500,7 @@ export default function UsersSettingsPage() {
               const roleLabel = getRoleLabel(profile.role, customRoles);
 
               return (
-                <div key={profile.id} className="px-6 py-4 flex items-center gap-4">
+                <div key={profile.id} className="px-6 py-4 flex items-center gap-3">
                   {/* 아바타 */}
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                     {profile.role === 'admin' ? (
@@ -508,20 +513,20 @@ export default function UsersSettingsPage() {
                   {/* 이름/이메일/접속시간 */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-900 text-sm truncate">
+                      <span className="font-medium text-ink-900 text-sm truncate">
                         {profile.name ?? '(이름 없음)'}
                       </span>
                       {isMe && (
-                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">나</span>
+                        <span className="text-xs text-ink-400 bg-ink-100 px-2 py-0.5 rounded-full">나</span>
                       )}
                     </div>
                     {profile.email && (
-                      <p className="text-xs text-gray-400 truncate mt-0.5">{profile.email}</p>
+                      <p className="text-xs text-ink-400 truncate mt-0.5">{profile.email}</p>
                     )}
                     {activityError && (
                       <div className="flex items-center gap-1 mt-1">
-                        <Clock size={11} className="text-gray-300 flex-shrink-0" />
-                        <span className="text-xs text-gray-300">접속 정보 불러오기 실패</span>
+                        <Clock size={11} className="text-ink-300 flex-shrink-0" />
+                        <span className="text-xs text-ink-300">접속 정보 불러오기 실패</span>
                       </div>
                     )}
                     {!activityError && activityMap[profile.id] !== undefined && (
@@ -533,8 +538,8 @@ export default function UsersSettingsPage() {
                           </>
                         ) : (
                           <>
-                            <Clock size={11} className="text-gray-300 flex-shrink-0" />
-                            <span className="text-xs text-gray-400">
+                            <Clock size={11} className="text-ink-300 flex-shrink-0" />
+                            <span className="text-xs text-ink-400">
                               {activityMap[profile.id].lastSignInAt
                                 ? '마지막 접속: ' + formatRelativeTime(activityMap[profile.id].lastSignInAt!)
                                 : '접속 기록 없음'}
@@ -572,7 +577,7 @@ export default function UsersSettingsPage() {
                         </div>
                         <button
                           onClick={() => openEditModal(profile)}
-                          className="p-1.5 rounded-lg text-gray-300 hover:text-orange-500 hover:bg-orange-50 transition-all"
+                          className="p-1.5 rounded-lg text-ink-300 hover:text-orange-500 hover:bg-orange-50 transition-all"
                           title="계정 수정"
                         >
                           <Pencil size={14} />
@@ -580,7 +585,7 @@ export default function UsersSettingsPage() {
                         <button
                           onClick={() => handleDeleteUser(profile.id, profile.name)}
                           disabled={deletingId === profile.id}
-                          className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
+                          className="p-1.5 rounded-lg text-ink-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
                           title="계정 삭제"
                         >
                           <Trash2 size={14} />
@@ -619,18 +624,18 @@ export default function UsersSettingsPage() {
                   <UserCheck size={28} className="text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">계정 생성 완료</h3>
-                  <p className="text-sm text-gray-500 mt-1">{createdEmail}</p>
+                  <h3 className="text-lg font-bold text-ink-900">계정 생성 완료</h3>
+                  <p className="text-sm text-ink-500 mt-1">{createdEmail}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl border border-divider p-4">
-                  <p className="text-xs text-gray-400 font-medium mb-2">임시 비밀번호</p>
+                <div className="bg-ink-50 rounded-xl border border-divider p-4">
+                  <p className="text-xs text-ink-400 font-medium mb-2">임시 비밀번호</p>
                   <div className="flex items-center justify-center gap-3">
-                    <code className="text-lg font-mono font-bold text-gray-900 tracking-wider">
+                    <code className="text-lg font-mono font-bold text-ink-900 tracking-wider">
                       {createdPassword}
                     </code>
                     <button
                       onClick={handleCopyPassword}
-                      className={`p-2 rounded-lg transition-colors ${copiedPw ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
+                      className={`p-2 rounded-lg transition-colors ${copiedPw ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-ink-500 hover:bg-gray-300'}`}
                     >
                       {copiedPw ? <Check size={14} /> : <Copy size={14} />}
                     </button>
@@ -673,18 +678,18 @@ export default function UsersSettingsPage() {
               {/* 모달 헤더 */}
               <div className="px-6 py-5 border-b border-divider flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">계정 수정</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">{editingUser.name ?? editingUser.email}</p>
+                  <h3 className="text-lg font-bold text-ink-900">계정 수정</h3>
+                  <p className="text-xs text-ink-400 mt-0.5">{editingUser.name ?? editingUser.email}</p>
                 </div>
-                <button onClick={() => setEditingUser(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                  <X size={18} className="text-gray-400" />
+                <button onClick={() => setEditingUser(null)} className="p-2 hover:bg-ink-100 rounded-xl transition-colors">
+                  <X size={18} className="text-ink-400" />
                 </button>
               </div>
 
               {/* 모달 바디 */}
               <div className="px-6 py-5 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">이름</label>
+                  <label className="block text-sm font-medium text-ink-700 mb-1.5">이름</label>
                   <input
                     type="text"
                     value={editName}
@@ -694,7 +699,7 @@ export default function UsersSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">이메일</label>
+                  <label className="block text-sm font-medium text-ink-700 mb-1.5">이메일</label>
                   <input
                     type="email"
                     value={editEmail}
@@ -704,7 +709,7 @@ export default function UsersSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">새 비밀번호</label>
+                  <label className="block text-sm font-medium text-ink-700 mb-1.5">새 비밀번호</label>
                   <div className="relative">
                     <input
                       type={showEditPw ? 'text' : 'password'}
@@ -716,20 +721,20 @@ export default function UsersSettingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowEditPw(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600"
                     >
                       {showEditPw ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">최소 6자 이상</p>
+                  <p className="text-xs text-ink-400 mt-1">최소 6자 이상</p>
                 </div>
               </div>
 
               {/* 모달 푸터 */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-divider flex justify-end gap-2">
+              <div className="px-6 py-4 bg-ink-50 border-t border-divider flex justify-end gap-2">
                 <button
                   onClick={() => setEditingUser(null)}
-                  className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-divider rounded-xl hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2.5 text-sm font-medium text-ink-700 bg-white border border-divider rounded-xl hover:bg-ink-50 transition-colors"
                 >
                   취소
                 </button>

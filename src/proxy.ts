@@ -1,32 +1,16 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import NextAuth from 'next-auth';
+import { NextResponse } from 'next/server';
+import authConfig from '@/auth.config';
 
-export default async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+// Auth.js v5 미들웨어 — JWT 세션을 Edge에서 검증(DB 없음). authConfig는 Edge-안전.
+// Phase 4: Supabase @supabase/ssr 세션 갱신 → Auth.js JWT 클레임 게이트로 교체.
+const { auth } = NextAuth(authConfig);
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
+export default auth((request) => {
+  // request.auth = JWT에서 디코드한 세션 (session 콜백 적용: role/approved/needsPasswordChange/erpAccess)
+  const user = request.auth?.user ?? null;
 
-  // 세션 토큰 자동 갱신 (IMPORTANT: getUser 호출 필수)
-  const { data: { user } } = await supabase.auth.getUser();
+  const okResponse = NextResponse.next();
 
   const { pathname } = request.nextUrl;
   const host = request.headers.get('host') ?? '';
@@ -46,7 +30,7 @@ export default async function proxy(request: NextRequest) {
       url.pathname = `/partner${pathname}`;
       return NextResponse.rewrite(url);
     }
-    return supabaseResponse;
+    return okResponse;
   }
 
   // 메인 도메인에서 /partner/* 직접 접근 차단 (서브도메인 노출 방지)
@@ -63,33 +47,21 @@ export default async function proxy(request: NextRequest) {
 
   // 비봇 내부 툴 API: 라우트 내부에서 세션 또는 x-bibot-key 검증
   if (pathname.startsWith('/api/bibot/tools')) {
-    return supabaseResponse;
+    return okResponse;
   }
 
-  // API key 인증: /api/mcp 경로 (외부 전용)
+  // 비봇 strategy MCP 엔드포인트: 라우트 내부 authorizeMcp(x-api-key=API_SECRET_KEY)로
+  // 자체 인증 + rate limit. 미들웨어 로그인 게이트(307)를 우회해 MCP 핸드셰이크 허용. (2026-06-13)
   if (pathname.startsWith('/api/mcp')) {
-    const apiKey = request.headers.get('x-api-key');
-    const expectedKey = process.env.API_SECRET_KEY;
-    if (!expectedKey || apiKey !== expectedKey) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    return supabaseResponse;
+    return okResponse;
   }
 
-  // /api/strategy: API key 또는 로그인 세션 인증
-  if (pathname.startsWith('/api/strategy')) {
-    const apiKey = request.headers.get('x-api-key');
-    const expectedKey = process.env.API_SECRET_KEY;
-    if (apiKey && expectedKey && apiKey === expectedKey) {
-      return supabaseResponse;
-    }
-    if (user) {
-      return supabaseResponse;
-    }
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Auth.js 엔드포인트(session/signin/signout/callback/csrf)는 항상 통과 — 게이트 우회.
+  if (pathname.startsWith('/api/auth')) {
+    return okResponse;
   }
 
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/api/auth');
+  const isAuthPage = pathname.startsWith('/login');
   const isApiRoute = pathname.startsWith('/api/');
 
   if (!user && !isAuthPage) {
@@ -99,37 +71,22 @@ export default async function proxy(request: NextRequest) {
   }
 
   // 인증된 사용자가 대시보드에 접근할 때 승인 여부 및 비밀번호 변경 확인
-  // ── Phase 4 (universe): user_profiles 체크 + app_access 체크 이중 검증
+  // ── Phase 4 (universe): user_profiles(approved/role) + app_access(vimo_erp) 이중 검증.
+  //    JWT 클레임 기반(DB 호출 없음) — 로그인 시점 스냅샷. 계정 상태 변경의 즉시 차단은
+  //    레이아웃 getSessionUser(라이브)·DAL authz 가드가 담당, 여기는 상한 1일(JWT maxAge).
   if (user && !isAuthPage && !isApiRoute) {
-    const [profileRes, accessRes] = await Promise.all([
-      supabase
-        .from('user_profiles')
-        .select('approved, role, needs_password_change')
-        .eq('id', user.id)
-        .single(),
-      supabase
-        .from('app_access')
-        .select('status')
-        .eq('user_id', user.id)
-        .eq('app_code', 'vimo_erp')
-        .maybeSingle(),
-    ]);
-    const profile = profileRes.data;
-    const access = accessRes.data;
-
-    const profileOk = !!profile && (profile.role === 'admin' || profile.approved === true);
-    const accessOk = !!access && access.status === 'active';
+    const profileOk = user.role === 'admin' || user.approved === true;
+    const accessOk = user.erpAccess === true;
 
     // 둘 중 하나라도 통과 못하면 거부 (이중 검증)
     if (!profileOk || !accessOk) {
-      await supabase.auth.signOut();
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';
       return NextResponse.redirect(loginUrl);
     }
 
     // 비밀번호 변경이 필요한 경우 → /change-password로 강제 이동
-    if (profile.needs_password_change === true && !pathname.startsWith('/change-password')) {
+    if (user.needsPasswordChange === true && !pathname.startsWith('/change-password')) {
       const cpUrl = request.nextUrl.clone();
       cpUrl.pathname = '/change-password';
       return NextResponse.redirect(cpUrl);
@@ -137,27 +94,9 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (user && isAuthPage) {
-    // 로그인 페이지에 들어왔는데 이미 인증된 사용자라면 대시보드로
-    // ── Phase 4 (universe): user_profiles + app_access 둘 다 통과해야
-    const [profileRes, accessRes] = await Promise.all([
-      supabase
-        .from('user_profiles')
-        .select('approved, role')
-        .eq('id', user.id)
-        .single(),
-      supabase
-        .from('app_access')
-        .select('status')
-        .eq('user_id', user.id)
-        .eq('app_code', 'vimo_erp')
-        .maybeSingle(),
-    ]);
-    const profile = profileRes.data;
-    const access = accessRes.data;
-
-    const profileOk = !!profile && (profile.role === 'admin' || profile.approved === true);
-    const accessOk = !!access && access.status === 'active';
-
+    // 이미 인증·승인된 사용자가 로그인 페이지에 오면 대시보드로 (/api/auth 는 위에서 통과)
+    const profileOk = user.role === 'admin' || user.approved === true;
+    const accessOk = user.erpAccess === true;
     if (profileOk && accessOk) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/management';
@@ -165,8 +104,8 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  return supabaseResponse;
-}
+  return okResponse;
+});
 
 export const config = {
   matcher: [

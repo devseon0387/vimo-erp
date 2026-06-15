@@ -9,8 +9,14 @@ import { addToTrash } from '@/lib/trash';
 import DatePicker from '@/components/DatePicker';
 import { formatPhoneNumber } from '@/lib/utils';
 import { useToast } from '@/contexts/ToastContext';
-import { getPartners, updatePartner, deletePartner, getProjects, getAllEpisodes } from '@/lib/supabase/db';
+import {
+  getPartners, getPartnerById, updatePartner, deletePartner, getProjects, getAllEpisodes,
+  getPartnerHistory, insertPartnerHistory, deletePartnerHistory,
+  getPartnerIssues, insertPartnerIssue, deletePartnerIssue,
+} from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
+import EmptyState from '@/components/EmptyState';
+import { StatusBadge } from '@/components/StatusBadge';
 import PartnerEditModal from '../PartnerEditModal';
 
 interface PartnerHistoryEntry {
@@ -74,9 +80,9 @@ function computePartnerStats(
 // 스켈레톤 UI
 function DetailSkeleton() {
   return (
-    <div className="space-y-4 sm:space-y-6 animate-pulse">
+    <div className="space-y-4 sm:space-y-5 animate-pulse">
       {/* 헤더 스켈레톤 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-divider p-4 sm:p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-divider p-3.5 sm:p-4">
         <div className="h-4 w-32 sm:w-40 bg-gray-200 rounded mb-4" />
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-200 rounded-full flex-shrink-0" />
@@ -94,9 +100,9 @@ function DetailSkeleton() {
             <div key={i} className="h-5 bg-gray-200 rounded flex-shrink-0" style={{ width: w }} />
           ))}
         </div>
-        <div className="p-4 sm:p-6 space-y-4">
+        <div className="p-3.5 sm:p-4 space-y-4">
           <div className="h-5 w-24 bg-gray-200 rounded" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gray-200 rounded flex-shrink-0" />
@@ -110,7 +116,7 @@ function DetailSkeleton() {
           <div className="h-5 w-24 bg-gray-200 rounded mt-6" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-gray-100 rounded-lg p-3 sm:p-4">
+              <div key={i} className="bg-[#f5f5f4] rounded-lg p-3 sm:p-4">
                 <div className="h-4 w-8 bg-gray-200 rounded mb-2" />
                 <div className="h-6 sm:h-7 w-12 bg-gray-200 rounded mb-1" />
                 <div className="h-3 w-16 sm:w-20 bg-gray-200 rounded" />
@@ -196,36 +202,28 @@ export default function PartnerDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [partners, proj, eps] = await Promise.all([getPartners(), getProjects(), getAllEpisodes()]);
-      const found = partners.find(p => p.id === partnerId);
+      // 파트너 본인 + 히스토리/이슈 (DB) + 프로젝트/회차 보조 데이터 한 번에
+      const [found, history, issues, proj, eps] = await Promise.all([
+        getPartnerById(partnerId),
+        getPartnerHistory(partnerId),
+        getPartnerIssues(partnerId),
+        getProjects(),
+        getAllEpisodes(),
+      ]);
       if (found) {
         setPartner(found);
         setNewHistoryEntry(prev => ({ ...prev, generation: found.generation || 1 }));
 
-        // 히스토리 로드
-        const stored = localStorage.getItem(`partner_history_${found.id}`);
-        let history: PartnerHistoryEntry[] = [];
-        if (stored) {
-          try { history = JSON.parse(stored); } catch { /* ignore */ }
-        }
+        // 히스토리가 비어 있고 partner.generation 설정돼 있으면 최초 1행 seed
+        let finalHistory = history;
         if (history.length === 0 && found.generation) {
-          const initialEntry = {
-            id: crypto.randomUUID(),
+          const seeded = await insertPartnerHistory(found.id, {
             generation: found.generation,
             startDate: found.createdAt ? found.createdAt.split('T')[0] : '',
-            endDate: undefined,
-          };
-          history = [initialEntry];
-          localStorage.setItem(`partner_history_${found.id}`, JSON.stringify(history));
+          });
+          if (seeded) finalHistory = [seeded];
         }
-        setPartnerHistories(history);
-
-        // 이슈 로드
-        const storedIssues = localStorage.getItem(`partner_issues_${found.id}`);
-        let issues: PartnerIssueEntry[] = [];
-        if (storedIssues) {
-          try { issues = JSON.parse(storedIssues); } catch { /* ignore */ }
-        }
+        setPartnerHistories(finalHistory);
         setPartnerIssues(issues);
       }
       setAllProjectsData(proj);
@@ -241,7 +239,8 @@ export default function PartnerDetailPage() {
     loadData();
   }, [loadData]);
 
-  useSupabaseRealtime(['partners', 'episodes'], loadData);
+  // realtime: 폴링 1회만 등록(filter는 폴링에서 무시됨 — 3중 등록 단일화로 포커스당 loadData 3회→1회).
+  useSupabaseRealtime(['partners', 'partner_history', 'partner_issues', 'episodes'], loadData);
 
   // #1 로딩: 스켈레톤 UI
   if (loading) {
@@ -251,8 +250,8 @@ export default function PartnerDetailPage() {
   // #5 에러: 재시도 UI
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-gray-500">{error}</p>
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <p className="text-[#78716c]">{error}</p>
         <button
           onClick={loadData}
           className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
@@ -266,8 +265,8 @@ export default function PartnerDetailPage() {
 
   if (!partner) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-gray-500">파트너를 찾을 수 없습니다.</p>
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <p className="text-[#78716c]">파트너를 찾을 수 없습니다.</p>
         <button
           onClick={() => router.push('/partners')}
           className="text-orange-500 hover:text-orange-600 font-medium"
@@ -281,46 +280,45 @@ export default function PartnerDetailPage() {
   const stats = computePartnerStats(partner.id, allProjectsData, allEpisodesData);
   const inProgressEpisodesCount = allEpisodesData.filter(e => e.assignee === partner.id && e.status === 'in_progress').length;
 
-  // 히스토리 핸들러
-  const handleAddHistory = () => {
+  // 히스토리 핸들러 (DB)
+  const handleAddHistory = async () => {
     if (!newHistoryEntry.startDate) return;
-    const entry = {
-      id: crypto.randomUUID(),
+    const created = await insertPartnerHistory(partner.id, {
       generation: newHistoryEntry.generation,
       startDate: newHistoryEntry.startDate,
       endDate: newHistoryEntry.endDate || undefined,
-    };
-    const updated = [...partnerHistories, entry].sort((a, b) => a.generation - b.generation);
-    setPartnerHistories(updated);
-    localStorage.setItem(`partner_history_${partner.id}`, JSON.stringify(updated));
-    setIsAddingHistory(false);
-    setNewHistoryEntry({ generation: newHistoryEntry.generation + 1, startDate: '', endDate: '' });
+    });
+    if (created) {
+      setPartnerHistories(prev => [...prev, created].sort((a, b) => a.generation - b.generation));
+      setIsAddingHistory(false);
+      setNewHistoryEntry({ generation: newHistoryEntry.generation + 1, startDate: '', endDate: '' });
+    } else {
+      toast.error('이력 추가에 실패했습니다.');
+    }
   };
 
-  const handleDeleteHistory = (entryId: string) => {
-    const updated = partnerHistories.filter(e => e.id !== entryId);
-    setPartnerHistories(updated);
-    localStorage.setItem(`partner_history_${partner.id}`, JSON.stringify(updated));
+  const handleDeleteHistory = async (entryId: string) => {
+    const ok = await deletePartnerHistory(entryId);
+    if (ok) setPartnerHistories(prev => prev.filter(e => e.id !== entryId));
+    else toast.error('이력 삭제에 실패했습니다.');
   };
 
-  // 이슈 핸들러
-  const handleAddIssue = () => {
+  // 이슈 핸들러 (DB)
+  const handleAddIssue = async () => {
     if (!newIssueText.trim()) return;
-    const entry: PartnerIssueEntry = {
-      id: crypto.randomUUID(),
-      content: newIssueText.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [entry, ...partnerIssues];
-    setPartnerIssues(updated);
-    localStorage.setItem(`partner_issues_${partner.id}`, JSON.stringify(updated));
-    setNewIssueText('');
+    const created = await insertPartnerIssue(partner.id, newIssueText.trim());
+    if (created) {
+      setPartnerIssues(prev => [created, ...prev]);
+      setNewIssueText('');
+    } else {
+      toast.error('이슈 추가에 실패했습니다.');
+    }
   };
 
-  const handleDeleteIssue = (issueId: string) => {
-    const updated = partnerIssues.filter(e => e.id !== issueId);
-    setPartnerIssues(updated);
-    localStorage.setItem(`partner_issues_${partner.id}`, JSON.stringify(updated));
+  const handleDeleteIssue = async (issueId: string) => {
+    const ok = await deletePartnerIssue(issueId);
+    if (ok) setPartnerIssues(prev => prev.filter(e => e.id !== issueId));
+    else toast.error('이슈 삭제에 실패했습니다.');
   };
 
   // 상태 토글
@@ -369,27 +367,27 @@ export default function PartnerDetailPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* 헤더 - #1 모바일 대응 */}
       <div className="bg-white rounded-2xl shadow-sm border border-divider">
         <div className="px-4 sm:px-6 py-4 border-b border-divider">
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+            className="flex items-center gap-2 text-[#57534e] hover:text-[#1c1917] mb-4 transition-colors"
           >
             <ArrowLeft size={20} />
             <span className="text-sm font-medium">파트너 목록으로 돌아가기</span>
           </button>
 
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
               <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <User size={24} className="text-orange-500 sm:hidden" />
                 <User size={28} className="text-orange-500 hidden sm:block" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{partner.name}</h1>
-                <p className="text-sm text-gray-500 mt-1">
+                <h1 className="text-page">{partner.name}</h1>
+                <p className="text-sm text-[#78716c] mt-1">
                   {[partner.email, partner.phone ? formatPhoneNumber(partner.phone) : ''].filter(Boolean).join(' · ') || '-'}
                 </p>
                 <button
@@ -397,7 +395,7 @@ export default function PartnerDetailPage() {
                   className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
                     partner.status === 'active'
                       ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
+                      : 'bg-[#f5f5f4] text-[#1c1917]'
                   }`}
                   title={partner.status === 'active' ? '클릭하여 비활성으로 변경' : '클릭하여 활성으로 변경'}
                 >
@@ -409,7 +407,7 @@ export default function PartnerDetailPage() {
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <button
                 onClick={() => setIsEditModalOpen(true)}
-                className="p-2 sm:px-4 sm:py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+                className="p-2 sm:px-4 sm:py-2 text-[#44403c] hover:bg-[#f5f5f4] rounded-lg transition-colors flex items-center gap-2"
               >
                 <Edit size={16} />
                 <span className="hidden sm:inline">수정</span>
@@ -443,7 +441,7 @@ export default function PartnerDetailPage() {
                 className={`px-3 sm:px-4 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
                   activeTab === tab.key
                     ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    : 'border-transparent text-[#78716c] hover:text-[#44403c]'
                 }`}
               >
                 {tab.label}
@@ -451,7 +449,7 @@ export default function PartnerDetailPage() {
                   <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
                     activeTab === tab.key
                       ? 'bg-orange-100 text-orange-600'
-                      : 'bg-gray-100 text-gray-500'
+                      : 'bg-[#f5f5f4] text-[#78716c]'
                   }`}>
                     {tab.count}
                   </span>
@@ -462,21 +460,21 @@ export default function PartnerDetailPage() {
         </div>
 
         {/* 탭 내용 */}
-        <div className="p-4 sm:p-6 space-y-6">
+        <div className="p-3.5 sm:p-4 space-y-5">
           {/* 기본정보 탭 */}
           {activeTab === 'info' && (
             <>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">기본 정보</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <h3 className="text-lg font-semibold text-[#1c1917] mb-3">기본 정보</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex items-center space-x-3">
-                    <Phone size={16} className="text-gray-400 flex-shrink-0" />
+                    <Phone size={16} className="text-[#a8a29e] flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">전화번호</p>
+                      <p className="text-xs text-[#78716c]">전화번호</p>
                       {partner.phone ? (
                         <button
                           onClick={() => copyToClipboard(partner.phone!, '전화번호')}
-                          className="flex items-center gap-1.5 text-sm font-medium text-gray-900 hover:text-orange-600 transition-colors group/copy"
+                          className="flex items-center gap-1.5 text-sm font-medium text-[#1c1917] hover:text-orange-600 transition-colors group/copy"
                         >
                           {formatPhoneNumber(partner.phone)}
                           {copiedField === '전화번호' ? (
@@ -486,20 +484,20 @@ export default function PartnerDetailPage() {
                           )}
                         </button>
                       ) : (
-                        <p className="text-sm font-medium text-gray-900">-</p>
+                        <p className="text-sm font-medium text-[#1c1917]">-</p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Activity size={16} className="text-gray-400 flex-shrink-0" />
+                    <Activity size={16} className="text-[#a8a29e] flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">상태</p>
+                      <p className="text-xs text-[#78716c] mb-1">상태</p>
                       <button
                         onClick={handleToggleStatus}
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
                           partner.status === 'active'
                             ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
+                            : 'bg-[#f5f5f4] text-[#1c1917]'
                         }`}
                       >
                         {partner.status === 'active' ? '활성' : '비활성'}
@@ -508,34 +506,34 @@ export default function PartnerDetailPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <UserCircle size={16} className="text-gray-400 flex-shrink-0" />
+                    <UserCircle size={16} className="text-[#a8a29e] flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">파트너 유형</p>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-xs text-[#78716c]">파트너 유형</p>
+                      <p className="text-sm font-medium text-[#1c1917]">
                         {partner.partnerType === 'business' ? '사업자' : partner.partnerType === 'freelancer' ? '프리랜서' : '-'}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Users size={16} className="text-gray-400 flex-shrink-0" />
+                    <Users size={16} className="text-[#a8a29e] flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">파트너 기수</p>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-xs text-[#78716c]">파트너 기수</p>
+                      <p className="text-sm font-medium text-[#1c1917]">
                         {partner.generation ? `${partner.generation}기` : '-'}
                       </p>
                     </div>
                   </div>
                   {(partner.bank || partner.bankAccount) && (
                     <div className="col-span-1 sm:col-span-2 flex items-center space-x-3">
-                      <CreditCard size={16} className="text-gray-400 flex-shrink-0" />
+                      <CreditCard size={16} className="text-[#a8a29e] flex-shrink-0" />
                       <div>
-                        <p className="text-xs text-gray-500">계좌번호</p>
+                        <p className="text-xs text-[#78716c]">계좌번호</p>
                         <button
                           onClick={() => copyToClipboard(
                             [partner.bank, partner.bankAccount].filter(Boolean).join(' '),
                             '계좌번호'
                           )}
-                          className="flex items-center gap-1.5 text-sm font-medium text-gray-900 hover:text-orange-600 transition-colors group/copy"
+                          className="flex items-center gap-1.5 text-sm font-medium text-[#1c1917] hover:text-orange-600 transition-colors group/copy"
                         >
                           {[partner.bank, partner.bankAccount].filter(Boolean).join('  ')}
                           {copiedField === '계좌번호' ? (
@@ -552,16 +550,16 @@ export default function PartnerDetailPage() {
 
               {/* 통계 요약 */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">통계 요약</h3>
+                <h3 className="text-lg font-semibold text-[#1c1917] mb-3">통계 요약</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                   <div className="bg-orange-50 rounded-lg p-3 sm:p-4">
                     <div className="flex items-center justify-between mb-1 sm:mb-2">
                       <Folder size={18} className="text-orange-500 sm:hidden" />
                       <Folder size={20} className="text-orange-500 hidden sm:block" />
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-600 mt-1">전체 프로젝트</p>
-                    <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-gray-500">
+                    <p className="text-xl sm:text-2xl font-bold text-[#1c1917]">{stats.totalProjects}</p>
+                    <p className="text-[10px] sm:text-xs text-[#57534e] mt-1">전체 프로젝트</p>
+                    <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-[#78716c]">
                       진행중 {stats.inProgressProjects} · 완료 {stats.completedProjects}
                     </div>
                   </div>
@@ -570,9 +568,9 @@ export default function PartnerDetailPage() {
                       <Film size={18} className="text-orange-500 sm:hidden" />
                       <Film size={20} className="text-orange-500 hidden sm:block" />
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalEpisodes}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-600 mt-1">담당 회차</p>
-                    <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-gray-500">
+                    <p className="text-xl sm:text-2xl font-bold text-[#1c1917]">{stats.totalEpisodes}</p>
+                    <p className="text-[10px] sm:text-xs text-[#57534e] mt-1">담당 회차</p>
+                    <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-[#78716c]">
                       완료 {stats.completedEpisodes} · 진행중 {stats.inProgressEpisodes}
                     </div>
                   </div>
@@ -581,9 +579,9 @@ export default function PartnerDetailPage() {
                       <Calendar size={18} className="text-green-500 sm:hidden" />
                       <Calendar size={20} className="text-green-500 hidden sm:block" />
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.thisMonthEpisodes}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-600 mt-1">이번 달 완료</p>
-                    <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-gray-500">
+                    <p className="text-xl sm:text-2xl font-bold text-[#1c1917]">{stats.thisMonthEpisodes}</p>
+                    <p className="text-[10px] sm:text-xs text-[#57534e] mt-1">이번 달 완료</p>
+                    <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-[#78716c]">
                       {new Date().toLocaleDateString('ko-KR', { month: 'long' })}
                     </div>
                   </div>
@@ -592,44 +590,44 @@ export default function PartnerDetailPage() {
                       <Activity size={18} className="text-orange-500 sm:hidden" />
                       <Activity size={20} className="text-orange-500 hidden sm:block" />
                     </div>
-                    <p className="text-xs sm:text-sm font-bold text-gray-900">
+                    <p className="text-xs sm:text-sm font-bold text-[#1c1917]">
                       {stats.lastActivity
                         ? new Date(stats.lastActivity).toLocaleDateString('ko-KR')
                         : '-'}
                     </p>
-                    <p className="text-[10px] sm:text-xs text-gray-600 mt-1">최근 활동일</p>
+                    <p className="text-[10px] sm:text-xs text-[#57534e] mt-1">최근 활동일</p>
                   </div>
                 </div>
               </div>
 
               {/* 수익 정보 */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">수익 정보</h3>
+                <h3 className="text-lg font-semibold text-[#1c1917] mb-3">수익 정보</h3>
                 <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                  <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="bg-[#fafaf9] rounded-lg p-3 sm:p-4">
                     <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 sm:mb-2">
-                      <DollarSign size={14} className="text-gray-500 flex-shrink-0" />
-                      <p className="text-[10px] sm:text-xs text-gray-600">총 수익</p>
+                      <DollarSign size={14} className="text-[#78716c] flex-shrink-0" />
+                      <p className="text-[10px] sm:text-xs text-[#57534e]">총 수익</p>
                     </div>
-                    <p className="text-sm sm:text-xl font-bold text-gray-900">
+                    <p className="text-sm sm:text-xl font-bold text-[#1c1917]">
                       ₩{stats.totalRevenue.toLocaleString()}
                     </p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="bg-[#fafaf9] rounded-lg p-3 sm:p-4">
                     <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 sm:mb-2">
-                      <TrendingUp size={14} className="text-gray-500 flex-shrink-0" />
-                      <p className="text-[10px] sm:text-xs text-gray-600">이번 달</p>
+                      <TrendingUp size={14} className="text-[#78716c] flex-shrink-0" />
+                      <p className="text-[10px] sm:text-xs text-[#57534e]">이번 달</p>
                     </div>
-                    <p className="text-sm sm:text-xl font-bold text-gray-900">
+                    <p className="text-sm sm:text-xl font-bold text-[#1c1917]">
                       ₩{stats.thisMonthRevenue.toLocaleString()}
                     </p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <div className="bg-[#fafaf9] rounded-lg p-3 sm:p-4">
                     <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 sm:mb-2">
-                      <Film size={14} className="text-gray-500 flex-shrink-0" />
-                      <p className="text-[10px] sm:text-xs text-gray-600">회차 평균</p>
+                      <Film size={14} className="text-[#78716c] flex-shrink-0" />
+                      <p className="text-[10px] sm:text-xs text-[#57534e]">회차 평균</p>
                     </div>
-                    <p className="text-sm sm:text-xl font-bold text-gray-900">
+                    <p className="text-sm sm:text-xl font-bold text-[#1c1917]">
                       ₩{Math.round(stats.avgRevenuePerEpisode).toLocaleString()}
                     </p>
                   </div>
@@ -647,14 +645,16 @@ export default function PartnerDetailPage() {
 
             return (
               <>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <h3 className="text-lg font-semibold text-[#1c1917] mb-4">
                   진행 중인 회차 ({inProgressEpisodes.length})
                 </h3>
                 {inProgressEpisodes.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Film size={48} className="text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">진행 중인 회차가 없습니다</p>
-                  </div>
+                  <EmptyState
+                    icon={Film}
+                    title="진행 중인 회차가 없습니다"
+                    description="이 파트너가 진행 중인 회차가 아직 없습니다."
+                    size="compact"
+                  />
                 ) : (
                   <div className="space-y-3">
                     {inProgressEpisodes.map(({ project, ...episode }) => (
@@ -666,28 +666,26 @@ export default function PartnerDetailPage() {
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h4 className="font-semibold text-gray-900">{project.title}</h4>
-                              <ArrowRight size={14} className="text-gray-400" />
-                              <span className="text-gray-700">{episode.episodeNumber}회차</span>
+                              <h4 className="font-semibold text-[#1c1917]">{project.title}</h4>
+                              <ArrowRight size={14} className="text-[#a8a29e]" />
+                              <span className="text-[#44403c]">{episode.episodeNumber}회차</span>
                             </div>
-                            <p className="text-sm text-gray-600">{episode.title}</p>
+                            <p className="text-sm text-[#57534e]">{episode.title}</p>
                           </div>
-                          <span className="px-2.5 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium whitespace-nowrap ml-2">
-                            진행중
-                          </span>
+                          <StatusBadge tone="brand" className="ml-2">진행중</StatusBadge>
                         </div>
                         {episode.endDate && (
-                          <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                          <div className="flex items-center gap-2 text-sm text-[#78716c] mt-2">
                             <Clock size={14} />
                             <span>마감: {new Date(episode.endDate).toLocaleDateString('ko-KR')}</span>
                           </div>
                         )}
                         {episode.workContent && episode.workContent.length > 0 && (
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="text-xs text-gray-500">작업:</span>
+                            <span className="text-xs text-[#78716c]">작업:</span>
                             <div className="flex gap-1 flex-wrap">
                               {episode.workContent.map((work: string) => (
-                                <span key={work} className="px-2 py-0.5 bg-white rounded text-xs text-gray-600">
+                                <span key={work} className="px-2 py-0.5 bg-white rounded text-xs text-[#57534e]">
                                   {work === 'filming' ? '촬영' : work === 'editing' ? '편집' : work === 'audio' ? '오디오' : work === 'color' ? '색보정' : work === 'graphics' ? '그래픽' : work}
                                 </span>
                               ))}
@@ -705,39 +703,42 @@ export default function PartnerDetailPage() {
           {/* 담당 프로젝트 탭 */}
           {activeTab === 'projects' && (
             <>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-[#1c1917] mb-4">
                 담당 프로젝트 ({stats.projects.length})
               </h3>
               {stats.projects.length === 0 ? (
-                <div className="text-center py-12">
-                  <Folder size={48} className="text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">담당 프로젝트가 없습니다</p>
-                </div>
+                <EmptyState
+                  icon={Folder}
+                  title="담당 프로젝트가 없습니다"
+                  description="이 파트너에게 배정된 프로젝트가 아직 없습니다."
+                  size="compact"
+                />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {stats.projects.map((project) => {
                     const projectEpisodes = allEpisodesData.filter(e => e.projectId === project.id);
                     return (
                       <Link
                         key={project.id}
                         href={`/projects/${project.id}`}
-                        className="block p-4 bg-white rounded-lg border-2 border-divider hover:border-orange-400 hover:shadow-lg transition-[border-color,box-shadow]"
+                        className="block p-4 bg-white rounded-2xl border-2 border-divider hover:border-orange-400 hover:shadow-lg transition-[border-color,box-shadow]"
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 truncate">{project.title}</h4>
-                            <p className="text-sm text-gray-500 mt-1">{project.client}</p>
+                            <h4 className="font-semibold text-[#1c1917] truncate">{project.title}</h4>
+                            <p className="text-sm text-[#78716c] mt-1">{project.client}</p>
                           </div>
-                          <span
-                            className={`ml-2 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                          <StatusBadge
+                            tone={
                               project.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'ok'
                                 : project.status === 'in_progress'
-                                ? 'bg-orange-100 text-orange-800'
+                                ? 'brand'
                                 : project.status === 'on_hold'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
+                                ? 'warn'
+                                : 'neutral'
+                            }
+                            className="ml-2"
                           >
                             {project.status === 'completed'
                               ? '완료'
@@ -746,16 +747,16 @@ export default function PartnerDetailPage() {
                               : project.status === 'on_hold'
                               ? '보류'
                               : '기획'}
-                          </span>
+                          </StatusBadge>
                         </div>
                         {projectEpisodes.length > 0 && (
                           <div className="grid grid-cols-2 gap-3 pt-3 border-t border-divider">
-                            <div className="bg-gray-50 rounded p-2">
-                              <p className="text-xs text-gray-500">총 회차</p>
-                              <p className="text-lg font-semibold text-gray-900">{projectEpisodes.length}</p>
+                            <div className="bg-[#fafaf9] rounded p-2">
+                              <p className="text-xs text-[#78716c]">총 회차</p>
+                              <p className="text-lg font-semibold text-[#1c1917]">{projectEpisodes.length}</p>
                             </div>
-                            <div className="bg-gray-50 rounded p-2">
-                              <p className="text-xs text-gray-500">진행중</p>
+                            <div className="bg-[#fafaf9] rounded p-2">
+                              <p className="text-xs text-[#78716c]">진행중</p>
                               <p className="text-lg font-semibold text-orange-600">
                                 {projectEpisodes.filter(e => e.status === 'in_progress').length}
                               </p>
@@ -765,8 +766,8 @@ export default function PartnerDetailPage() {
                         {project.budget && project.budget.totalAmount > 0 && (
                           <div className="mt-3 pt-3 border-t border-divider">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-500">예산</span>
-                              <span className="font-semibold text-gray-900">
+                              <span className="text-[#78716c]">예산</span>
+                              <span className="font-semibold text-[#1c1917]">
                                 {(project.budget.totalAmount / 10000).toFixed(0)}만원
                               </span>
                             </div>
@@ -784,11 +785,11 @@ export default function PartnerDetailPage() {
           {activeTab === 'issue' && (
             <>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">이슈 메모</h3>
-                <span className="text-xs text-gray-400">{partnerIssues.length}개</span>
+                <h3 className="text-lg font-semibold text-[#1c1917]">이슈 메모</h3>
+                <span className="text-xs text-[#a8a29e]">{partnerIssues.length}개</span>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-4 mb-5">
+              <div className="bg-[#fafaf9] rounded-xl p-4 mb-5">
                 <textarea
                   value={newIssueText}
                   onChange={e => setNewIssueText(e.target.value)}
@@ -797,7 +798,7 @@ export default function PartnerDetailPage() {
                   }}
                   placeholder="이슈나 특이사항을 메모하세요... (Cmd+Enter로 저장)"
                   rows={3}
-                  className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none resize-none leading-relaxed"
+                  className="w-full bg-transparent text-sm text-[#44403c] placeholder-gray-400 outline-none resize-none leading-relaxed"
                 />
                 <div className="flex justify-end mt-2">
                   <button
@@ -812,18 +813,19 @@ export default function PartnerDetailPage() {
               </div>
 
               {partnerIssues.length === 0 ? (
-                <div className="text-center py-12">
-                  <MessageSquare size={48} className="text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">기록된 이슈가 없습니다</p>
-                  <p className="text-gray-400 text-xs mt-1">파트너 관련 이슈나 특이사항을 메모해 두세요</p>
-                </div>
+                <EmptyState
+                  icon={MessageSquare}
+                  title="기록된 이슈가 없습니다"
+                  description="파트너 관련 이슈나 특이사항을 메모해 두세요"
+                  size="compact"
+                />
               ) : (
                 <div className="space-y-3">
                   {partnerIssues.map(issue => (
-                    <div key={issue.id} className="group flex items-start gap-3 bg-white border border-divider rounded-xl p-4 hover:border-gray-300 transition-colors">
+                    <div key={issue.id} className="group flex items-start gap-3 bg-white border border-divider rounded-2xl p-4 hover:border-gray-300 transition-colors">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">{issue.content}</p>
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-sm text-[#1c1917] leading-relaxed whitespace-pre-wrap break-words">{issue.content}</p>
+                        <p className="text-xs text-[#a8a29e] mt-2">
                           {new Date(issue.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -844,7 +846,7 @@ export default function PartnerDetailPage() {
           {activeTab === 'history' && (
             <>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">활동 히스토리</h3>
+                <h3 className="text-lg font-semibold text-[#1c1917]">활동 히스토리</h3>
                 {!isAddingHistory && (
                   <button
                     onClick={() => setIsAddingHistory(true)}
@@ -857,13 +859,13 @@ export default function PartnerDetailPage() {
               </div>
 
               {isAddingHistory && (
-                <div className="bg-white border border-divider rounded-xl p-4 mb-4 space-y-3">
-                  <p className="text-sm font-semibold text-gray-900 mb-2">새 활동 기록</p>
+                <div className="bg-white border border-divider rounded-2xl p-4 mb-4 space-y-3">
+                  <p className="text-sm font-semibold text-[#1c1917] mb-2">새 활동 기록</p>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-gray-600">
+                    <label className="text-xs font-medium text-[#57534e]">
                       기수
                       {partner.generation && (
-                        <span className="ml-1.5 text-gray-400">(현재 {partner.generation}기)</span>
+                        <span className="ml-1.5 text-[#a8a29e]">(현재 {partner.generation}기)</span>
                       )}
                     </label>
                     <div className="relative">
@@ -872,10 +874,10 @@ export default function PartnerDetailPage() {
                         onClick={() => setIsHistoryGenerationDropdownOpen(!isHistoryGenerationDropdownOpen)}
                         className="w-full h-11 px-4 bg-white border-2 border-divider rounded-xl text-left flex items-center justify-between hover:border-orange-300 focus:outline-none focus:border-orange-400 transition-colors"
                       >
-                        <span className="text-sm font-semibold text-gray-900">{newHistoryEntry.generation}기</span>
+                        <span className="text-sm font-semibold text-[#1c1917]">{newHistoryEntry.generation}기</span>
                         <ChevronDown
                           size={16}
-                          className={`text-gray-400 transition-transform duration-200 ${isHistoryGenerationDropdownOpen ? 'rotate-180' : ''}`}
+                          className={`text-[#a8a29e] transition-transform duration-200 ${isHistoryGenerationDropdownOpen ? 'rotate-180' : ''}`}
                         />
                       </button>
                       {isHistoryGenerationDropdownOpen && (
@@ -892,7 +894,7 @@ export default function PartnerDetailPage() {
                                 className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between ${
                                   newHistoryEntry.generation === gen
                                     ? 'bg-orange-50 text-orange-700 font-semibold'
-                                    : 'text-gray-800 hover:bg-gray-50'
+                                    : 'text-[#1c1917] hover:bg-[#fafaf9]'
                                 }`}
                               >
                                 <span>{gen}기</span>
@@ -908,7 +910,7 @@ export default function PartnerDetailPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-600">
+                      <label className="text-xs font-medium text-[#57534e]">
                         시작일 <span className="text-red-500">*</span>
                       </label>
                       <DatePicker
@@ -918,8 +920,8 @@ export default function PartnerDetailPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-600">
-                        종료일 <span className="text-gray-400 font-normal">(없으면 활동 중)</span>
+                      <label className="text-xs font-medium text-[#57534e]">
+                        종료일 <span className="text-[#a8a29e] font-normal">(없으면 활동 중)</span>
                       </label>
                       <DatePicker
                         value={newHistoryEntry.endDate}
@@ -933,7 +935,7 @@ export default function PartnerDetailPage() {
                     <button
                       type="button"
                       onClick={() => setIsAddingHistory(false)}
-                      className="flex-1 py-2 text-sm text-gray-600 bg-white border border-divider rounded-lg hover:bg-gray-50 transition-colors active:scale-[0.97]"
+                      className="flex-1 py-2 text-sm text-[#57534e] bg-white border border-divider rounded-lg hover:bg-[#fafaf9] transition-colors active:scale-[0.97]"
                     >
                       취소
                     </button>
@@ -950,32 +952,33 @@ export default function PartnerDetailPage() {
               )}
 
               {partnerHistories.length === 0 ? (
-                <div className="text-center py-12">
-                  <Clock size={48} className="text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">활동 기록이 없습니다</p>
-                  <p className="text-gray-400 text-xs mt-1">기록 추가 버튼으로 활동 히스토리를 쌓아보세요</p>
-                </div>
+                <EmptyState
+                  icon={Clock}
+                  title="활동 기록이 없습니다"
+                  description="기록 추가 버튼으로 활동 히스토리를 쌓아보세요"
+                  size="compact"
+                />
               ) : (
                 <div className="relative">
                   <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
                   <div className="space-y-4">
                     {partnerHistories.map((entry) => (
-                      <div key={entry.id} className="relative flex items-start gap-4 group">
+                      <div key={entry.id} className="relative flex items-start gap-3 group">
                         <div className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
-                          !entry.endDate ? 'bg-gray-800 text-white' : 'bg-white border-2 border-gray-300 text-gray-600'
+                          !entry.endDate ? 'bg-gray-800 text-white' : 'bg-white border-2 border-gray-300 text-[#57534e]'
                         }`}>
                           {entry.generation}기
                         </div>
-                        <div className="flex-1 bg-white border border-divider rounded-xl p-4 group-hover:border-gray-300 transition-colors">
+                        <div className="flex-1 bg-white border border-divider rounded-2xl p-4 group-hover:border-gray-300 transition-colors">
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-semibold text-gray-900">{entry.generation}기 활동</span>
+                                <span className="text-sm font-semibold text-[#1c1917]">{entry.generation}기 활동</span>
                                 {!entry.endDate && (
-                                  <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">활동 중</span>
+                                  <StatusBadge tone="ok">활동 중</StatusBadge>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-[#78716c]">
                                 {new Date(entry.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 {' ~ '}
                                 {entry.endDate
@@ -983,7 +986,7 @@ export default function PartnerDetailPage() {
                                   : '현재'}
                               </p>
                               {entry.endDate && (
-                                <p className="text-xs text-gray-400 mt-0.5">
+                                <p className="text-xs text-[#a8a29e] mt-0.5">
                                   {Math.round((new Date(entry.endDate).getTime() - new Date(entry.startDate).getTime()) / (1000 * 60 * 60 * 24 * 30))}개월
                                 </p>
                               )}
@@ -1019,11 +1022,11 @@ export default function PartnerDetailPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-6 py-4 border-b border-divider">
-                <h2 className="text-xl font-bold text-gray-900">파트너 관리</h2>
+                <h2 className="text-xl font-bold text-[#1c1917]">파트너 관리</h2>
               </div>
-              <div className="p-6">
-                <p className="text-gray-700 text-center mb-2">
-                  <span className="font-semibold text-gray-900">&quot;{partner.name}&quot;</span> 파트너를<br />
+              <div className="p-4">
+                <p className="text-[#44403c] text-center mb-2">
+                  <span className="font-semibold text-[#1c1917]">&quot;{partner.name}&quot;</span> 파트너를<br />
                   정말 삭제하시겠습니까?
                 </p>
                 <p className="text-sm text-orange-600 text-center">
@@ -1033,7 +1036,7 @@ export default function PartnerDetailPage() {
               <div className="px-4 sm:px-6 py-4 border-t border-divider flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
                 <button
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="px-4 py-2.5 sm:py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors active:scale-[0.97] text-sm font-medium"
+                  className="px-4 py-2.5 sm:py-2 text-[#44403c] hover:bg-[#f5f5f4] rounded-lg transition-colors active:scale-[0.97] text-sm font-medium"
                 >
                   취소
                 </button>

@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Save, Sparkles, Check, ChevronDown, ChevronUp, User, Search } from 'lucide-react';
+import { AlertTriangle, Save, Sparkles, Check, CheckCircle, ChevronDown, ChevronUp, User, Search } from 'lucide-react';
 import { Project, Partner, Episode } from '@/types';
 import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { useToast } from '@/contexts/ToastContext';
 import DatePickerModal from '@/components/DatePickerModal';
 import DateTripleModal from '@/components/DateTripleModal';
+import { TabBar } from '@/components/TabBar';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 
 // ── 제목에서 금액 힌트 추출
 function extractPriceHint(title: string): number | null {
@@ -51,13 +54,11 @@ function normalizeDate(v: string | undefined | null): string {
 
 function checkMissing(ep: Episode): MissingFlags {
   const partnerPay = ep.budget?.partnerPayment ?? 0;
-  const total = ep.budget?.totalAmount ?? 0;
-  const mgmtFee = ep.budget?.managementFee ?? 0;
-  const mgmtMissing = mgmtFee === 0 && (total - partnerPay) > 0;
 
   return {
     cost: partnerPay === 0,
-    mgmt: mgmtMissing,
+    // 매니징 비용 0원은 의도된 정상값 (0원 회차도 존재) — 미입력 분류에서 제외
+    mgmt: false,
     date: !isValidDateStr(ep.paymentDueDate),
     assignee: !ep.assignee || ep.assignee === '',
     manager: !ep.manager || ep.manager === '',
@@ -384,7 +385,7 @@ export default function BatchSettlementPage() {
               <div className={`w-5 h-5 rounded-full ${accentBg} flex items-center justify-center flex-shrink-0`}>
                 <User size={10} className="text-white" />
               </div>
-              <span className="text-[12px] font-medium text-gray-900 truncate">{selectedPartner.name}</span>
+              <span className="text-[12px] font-medium text-[#1c1917] truncate">{selectedPartner.name}</span>
             </>
           ) : (
             <>
@@ -407,7 +408,7 @@ export default function BatchSettlementPage() {
             >
               <div className="sticky top-0 p-2 border-b border-divider bg-white/95">
                 <div className="flex items-center gap-1.5 px-2 py-1.5 border border-divider rounded-lg bg-white">
-                  <Search size={12} className="text-gray-400 flex-shrink-0" />
+                  <Search size={12} className="text-[#a8a29e] flex-shrink-0" />
                   <input
                     type="text"
                     value={dropdownSearch}
@@ -427,9 +428,9 @@ export default function BatchSettlementPage() {
                     setOpenDropdown(null);
                     setDropdownSearch('');
                   }}
-                  className="w-full flex items-center px-3 py-2 hover:bg-gray-50 transition-colors text-left border-b border-gray-50"
+                  className="w-full flex items-center px-3 py-2 hover:bg-[#fafaf9] transition-colors text-left border-b border-gray-50"
                 >
-                  <span className="text-[12px] text-gray-400">선택 안함</span>
+                  <span className="text-[12px] text-[#a8a29e]">선택 안함</span>
                 </button>
                 {filteredOptions.map(p => (
                   <button
@@ -440,19 +441,19 @@ export default function BatchSettlementPage() {
                       setOpenDropdown(null);
                       setDropdownSearch('');
                     }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors text-left ${
+                    className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-[#fafaf9] transition-colors text-left ${
                       currentValue === p.id ? accentBgLight : ''
                     }`}
                   >
                     <div className={`w-5 h-5 rounded-full ${accentBg} flex items-center justify-center flex-shrink-0`}>
                       <User size={10} className="text-white" />
                     </div>
-                    <span className="text-[12px] font-medium text-gray-900">{p.name}</span>
+                    <span className="text-[12px] font-medium text-[#1c1917]">{p.name}</span>
                     {currentValue === p.id && <Check size={12} className={`ml-auto ${accentText}`} />}
                   </button>
                 ))}
                 {filteredOptions.length === 0 && (
-                  <div className="px-3 py-4 text-center text-[12px] text-gray-400">결과 없음</div>
+                  <div className="px-3 py-4 text-center text-[12px] text-[#a8a29e]">결과 없음</div>
                 )}
               </div>
             </motion.div>
@@ -467,11 +468,11 @@ export default function BatchSettlementPage() {
       {/* 헤더 */}
       <div>
         <h1 className="text-page">미입력 일괄 처리</h1>
-        <p className="text-gray-500 mt-1 text-sm">비용, 정산일, 담당자, 일정이 비어있는 에피소드를 한눈에 확인하고 처리합니다</p>
+        <p className="text-[#78716c] mt-1 text-sm">비용, 정산일, 담당자, 일정이 비어있는 에피소드를 한눈에 확인하고 처리합니다</p>
       </div>
 
       {/* 통합 카드 */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-divider">
+      <div className="bg-white rounded-2xl border border-divider">
         {/* 툴바 */}
         <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-[#f0ece9] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
@@ -487,26 +488,12 @@ export default function BatchSettlementPage() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {/* 탭 */}
-            <div className="inline-flex gap-0.5 p-1 bg-[#f5f4f2] rounded-xl">
-              {tabs.map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setFilter(tab.key)}
-                  className="relative px-2.5 py-1.5 rounded-lg text-[11px] sm:text-[12px] font-semibold"
-                >
-                  {filter === tab.key && (
-                    <motion.div
-                      layoutId="batch-tab"
-                      className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  <span className={`relative z-10 whitespace-nowrap ${filter === tab.key ? 'text-white' : 'text-[#78716c]'}`}>
-                    {tab.label} {tab.count}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <TabBar<FilterKey>
+              items={tabs}
+              active={filter}
+              onChange={setFilter}
+              fullWidthMobile={false}
+            />
 
             {/* 선택 항목 일괄 정산일 */}
             {selected.size > 0 && (
@@ -562,15 +549,16 @@ export default function BatchSettlementPage() {
 
         {/* 테이블 */}
         {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-          </div>
+          <LoadingState size="compact" />
         ) : filtered.length === 0 ? (
-          <div className="py-20 text-center">
-            <Check className="mx-auto mb-3 text-green-400" size={36} />
-            <p className="font-medium text-gray-500">미입력 항목이 없습니다</p>
-            <p className="text-xs mt-1 text-[#a8a29e]">모든 에피소드의 정보가 입력되었습니다</p>
-          </div>
+          <EmptyState
+            icon={CheckCircle}
+            title="미입력 항목이 없습니다"
+            description="모든 에피소드의 정보가 입력되었습니다"
+            size="compact"
+            iconColor="text-green-500"
+            iconBgColor="bg-green-50"
+          />
         ) : (
           <div className="overflow-x-auto">
             {/* 헤더 */}
@@ -693,7 +681,7 @@ export default function BatchSettlementPage() {
                               editedField && hasVal
                                 ? 'border-green-400 bg-green-50/50 text-green-700'
                                 : hasVal
-                                  ? 'border-divider bg-[#fafaf9] text-gray-700'
+                                  ? 'border-divider bg-[#fafaf9] text-[#44403c]'
                                   : missing
                                     ? 'border-dashed border-orange-300 bg-orange-50/30 text-[#a8a29e]'
                                     : 'border-divider bg-[#fafaf9] text-[#a8a29e]'

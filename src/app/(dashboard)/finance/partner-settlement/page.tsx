@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Partner, Episode } from '@/types';
 import { getProjects, getPartners, getAllEpisodes } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
+import { TabBar } from '@/components/TabBar';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 import Link from 'next/link';
 
 interface SettlementRow {
@@ -191,7 +194,7 @@ export default function SettlementPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-gray-500">데이터를 불러오는데 실패했습니다.</p>
+        <p className="text-[#78716c]">데이터를 불러오는데 실패했습니다.</p>
         <button onClick={loadData} className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-sm font-medium">다시 시도</button>
       </div>
     );
@@ -209,31 +212,14 @@ export default function SettlementPage() {
       <div className="space-y-3">
         <div>
           <h1 className="text-page">정산 관리</h1>
-          <p className="text-gray-500 mt-1 text-sm">{selectedDate.year}년 {selectedDate.month}월</p>
+          <p className="text-[#78716c] mt-1 text-sm">{selectedDate.year}년 {selectedDate.month}월</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           {/* 탭 */}
-          <div className="inline-flex gap-0.5 sm:gap-1 p-1 bg-white border border-divider rounded-xl">
-            {tabs.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key)}
-                className="relative px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[12px] sm:text-[13px] font-semibold"
-              >
-                {filter === tab.key && (
-                  <motion.div
-                    layoutId="settlement-tab"
-                    className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-                <span className={`relative z-10 ${filter === tab.key ? 'text-white' : 'text-[#78716c]'}`}>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+          <TabBar items={tabs} active={filter} onChange={setFilter} fullWidthMobile={false} />
           {/* 월 이동 */}
           <div className="flex items-center gap-1 bg-white border border-divider rounded-[10px] px-1 py-1">
-            <button onClick={prevMonth} disabled={isMinMonth} className={`p-1.5 rounded-lg transition-colors ${isMinMonth ? 'invisible' : 'hover:bg-gray-100'}`}>
+            <button onClick={prevMonth} disabled={isMinMonth} className={`p-1.5 rounded-lg transition-colors ${isMinMonth ? 'invisible' : 'hover:bg-[#f5f5f4]'}`}>
               <ChevronLeft size={14} className="text-[#a8a29e]" />
             </button>
             <div className="px-2.5 py-1 min-w-[90px] text-center overflow-hidden">
@@ -244,13 +230,13 @@ export default function SettlementPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.15 }}
-                  className="block text-[13px] font-semibold text-gray-800 tabular-nums"
+                  className="block text-[13px] font-semibold text-[#1c1917] tabular-nums"
                 >
                   {String(selectedDate.year).slice(2)}년 {String(selectedDate.month).padStart(2, '0')}월
                 </motion.span>
               </AnimatePresence>
             </div>
-            <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <button onClick={nextMonth} className="p-1.5 hover:bg-[#f5f5f4] rounded-lg transition-colors">
               <ChevronRight size={14} className="text-[#a8a29e]" />
             </button>
           </div>
@@ -258,7 +244,7 @@ export default function SettlementPage() {
       </div>
 
       {/* 통합 카드: 통계 + 테이블 */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-divider" style={{ overflow: 'clip' }}>
+      <div className="bg-white rounded-2xl border border-divider" style={{ overflow: 'clip' }}>
         {/* 통계 바 */}
         <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-[#f0ece9]">
           <div className="flex items-baseline justify-between mb-1.5">
@@ -290,9 +276,7 @@ export default function SettlementPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-          </div>
+          <LoadingState size="compact" />
         ) : (
           <div style={{ overflowX: 'clip' }}>
             <div>
@@ -306,13 +290,14 @@ export default function SettlementPage() {
                 <span className="text-right">상태</span>
               </div>
               {filtered.length === 0 ? (
-                <div className="py-20 text-center text-gray-400">
-                  <Receipt className="mx-auto mb-3 text-gray-200" size={36} />
-                  <p className="font-medium text-gray-500">정산 내역이 없어요</p>
-                  <p className="text-xs mt-1">{selectedDate.year}년 {selectedDate.month}월에 해당하는 내역이 없습니다</p>
-                </div>
+                <EmptyState
+                  icon={Receipt}
+                  title="정산 내역이 없어요"
+                  description={`${selectedDate.year}년 ${selectedDate.month}월에 해당하는 내역이 없습니다`}
+                  size="compact"
+                />
               ) : (
-                <div className="divide-y divide-[#f8f7f6]">
+                <div className="divide-y divide-[#f0ece9]">
                   {filtered.map((row, idx) => {
                     const projLabel = row.projectNames.length > 1
                       ? `${row.projectNames[0]} 외 ${row.projectNames.length - 1}`
@@ -337,7 +322,7 @@ export default function SettlementPage() {
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-[6px]">
-                              <span className="text-[15px] font-bold text-gray-900">{row.person.name}</span>
+                              <span className="text-[15px] font-bold text-[#1c1917]">{row.person.name}</span>
                               <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${
                                 row.type === 'manager' ? 'bg-purple-50 text-purple-600' : 'bg-[#fff7ed] text-orange-500'
                               }`}>
@@ -373,7 +358,7 @@ export default function SettlementPage() {
                           }`}>
                             <User size={14} className="text-white" />
                           </div>
-                          <span className="text-[14px] font-semibold text-gray-900 truncate">{row.person.name}</span>
+                          <span className="text-[14px] font-semibold text-[#1c1917] truncate">{row.person.name}</span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${
                             row.type === 'manager' ? 'bg-purple-50 text-purple-600' : 'bg-[#fff7ed] text-orange-500'
                           }`}>
@@ -386,7 +371,7 @@ export default function SettlementPage() {
                           )}
                           <span className="text-[11px] text-[#a8a29e] flex-shrink-0">{row.episodeCount}회차</span>
                         </div>
-                        <span className="text-[14px] font-semibold text-gray-900 text-right tabular-nums">{row.totalAmount.toLocaleString()}</span>
+                        <span className="text-[14px] font-semibold text-[#1c1917] text-right tabular-nums">{row.totalAmount.toLocaleString()}</span>
                         <span className={`text-[14px] text-right font-semibold tabular-nums ${row.unpaidAmount > 0 ? 'text-orange-500' : 'text-[#a8a29e]'}`}>
                           {row.unpaidAmount > 0 ? row.unpaidAmount.toLocaleString() : '0'}
                         </span>

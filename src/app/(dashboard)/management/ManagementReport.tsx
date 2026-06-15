@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Inbox, Users, FolderOpen } from 'lucide-react';
+import { TabBar } from '@/components/TabBar';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 import { getProjects, getAllEpisodes, getPartners } from '@/lib/supabase/db';
 import type { Project, Episode, Partner } from '@/types';
 
@@ -176,16 +180,15 @@ export default function ManagementReport() {
     <div className="space-y-5">
       {/* 기간 토글 + 네비게이션 */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="inline-flex p-0.5 bg-ink-100 rounded-lg">
-          <button
-            onClick={() => { setPeriod('week'); setOffset(0); }}
-            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${period === 'week' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500'}`}
-          >주간</button>
-          <button
-            onClick={() => { setPeriod('month'); setOffset(0); }}
-            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${period === 'month' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500'}`}
-          >월간</button>
-        </div>
+        <TabBar<Period>
+          items={[
+            { key: 'week', label: '주간' },
+            { key: 'month', label: '월간' },
+          ]}
+          active={period}
+          onChange={(k) => { setPeriod(k); setOffset(0); }}
+          fullWidthMobile={false}
+        />
 
         <div className="inline-flex items-center gap-1 bg-white border border-ink-200 rounded-lg px-1 py-0.5">
           <button
@@ -260,9 +263,9 @@ export default function ManagementReport() {
         </div>
 
         {/* 메인 */}
-        <div className="bg-white p-5 rounded-2xl md:rounded-l-none border border-ink-100">
+        <div className="bg-white p-4 rounded-2xl md:rounded-l-none border border-ink-100">
           {loading ? (
-            <div className="text-center text-ink-400 py-12 text-sm">불러오는 중...</div>
+            <LoadingState label="불러오는 중..." />
           ) : activeSidebar === 'projects' ? (
             <ProjectActivity
               period={period}
@@ -278,7 +281,11 @@ export default function ManagementReport() {
           ) : activeSidebar === 'manager' ? (
             <ManagerSummary totals={totals} projectCount={projectMetrics.length} />
           ) : (
-            <EmptyState label={activeSidebar === 'inquiries' ? '신규 의뢰' : '마케팅'} />
+            <EmptyState
+              icon={Inbox}
+              title={`${activeSidebar === 'inquiries' ? '신규 의뢰' : '마케팅'} 기록 없음`}
+              description="해당 기능이 추가되면 여기에 표시됩니다"
+            />
           )}
         </div>
       </div>
@@ -352,9 +359,12 @@ function ProjectActivity({
       <div className="text-lg font-bold mt-0.5 mb-3">{periodLabel} · {total}화 완료</div>
 
       {total === 0 ? (
-        <div className="text-center text-ink-400 py-12 text-sm border border-dashed border-ink-200 rounded-xl">
-          아직 완료된 회차가 없어요
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title="아직 완료된 회차가 없어요"
+          description="이 기간에 완료된 회차가 없습니다."
+          size="compact"
+        />
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', aspectRatio: `${W}/${H}`, display: 'block' }}>
           <defs>
@@ -400,7 +410,12 @@ function ProjectActivity({
 
       <div className="text-[11px] font-bold uppercase tracking-wider text-ink-400 mt-6 mb-2">진행 프로젝트</div>
       {projectMetrics.length === 0 ? (
-        <div className="text-center text-ink-400 py-6 text-sm">활성 프로젝트가 없어요</div>
+        <EmptyState
+          icon={FolderOpen}
+          title="활성 프로젝트가 없어요"
+          description="이 기간에 진행 중인 프로젝트가 없습니다."
+          size="compact"
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
           <AnimatePresence>
@@ -453,7 +468,14 @@ function PartnerRanking({ metrics, partnerNameMap, episodes }: {
     .map(([id, v]) => ({ id, name: partnerNameMap.get(id) ?? '(알 수 없음)', amt: v.amt, projectCount: v.projectIds.size, episodeCount: v.episodeCount }))
     .sort((a, b) => b.amt - a.amt);
   if (sorted.length === 0) {
-    return <div className="text-center text-ink-400 py-12 text-sm">활동한 파트너가 없어요</div>;
+    return (
+      <EmptyState
+        icon={Users}
+        title="활동한 파트너가 없어요"
+        description="이 기간에 활동한 파트너가 없습니다."
+        size="compact"
+      />
+    );
   }
   const maxAmt = Math.max(1, ...sorted.map(s => s.amt));
   const totalAmt = sorted.reduce((a, s) => a + s.amt, 0);
@@ -504,16 +526,6 @@ function ManagerSummary({ totals, projectCount }: { totals: { managerSum: number
         <div className="text-xs text-ink-500">파트너 지급 총합</div>
         <div className="text-xl font-bold mt-1 text-cyan-600">{totals.partnerSum.toLocaleString()}원</div>
       </div>
-    </div>
-  );
-}
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="text-center py-16">
-      <div className="text-6xl font-bold text-stone-200 leading-none">0</div>
-      <div className="text-sm text-ink-500 mt-3 font-medium">{label} 기록 없음</div>
-      <div className="text-[11px] text-ink-400 mt-1">해당 기능이 추가되면 여기에 표시됩니다</div>
     </div>
   );
 }

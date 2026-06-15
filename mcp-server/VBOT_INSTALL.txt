@@ -10,7 +10,7 @@ STEP 1. .env에 환경변수 추가
 /Users/vimo/Desktop/agent/.env 파일에 아래 두 줄 추가:
 
 SUPABASE_URL=https://qxyiifphpsthrwxplafd.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4eWlpZnBocHN0aHJ3eHBsYWZkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQ0MDI3NCwiZXhwIjoyMDg3MDE2Mjc0fQ.c2-LsmzjC0QQEf9W2WTHCUqBQ7S3e82yC2pSxcO7rWA
+SUPABASE_SERVICE_ROLE_KEY=<service_role 키 — Supabase 대시보드 > Settings > API 에서 복사 (절대 커밋 금지)>
 
 ----------------------------------------------------------------
 STEP 2. Python 패키지 설치

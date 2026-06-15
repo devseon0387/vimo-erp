@@ -188,8 +188,13 @@ export default function BibotWidget() {
     return () => window.removeEventListener(OPEN_EVENT, handler);
   }, []);
 
+  // 메시지 변경마다 즉시 직렬화 → main thread 블로킹 (스트리밍 중 키스트로크 jank).
+  // 500ms 디바운스로 채팅 메시지가 빠르게 쌓일 때 직렬화 부담 차단.
   useEffect(() => {
-    try { localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages)); } catch {}
+    const t = setTimeout(() => {
+      try { localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages)); } catch {}
+    }, 500);
+    return () => clearTimeout(t);
   }, [messages]);
 
   useEffect(() => {
@@ -266,7 +271,7 @@ export default function BibotWidget() {
           id: string; project_id: string; episode_number: number; title: string;
           status: string; assignee: string | null; project_title?: string;
         }>;
-        if (eps.length === 0) return finish({ text: '오늘 마감인 회차가 없어요. 🎉' });
+        if (eps.length === 0) return finish({ text: '오늘 마감인 회차가 없어요.' });
         finish({
           text: `오늘(${data.today}) 마감 회차 ${eps.length}개입니다.`,
           cards: eps.map(e => ({
@@ -306,7 +311,7 @@ export default function BibotWidget() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      finish({ text: `⚠️ 조회 실패: ${msg}` });
+      finish({ text: `조회 실패: ${msg}` });
     }
   };
 
@@ -394,7 +399,7 @@ export default function BibotWidget() {
               }
               setMessages(prev => prev.map(m =>
                 m.id === assistantMsg.id
-                  ? { ...m, text: `⚠️ ${parsed.message}`, pending: false }
+                  ? { ...m, text: `${parsed.message}`, pending: false }
                   : m
               ));
             }
@@ -405,7 +410,7 @@ export default function BibotWidget() {
       const msg = err instanceof Error ? err.message : String(err);
       setMessages(prev => prev.map(m =>
         m.id === assistantMsg.id
-          ? { ...m, text: `⚠️ 요청 실패: ${msg}`, pending: false }
+          ? { ...m, text: `요청 실패: ${msg}`, pending: false }
           : m
       ));
     } finally {

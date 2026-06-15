@@ -1,18 +1,27 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import DOMPurify from 'dompurify';
 import { Mail, Send, AlertCircle, Plus, X, Eye } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
-import RichTextEditor from './_components/RichTextEditor';
+
+// ProseMirror/tiptap(수백KB)는 작성 화면 진입 즉시가 아니라 에디터가 보일 때 로드.
+const RichTextEditor = dynamic(() => import('./_components/RichTextEditor'), {
+  ssr: false,
+  loading: () => <div className="min-h-[240px] rounded-xl border border-divider bg-gray-50 animate-pulse" />,
+});
 
 export default function ComposeMailPage() {
   const toast = useToast();
 
-  // 메일 발송 라우트(/api/hiworks/send-mail) 미구현 — 미연결로 고정해 발송 버튼 disabled
-  const [configured] = useState<boolean>(false);
-  const [senderEmail] = useState<string | null>(null);
-  const [senderName] = useState<string | null>(null);
+  // 발송 설정(SES SMTP) — 마운트 시 /api/mail/send GET 으로 확인. 확인 전엔 버튼 disabled.
+  const [configured, setConfigured] = useState<boolean>(false);
+  const [configChecked, setConfigChecked] = useState<boolean>(false);
+  const [senderEmail, setSenderEmail] = useState<string | null>(null);
+  const [senderName, setSenderName] = useState<string | null>(null);
+  const [senderOptions, setSenderOptions] = useState<{ email: string; label: string; type: 'personal' | 'shared' }[]>([]);
+  const [fromEmail, setFromEmail] = useState<string>('');
   const [to, setTo] = useState<string[]>([]);
   const [toInput, setToInput] = useState('');
   const [cc, setCc] = useState<string[]>([]);
@@ -23,12 +32,30 @@ export default function ComposeMailPage() {
   const [showCc, setShowCc] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // 발송 설정/발신자 로드
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/mail/send')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (cancelled || !d) return;
+        setConfigured(Boolean(d.configured));
+        setSenderEmail(d.senderEmail ?? null);
+        setSenderName(d.senderName ?? null);
+        const opts = Array.isArray(d.senderOptions) ? d.senderOptions : [];
+        setSenderOptions(opts);
+        if (opts.length > 0) setFromEmail(opts[0].email);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setConfigChecked(true); });
+    return () => { cancelled = true; };
+  }, []);
+
   const onContentChange = useCallback((html: string) => {
     contentRef.current = html;
   }, []);
   const onContentChangeRef = useRef(onContentChange);
   onContentChangeRef.current = onContentChange;
-
 
   const addEmail = useCallback((list: string[], setList: (v: string[]) => void, input: string, setInput: (v: string) => void) => {
     const email = input.trim();
@@ -64,7 +91,7 @@ export default function ComposeMailPage() {
 
     setSending(true);
     try {
-      const res = await fetch('/api/hiworks/send-mail', {
+      const res = await fetch('/api/mail/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,6 +99,7 @@ export default function ComposeMailPage() {
           cc: cc.length > 0 ? cc : undefined,
           subject,
           content,
+          from: fromEmail || undefined,
         }),
       });
 
@@ -91,50 +119,73 @@ export default function ComposeMailPage() {
     } finally {
       setSending(false);
     }
-  }, [to, cc, subject, toast]);
+  }, [to, cc, subject, fromEmail, toast]);
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }} className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* 헤더 */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">메일 쓰기</h1>
-        <p className="text-gray-500 mt-2">하이웍스를 통해 이메일을 발송합니다.</p>
+        <h1 className="text-page">메일 쓰기</h1>
+        <p className="text-gray-500 mt-1 text-sm">비모 메일 서버(SES)를 통해 이메일을 발송합니다</p>
       </div>
 
-      {/* 메일 백엔드 미연결 배너 */}
-      {configured === false && (
-        <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
-          <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: '1px' }} />
+      {/* 메일 서버 미설정 배너 */}
+      {configChecked && configured === false && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
+          <AlertCircle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p style={{ fontWeight: 600, color: '#92400e', fontSize: '14px' }}>메일 백엔드 연결 준비 중</p>
-            <p style={{ color: '#a16207', fontSize: '13px', marginTop: '4px' }}>
-              메일 발송 API가 아직 구현되지 않아 발송 버튼을 일시 비활성화했습니다. 후속 릴리스에서 복원됩니다.
+            <p className="text-[13px] font-semibold text-amber-900">메일 서버 설정이 필요합니다</p>
+            <p className="text-[12px] text-amber-800 mt-0.5">
+              발신 메일 서버(SES)가 아직 설정되지 않아 발송을 일시 비활성화했습니다. 관리자 설정 완료 후 활성화됩니다.
             </p>
           </div>
         </div>
       )}
 
-      {/* 이메일 작성 폼 */}
-      <div className="bg-white rounded-lg shadow" style={{ border: '1px solid #ede9e6' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0ece9' }}>
-          <div className="flex items-center gap-2">
-            <Mail size={20} style={{ color: '#f97316' }} />
-            <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1c1917' }}>이메일 작성</h2>
-          </div>
+      {/* 작성 폼 카드 */}
+      <div className="bg-white rounded-2xl border border-ink-100">
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-[#f8f7f6]">
+          <Mail size={16} className="text-orange-500" />
+          <h2 className="text-section">이메일 작성</h2>
         </div>
 
-        <div style={{ padding: '24px' }} className="space-y-5">
+        <div className="px-6 py-5 space-y-4">
+          {/* 보내는 주소 — 부여된 개인 주소 + 담당 공용함 */}
+          {senderOptions.length > 0 && (
+            <div>
+              <label className="block text-[12px] font-semibold text-[#44403c] mb-1.5">
+                보내는 주소
+              </label>
+              <select
+                value={fromEmail}
+                onChange={e => setFromEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-divider rounded-lg text-[13px] outline-none focus:border-orange-400 bg-white"
+              >
+                {senderOptions.map(o => (
+                  <option key={o.email} value={o.email}>
+                    {o.label !== o.email ? `${o.label} <${o.email}>` : o.email}
+                    {o.type === 'shared' ? ' — 공용' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* 받는 사람 */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#44403c', marginBottom: '6px' }}>
-              받는 사람 <span style={{ color: '#ef4444' }}>*</span>
+            <label className="block text-[12px] font-semibold text-[#44403c] mb-1.5">
+              받는 사람 <span className="text-red-500">*</span>
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 12px', border: '1px solid #d6d3d1', borderRadius: '8px', minHeight: '42px', alignItems: 'center' }}>
+            <div className="flex flex-wrap gap-1.5 px-3 py-2 border border-divider rounded-lg min-h-[40px] items-center focus-within:border-orange-400">
               {to.map(email => (
-                <span key={email} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', background: '#fef4ed', color: '#f97316', borderRadius: '6px', fontSize: '13px' }}>
+                <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 text-orange-500 text-[12px]">
                   {email}
-                  <button onClick={() => removeEmail(to, setTo, email)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', color: '#f97316', display: 'flex' }}>
-                    <X size={14} />
+                  <button
+                    onClick={() => removeEmail(to, setTo, email)}
+                    className="text-orange-500 hover:text-orange-700"
+                    aria-label="제거"
+                  >
+                    <X size={12} />
                   </button>
                 </span>
               ))}
@@ -145,12 +196,15 @@ export default function ComposeMailPage() {
                 onKeyDown={e => handleKeyDown(e, to, setTo, toInput, setToInput)}
                 onBlur={() => { if (toInput.trim()) addEmail(to, setTo, toInput, setToInput); }}
                 placeholder={to.length === 0 ? '이메일 주소 입력 후 Enter' : ''}
-                style={{ border: 'none', outline: 'none', flex: 1, minWidth: '150px', fontSize: '14px', padding: '2px 0' }}
+                className="flex-1 min-w-[150px] text-[13px] outline-none bg-transparent"
               />
             </div>
             {!showCc && (
-              <button onClick={() => setShowCc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#78716c', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Plus size={12} /> 참조 추가
+              <button
+                onClick={() => setShowCc(true)}
+                className="mt-1.5 flex items-center gap-1 text-[11px] text-[#78716c] hover:text-[#44403c]"
+              >
+                <Plus size={11} /> 참조 추가
               </button>
             )}
           </div>
@@ -158,15 +212,19 @@ export default function ComposeMailPage() {
           {/* 참조 */}
           {showCc && (
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#44403c', marginBottom: '6px' }}>
+              <label className="block text-[12px] font-semibold text-[#44403c] mb-1.5">
                 참조 (CC)
               </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 12px', border: '1px solid #d6d3d1', borderRadius: '8px', minHeight: '42px', alignItems: 'center' }}>
+              <div className="flex flex-wrap gap-1.5 px-3 py-2 border border-divider rounded-lg min-h-[40px] items-center focus-within:border-orange-400">
                 {cc.map(email => (
-                  <span key={email} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', background: '#f5f3f1', color: '#44403c', borderRadius: '6px', fontSize: '13px' }}>
+                  <span key={email} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--color-ink-100)] text-[#44403c] text-[12px]">
                     {email}
-                    <button onClick={() => removeEmail(cc, setCc, email)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', color: '#78716c', display: 'flex' }}>
-                      <X size={14} />
+                    <button
+                      onClick={() => removeEmail(cc, setCc, email)}
+                      className="text-[#78716c] hover:text-[#44403c]"
+                      aria-label="제거"
+                    >
+                      <X size={12} />
                     </button>
                   </span>
                 ))}
@@ -177,7 +235,7 @@ export default function ComposeMailPage() {
                   onKeyDown={e => handleKeyDown(e, cc, setCc, ccInput, setCcInput)}
                   onBlur={() => { if (ccInput.trim()) addEmail(cc, setCc, ccInput, setCcInput); }}
                   placeholder={cc.length === 0 ? '참조 이메일 입력 후 Enter' : ''}
-                  style={{ border: 'none', outline: 'none', flex: 1, minWidth: '150px', fontSize: '14px', padding: '2px 0' }}
+                  className="flex-1 min-w-[150px] text-[13px] outline-none bg-transparent"
                 />
               </div>
             </div>
@@ -185,68 +243,42 @@ export default function ComposeMailPage() {
 
           {/* 제목 */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#44403c', marginBottom: '6px' }}>
-              제목 <span style={{ color: '#ef4444' }}>*</span>
+            <label className="block text-[12px] font-semibold text-[#44403c] mb-1.5">
+              제목 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={subject}
               onChange={e => setSubject(e.target.value)}
               placeholder="이메일 제목을 입력하세요"
-              style={{ width: '100%', padding: '10px 12px', border: '1px solid #d6d3d1', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+              className="w-full px-3 py-2 border border-divider rounded-lg text-[13px] outline-none focus:border-orange-400"
             />
           </div>
 
           {/* 본문 */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#44403c', marginBottom: '6px' }}>
-              본문 <span style={{ color: '#ef4444' }}>*</span>
+            <label className="block text-[12px] font-semibold text-[#44403c] mb-1.5">
+              본문 <span className="text-red-500">*</span>
             </label>
             <RichTextEditor onChangeRef={onContentChangeRef} />
           </div>
         </div>
 
         {/* 미리보기 / 발송 버튼 */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #f0ece9', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+        <div className="flex justify-end gap-2 px-6 py-3 border-t border-[#f8f7f6]">
           <button
             onClick={() => setShowPreview(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 24px',
-              borderRadius: '8px',
-              border: '1px solid #d6d3d1',
-              cursor: 'pointer',
-              background: '#ffffff',
-              color: '#44403c',
-              fontSize: '14px',
-              fontWeight: 600,
-              transition: 'background 0.15s',
-            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-divider bg-white text-[13px] font-semibold text-[#44403c] hover:bg-[#fafaf9]"
           >
-            <Eye size={16} />
+            <Eye size={14} />
             미리보기
           </button>
           <button
             onClick={handleSend}
             disabled={sending || configured === false}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: sending || configured === false ? 'not-allowed' : 'pointer',
-              background: sending || configured === false ? '#d6d3d1' : '#f97316',
-              color: '#ffffff',
-              fontSize: '14px',
-              fontWeight: 600,
-              transition: 'background 0.15s',
-            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-500 text-white text-[13px] font-semibold hover:bg-orange-600 disabled:bg-[var(--color-ink-300)] disabled:cursor-not-allowed transition-colors"
           >
-            <Send size={16} />
+            <Send size={14} />
             {sending ? '발송 중...' : '이메일 발송'}
           </button>
         </div>
@@ -256,76 +288,46 @@ export default function ComposeMailPage() {
       {showPreview && (
         <div
           onClick={() => setShowPreview(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 50,
-          }}
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{
-              background: '#ffffff',
-              borderRadius: '12px',
-              width: '100%',
-              maxWidth: '640px',
-              maxHeight: '80vh',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
           >
-            {/* 모달 헤더 */}
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0ece9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Eye size={18} style={{ color: '#f97316' }} />
-                <span style={{ fontSize: '15px', fontWeight: 600, color: '#1c1917' }}>메일 미리보기</span>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#f8f7f6]">
+              <div className="flex items-center gap-2">
+                <Eye size={16} className="text-orange-500" />
+                <span className="text-[14px] font-semibold text-[#1c1917]">메일 미리보기</span>
               </div>
               <button
                 onClick={() => setShowPreview(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716c', display: 'flex', padding: '4px' }}
+                className="text-[#a8a29e] hover:text-[#44403c] p-1"
+                aria-label="닫기"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            {/* 모달 본문 */}
-            <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
-              {/* 메타 정보 */}
-              <div style={{ marginBottom: '16px', fontSize: '13px', color: '#57534e', lineHeight: '1.8' }}>
-                <div><strong style={{ color: '#44403c' }}>보낸 사람:</strong> {senderName ? `${senderName} <${senderEmail}>` : senderEmail || <span style={{ color: '#a8a29e' }}>알 수 없음</span>}</div>
-                <div><strong style={{ color: '#44403c' }}>받는 사람:</strong> {to.length > 0 ? to.join(', ') : <span style={{ color: '#a8a29e' }}>없음</span>}</div>
-                <div><strong style={{ color: '#44403c' }}>참조:</strong> {cc.length > 0 ? cc.join(', ') : <span style={{ color: '#a8a29e' }}>없음</span>}</div>
-                <div><strong style={{ color: '#44403c' }}>제목:</strong> {subject || <span style={{ color: '#a8a29e' }}>없음</span>}</div>
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              <div className="space-y-1 text-[12px] text-[#57534e] mb-4">
+                <div><strong className="font-semibold text-[#44403c]">보낸 사람:</strong> {senderName ? `${senderName} <${senderEmail}>` : senderEmail || <span className="text-[#a8a29e]">알 수 없음</span>}</div>
+                <div><strong className="font-semibold text-[#44403c]">받는 사람:</strong> {to.length > 0 ? to.join(', ') : <span className="text-[#a8a29e]">없음</span>}</div>
+                <div><strong className="font-semibold text-[#44403c]">참조:</strong> {cc.length > 0 ? cc.join(', ') : <span className="text-[#a8a29e]">없음</span>}</div>
+                <div><strong className="font-semibold text-[#44403c]">제목:</strong> {subject || <span className="text-[#a8a29e]">없음</span>}</div>
               </div>
 
-              <div style={{ height: '1px', background: '#f0ece9', margin: '0 0 16px' }} />
+              <div className="h-px bg-[#f8f7f6] mb-4" />
 
-              {/* 본문 미리보기 */}
               <div
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(contentRef.current || '<p style="color:#a8a29e">본문이 비어있습니다.</p>') }}
-                style={{ fontSize: '14px', lineHeight: '1.6', color: '#1c1917' }}
+                className="text-[13px] leading-relaxed text-[#1c1917]"
               />
             </div>
 
-            {/* 모달 푸터 */}
-            <div style={{ padding: '12px 20px', borderTop: '1px solid #f0ece9', display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="flex justify-end px-6 py-3 border-t border-[#f8f7f6]">
               <button
                 onClick={() => setShowPreview(false)}
-                style={{
-                  padding: '8px 20px',
-                  borderRadius: '8px',
-                  border: '1px solid #d6d3d1',
-                  background: '#ffffff',
-                  color: '#44403c',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="px-4 py-1.5 rounded-lg border border-divider bg-white text-[12px] font-semibold text-[#44403c] hover:bg-[#fafaf9]"
               >
                 닫기
               </button>

@@ -1,113 +1,120 @@
+'use server';
 /**
- * Expenses CRUD
+ * Expenses CRUD — Supabase → Baseon 자체 PG(Drizzle) 이전 (Phase 2).
+ * ★ 기존: 브라우저 클라이언트가 직접 쿼리(RLS가 보호).
+ * ★ 변경: 서버 액션에서 Drizzle로 쿼리 + 서버에서 권한 검사.
+ *   RLS `expenses_authenticated_all` (for all to authenticated, using/with check true)
+ *   = 소유/관리자 분리 없는 require-auth → 앱계층에서 currentUser() 로그인 필수로 번역.
+ *   인증(currentUser)은 Phase 4까지 Supabase Auth 유지. 호출부(클라이언트 컴포넌트)는 동일 시그니처라 무변경.
+ *
+ * 'use server' 모듈이라 동기 export 불가 → 매퍼/타입은 내부 non-export helper로 강등(외부 미사용).
  */
-import { createClient } from '../client';
+import { eq, desc } from 'drizzle-orm';
+import { db } from '@/db';
+import { expenses } from '@/db/schema';
+import { currentUser } from '@/lib/authz';
 import type { Expense } from '@/types';
 
-// ─── Row Types (Supabase snake_case) ─────────────────────────
-
-export interface ExpenseRow {
-  id: string;
-  title: string;
-  amount: number;
-  category: string;
-  payment_type: string;
-  expense_date: string;
-  next_renewal_date: string | null;
-  status: string;
-  cancel_reason: string | null;
-  description: string | null;
-  spender_name: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-// ─── Mappers ─────────────────────────────────────────────────
-
-export function expenseFromRow(row: ExpenseRow): Expense {
+// ─── Drizzle row → 도메인 타입 ───────────────────────────────
+// amount는 numeric()→Drizzle이 string으로 반환하므로 Number() 유지.
+type Row = typeof expenses.$inferSelect;
+function expenseFromRow(r: Row): Expense {
   return {
-    id: row.id,
-    title: row.title,
-    amount: Number(row.amount),
-    category: row.category as Expense['category'],
-    paymentType: row.payment_type as Expense['paymentType'],
-    expenseDate: row.expense_date,
-    nextRenewalDate: row.next_renewal_date ?? undefined,
-    status: row.status as Expense['status'],
-    cancelReason: row.cancel_reason ?? undefined,
-    description: row.description ?? undefined,
-    spenderName: row.spender_name ?? undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    id: r.id,
+    title: r.title,
+    amount: Number(r.amount),
+    category: r.category as Expense['category'],
+    paymentType: r.paymentType as Expense['paymentType'],
+    expenseDate: r.expenseDate,
+    nextRenewalDate: r.nextRenewalDate ?? undefined,
+    status: r.status as Expense['status'],
+    cancelReason: r.cancelReason ?? undefined,
+    description: r.description ?? undefined,
+    spenderName: r.spenderName ?? undefined,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
   };
 }
 
-export function expenseToInsert(expense: Omit<Expense, 'createdAt' | 'updatedAt'>) {
+// ─── 도메인 → Drizzle insert ─────────────────────────────────
+// numeric() 컬럼은 Drizzle에서 string으로 주고받음 → amount는 String()으로 직렬화.
+function expenseToInsert(
+  expense: Omit<Expense, 'createdAt' | 'updatedAt'>
+): typeof expenses.$inferInsert {
   return {
     id: expense.id,
     title: expense.title,
-    amount: expense.amount,
+    amount: String(expense.amount),
     category: expense.category,
-    payment_type: expense.paymentType,
-    expense_date: expense.expenseDate,
-    next_renewal_date: expense.nextRenewalDate ?? null,
+    paymentType: expense.paymentType,
+    expenseDate: expense.expenseDate,
+    nextRenewalDate: expense.nextRenewalDate ?? null,
     status: expense.status,
-    cancel_reason: expense.cancelReason ?? null,
+    cancelReason: expense.cancelReason ?? null,
     description: expense.description ?? null,
-    spender_name: expense.spenderName ?? null,
+    spenderName: expense.spenderName ?? null,
   };
 }
 
-export function expenseToUpdate(fields: Partial<Expense>) {
-  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (fields.title !== undefined) row.title = fields.title;
-  if (fields.amount !== undefined) row.amount = fields.amount;
-  if (fields.category !== undefined) row.category = fields.category;
-  if (fields.paymentType !== undefined) row.payment_type = fields.paymentType;
-  if (fields.expenseDate !== undefined) row.expense_date = fields.expenseDate;
-  if (fields.nextRenewalDate !== undefined) row.next_renewal_date = fields.nextRenewalDate ?? null;
-  if (fields.status !== undefined) row.status = fields.status;
-  if (fields.cancelReason !== undefined) row.cancel_reason = fields.cancelReason ?? null;
-  if (fields.description !== undefined) row.description = fields.description ?? null;
-  if (fields.spenderName !== undefined) row.spender_name = fields.spenderName ?? null;
-  return row;
+// ─── 도메인 부분 → Drizzle update patch ──────────────────────
+// updated_at은 트리거(trg_expenses_updated_at)도 존재하나 현 코드처럼 앱계층 명시 set 유지.
+function expenseToUpdate(fields: Partial<Expense>): Partial<typeof expenses.$inferInsert> {
+  const patch: Partial<typeof expenses.$inferInsert> = { updatedAt: new Date().toISOString() };
+  if (fields.title !== undefined) patch.title = fields.title;
+  if (fields.amount !== undefined) patch.amount = String(fields.amount);
+  if (fields.category !== undefined) patch.category = fields.category;
+  if (fields.paymentType !== undefined) patch.paymentType = fields.paymentType;
+  if (fields.expenseDate !== undefined) patch.expenseDate = fields.expenseDate;
+  if (fields.nextRenewalDate !== undefined) patch.nextRenewalDate = fields.nextRenewalDate ?? null;
+  if (fields.status !== undefined) patch.status = fields.status;
+  if (fields.cancelReason !== undefined) patch.cancelReason = fields.cancelReason ?? null;
+  if (fields.description !== undefined) patch.description = fields.description ?? null;
+  if (fields.spenderName !== undefined) patch.spenderName = fields.spenderName ?? null;
+  return patch;
 }
 
 // ─── CRUD ────────────────────────────────────────────────────
 
 export async function getExpenses(): Promise<Expense[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('expenses')
-    .select('*')
-    .order('expense_date', { ascending: false });
-  if (error) { console.error('[DB] getExpenses:', error.message); return []; }
-  if (!data) return [];
-  return (data as ExpenseRow[]).map(expenseFromRow);
+  if (!(await currentUser())) return [];
+  const rows = await db
+    .select()
+    .from(expenses)
+    .orderBy(desc(expenses.expenseDate));
+  return rows.map(expenseFromRow);
 }
 
-export async function insertExpense(expense: Omit<Expense, 'createdAt' | 'updatedAt'>): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from('expenses')
-    .insert(expenseToInsert(expense));
-  if (error) console.error('[DB] insertExpense:', error.message);
-  return !error;
+export async function insertExpense(
+  expense: Omit<Expense, 'createdAt' | 'updatedAt'>
+): Promise<boolean> {
+  if (!(await currentUser())) return false;
+  try {
+    await db.insert(expenses).values(expenseToInsert(expense));
+    return true;
+  } catch (e) {
+    console.error('[DB] insertExpense:', e instanceof Error ? e.message : e);
+    return false;
+  }
 }
 
 export async function updateExpense(id: string, fields: Partial<Expense>): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from('expenses')
-    .update(expenseToUpdate(fields))
-    .eq('id', id);
-  if (error) console.error('[DB] updateExpense:', error.message);
-  return !error;
+  if (!(await currentUser())) return false;
+  try {
+    await db.update(expenses).set(expenseToUpdate(fields)).where(eq(expenses.id, id));
+    return true;
+  } catch (e) {
+    console.error('[DB] updateExpense:', e instanceof Error ? e.message : e);
+    return false;
+  }
 }
 
 export async function deleteExpense(id: string): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase.from('expenses').delete().eq('id', id);
-  if (error) console.error('[DB] deleteExpense:', error.message);
-  return !error;
+  if (!(await currentUser())) return false;
+  try {
+    await db.delete(expenses).where(eq(expenses.id, id));
+    return true;
+  } catch (e) {
+    console.error('[DB] deleteExpense:', e instanceof Error ? e.message : e);
+    return false;
+  }
 }

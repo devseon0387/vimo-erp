@@ -1,3 +1,3 @@
-export const APP_VERSION = 'v0.2.3';
-export const APP_LAST_UPDATED = '2026.05.24';
+export const APP_VERSION = 'v0.3.0';
+export const APP_LAST_UPDATED = '2026.06.13';
 export const APP_VERSION_LABEL = `${APP_VERSION} · ${APP_LAST_UPDATED}`;

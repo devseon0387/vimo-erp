@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
 
 interface DatePickerProps {
   value: string; // YYYY-MM-DD
@@ -133,7 +133,7 @@ export default function DatePicker({ value, onChange, placeholder, minDate }: Da
             }}
             className="text-gray-300 hover:text-gray-500 transition-colors text-xs leading-none cursor-pointer ml-1"
           >
-            ✕
+            <X className="w-3 h-3" />
           </span>
         )}
       </button>

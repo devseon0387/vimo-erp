@@ -3,13 +3,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X, ChevronDown, UserPlus, ChevronRight, Send, Copy, Check, ArrowLeft } from 'lucide-react';
+import { X, ChevronDown, UserPlus, ChevronRight, Send, Copy, Check, ArrowLeft, Users, AlertCircle } from 'lucide-react';
 import { Partner, Project, Episode } from '@/types';
 import { addToTrash } from '@/lib/trash';
 import { formatPhoneNumber } from '@/lib/utils';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/contexts/ToastContext';
-import { getPartners, insertPartner, updatePartner, deletePartner, getProjects, getAllEpisodes } from '@/lib/supabase/db';
+import { getPartners, insertPartner, updatePartner, deletePartner, getProjects, getAllEpisodes, getMyProfile } from '@/lib/supabase/db';
 import { getPendingPartnerSignups, createPartnerInvite } from '@/lib/supabase/db/partner_signups';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import PartnerEditModal from './PartnerEditModal';
@@ -80,11 +82,18 @@ export default function PartnersPage() {
   const [allEpisodes, setAllEpisodes] = useState<(Episode & { projectId: string })[]>([]);
   const [pendingSignupsCount, setPendingSignupsCount] = useState(0);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-  // 신규 가입 신청 카운트
+  // 파트너 초대·가입 승인은 관리자(대표) 전용 — 매니저에겐 막다른 진입점이 안 뜨도록 역할 확인.
+  // 신규 가입 신청 카운트도 관리자만 (getPendingPartnerSignups는 비관리자에게 [] 반환).
   useEffect(() => {
-    getPendingPartnerSignups().then((s) => setPendingSignupsCount(s.length));
+    getMyProfile().then((p) => {
+      const admin = p?.role === 'admin';
+      setIsAdmin(admin);
+      if (admin) getPendingPartnerSignups().then((s) => setPendingSignupsCount(s.length));
+    });
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('selected'));
@@ -105,12 +114,18 @@ export default function PartnersPage() {
   });
 
   const loadData = useCallback(() => {
-    Promise.all([getPartners(), getProjects(), getAllEpisodes()]).then(([p, proj, eps]) => {
-      setPartners(p);
-      setAllProjects(proj);
-      setAllEpisodes(eps);
-      setLoading(false);
-    });
+    setLoadError(false);
+    Promise.all([getPartners(), getProjects(), getAllEpisodes()])
+      .then(([p, proj, eps]) => {
+        setPartners(p);
+        setAllProjects(proj);
+        setAllEpisodes(eps);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoadError(true);
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -297,7 +312,20 @@ export default function PartnersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+        <LoadingState />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <EmptyState
+          icon={AlertCircle}
+          title="파트너 정보를 불러오지 못했어요"
+          description="네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+          action={{ label: '다시 시도', onClick: () => { setLoading(true); loadData(); } }}
+        />
       </div>
     );
   }
@@ -321,16 +349,18 @@ export default function PartnersPage() {
             {needsContactCount > 0 && ` · 연락 필요 ${needsContactCount}`}
           </p>
         </div>
-        <button
-          onClick={() => setInviteModalOpen(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-[13px] font-semibold transition-colors"
-        >
-          <Send size={14} />
-          파트너 초대
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setInviteModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-[13px] font-semibold transition-colors"
+          >
+            <Send size={14} />
+            파트너 초대
+          </button>
+        )}
       </div>
 
-      {inviteModalOpen && (
+      {isAdmin && inviteModalOpen && (
         <InvitePartnerModal
           partners={partners}
           onClose={() => setInviteModalOpen(false)}
@@ -364,9 +394,9 @@ export default function PartnersPage() {
 
       {/* 마스터-디테일 — lg 이상에선 분할, 모바일에선 선택 시 디테일 전환 */}
       <div
-        className="grid gap-4 lg:grid-cols-[300px_1fr]"
+        className="grid gap-3 lg:grid-cols-[300px_1fr]"
         style={{
-          height: 'calc(100vh - 180px)',
+          height: pendingSignupsCount > 0 ? 'calc(100vh - 272px)' : 'calc(100vh - 180px)',
           minHeight: '480px',
         }}
       >
@@ -401,24 +431,25 @@ export default function PartnersPage() {
             />
           ) : (
             <div
-              className="rounded-xl flex items-center justify-center"
+              className="rounded-2xl flex items-center justify-center"
               style={{ background: 'white', border: '1px solid var(--color-ink-200)' }}
             >
-              <div className="text-center">
-                <p className="text-[14px]" style={{ color: 'var(--color-ink-500)' }}>
-                  {partners.length === 0 ? '첫 파트너를 추가해 보세요' : '왼쪽에서 파트너를 선택하세요'}
-                </p>
-                {partners.length === 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="mt-3 px-4 py-2 rounded-md text-[13px] font-semibold text-white"
-                    style={{ background: 'var(--color-brand-500)' }}
-                  >
-                    + 새 파트너 추가
-                  </button>
-                )}
-              </div>
+              {partners.length === 0 ? (
+                <EmptyState
+                  icon={Users}
+                  title="첫 파트너를 추가해 보세요"
+                  description="비디오 작업을 함께할 파트너를 추가하면 여기에서 관리할 수 있어요."
+                  action={{ label: '+ 새 파트너 추가', onClick: () => setIsAddModalOpen(true) }}
+                  iconColor="text-orange-500"
+                  iconBgColor="bg-orange-50"
+                />
+              ) : (
+                <EmptyState
+                  icon={Users}
+                  title="왼쪽에서 파트너를 선택하세요"
+                  description="목록에서 파트너를 선택하면 상세 정보가 여기에 표시됩니다."
+                />
+              )}
             </div>
           )}
         </div>
@@ -429,51 +460,51 @@ export default function PartnersPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)} />
           <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4">
-            <div className="relative bg-white rounded-t-[28px] sm:rounded-[28px] shadow-2xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="relative bg-white rounded-t-xl sm:rounded-xl shadow-2xl max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
               <div className="px-6 sm:px-8 pt-8 pb-6">
-                <button onClick={() => setIsAddModalOpen(false)} className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <X size={24} className="text-gray-400" />
+                <button onClick={() => setIsAddModalOpen(false)} className="absolute right-6 top-6 p-2 hover:bg-[#f5f5f4] rounded-full transition-colors">
+                  <X size={24} className="text-[#a8a29e]" />
                 </button>
-                <h2 className="text-page mb-2">새 파트너를<br />추가할게요</h2>
-                <p className="text-sm text-gray-500">파트너 정보를 입력해주세요</p>
+                <h2 className="text-base font-bold text-[#1c1917] mb-2">새 파트너를<br />추가할게요</h2>
+                <p className="text-sm text-[#78716c]">파트너 정보를 입력해주세요</p>
               </div>
-              <div className="px-6 sm:px-8 pb-8 space-y-6">
+              <div className="px-6 sm:px-8 pb-8 space-y-5">
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-900">기본 정보</h3>
+                  <h3 className="text-sm font-semibold text-[#1c1917]">기본 정보</h3>
                   <FloatingLabelInput
                     label="이름" required type="text" value={newPartner.name}
                     onChange={(e) => setNewPartner({ ...newPartner, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-900">연락처 정보</h3>
+                  <h3 className="text-sm font-semibold text-[#1c1917]">연락처 정보</h3>
                   <FloatingLabelInput
                     label="전화번호" type="tel" value={formatPhoneNumber(newPartner.phone)}
                     onChange={(e) => setNewPartner({ ...newPartner, phone: formatPhoneNumber(e.target.value) })}
                   />
                   <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-gray-700">계좌번호</label>
+                    <label className="block text-sm font-medium text-[#44403c]">계좌번호</label>
                     <div className="flex gap-2">
                       <div className="relative flex-shrink-0">
                         <button type="button" onClick={() => setIsBankDropdownOpen(!isBankDropdownOpen)}
-                          className="h-14 px-3 border-2 border-divider rounded-xl bg-white flex items-center gap-2 hover:border-gray-300 transition-colors whitespace-nowrap min-w-[110px]">
+                          className="h-11 px-3 border-2 border-divider rounded-xl bg-white flex items-center gap-2 hover:border-gray-300 transition-colors whitespace-nowrap min-w-[110px]">
                           {newPartner.bank ? (() => {
                             const b = KR_BANKS.find((b) => b.name === newPartner.bank);
                             return b ? (
                               <>
                                 <span className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                                   style={{ background: b.bg, color: b.fg }}>{b.abbr}</span>
-                                <span className="text-sm font-medium text-gray-900 truncate max-w-[68px]">{b.name}</span>
+                                <span className="text-sm font-medium text-[#1c1917] truncate max-w-[68px]">{b.name}</span>
                               </>
                             ) : null;
                           })() : (
-                            <span className="text-sm text-gray-400">은행 선택</span>
+                            <span className="text-sm text-[#a8a29e]">은행 선택</span>
                           )}
-                          <ChevronDown size={13} className="text-gray-400 flex-shrink-0 ml-auto" />
+                          <ChevronDown size={13} className="text-[#a8a29e] flex-shrink-0 ml-auto" />
                         </button>
                         {isBankDropdownOpen && (
                           <div className="absolute z-30 left-0 top-full mt-2 bg-white border-2 border-divider rounded-2xl shadow-2xl p-3" style={{ width: '320px' }}>
-                            <p className="text-xs text-gray-400 font-medium mb-2 px-1">은행 선택</p>
+                            <p className="text-xs text-[#a8a29e] font-medium mb-2 px-1">은행 선택</p>
                             <div className="grid grid-cols-5 gap-1.5">
                               {KR_BANKS.map((bank) => {
                                 const isSelected = newPartner.bank === bank.name;
@@ -481,11 +512,11 @@ export default function PartnersPage() {
                                   <button key={bank.name} type="button"
                                     onClick={() => { setNewPartner({ ...newPartner, bank: bank.name }); setIsBankDropdownOpen(false); }}
                                     className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${
-                                      isSelected ? 'bg-orange-50 ring-2 ring-orange-400' : 'hover:bg-gray-50'
+                                      isSelected ? 'bg-orange-50 ring-2 ring-orange-400' : 'hover:bg-[#fafaf9]'
                                     }`}>
                                     <span className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shadow-sm"
                                       style={{ background: bank.bg, color: bank.fg }}>{bank.abbr}</span>
-                                    <span className="text-[10px] text-gray-700 font-medium leading-tight text-center w-full truncate">{bank.name}</span>
+                                    <span className="text-[10px] text-[#44403c] font-medium leading-tight text-center w-full truncate">{bank.name}</span>
                                   </button>
                                 );
                               })}
@@ -495,34 +526,34 @@ export default function PartnersPage() {
                       </div>
                       <input type="text" placeholder="계좌번호 입력" value={newPartner.bankAccount || ''}
                         onChange={(e) => setNewPartner({ ...newPartner, bankAccount: e.target.value })}
-                        className="flex-1 h-14 px-4 border-2 border-divider rounded-xl focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm text-gray-900 placeholder-gray-400 transition-colors"
+                        className="flex-1 h-11 px-4 border-2 border-divider rounded-xl focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm text-[#1c1917] placeholder-[#a8a29e] transition-colors"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">파트너 유형</label>
+                    <label className="block text-sm font-medium text-[#44403c]">파트너 유형</label>
                     <div className="grid grid-cols-2 gap-3">
                       <button type="button" onClick={() => setNewPartner({ ...newPartner, partnerType: 'freelancer' })}
-                        className={`h-14 rounded-xl font-semibold transition-colors ${
+                        className={`h-11 rounded-xl font-semibold transition-colors ${
                           newPartner.partnerType === 'freelancer'
                             ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-[#f5f5f4] text-[#44403c] hover:bg-[#ede9e6]'
                         }`}>프리랜서</button>
                       <button type="button" onClick={() => setNewPartner({ ...newPartner, partnerType: 'business' })}
-                        className={`h-14 rounded-xl font-semibold transition-colors ${
+                        className={`h-11 rounded-xl font-semibold transition-colors ${
                           newPartner.partnerType === 'business'
                             ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-[#f5f5f4] text-[#44403c] hover:bg-[#ede9e6]'
                         }`}>사업자</button>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">파트너 기수</label>
+                    <label className="block text-sm font-medium text-[#44403c]">파트너 기수</label>
                     <div className="relative">
                       <button type="button" onClick={() => setIsGenerationDropdownOpen(!isGenerationDropdownOpen)}
-                        className="w-full h-14 px-4 border-2 border-divider rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-left flex items-center justify-between transition-colors">
-                        <span className="text-gray-900 font-medium">{newPartner.generation}기</span>
-                        <ChevronDown size={20} className="text-gray-400" />
+                        className="w-full h-11 px-4 border-2 border-divider rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-left flex items-center justify-between transition-colors">
+                        <span className="text-[#1c1917] font-medium">{newPartner.generation}기</span>
+                        <ChevronDown size={20} className="text-[#a8a29e]" />
                       </button>
                       {isGenerationDropdownOpen && (
                         <div className="absolute z-20 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-2xl overflow-hidden">
@@ -530,7 +561,7 @@ export default function PartnersPage() {
                             <button key={gen} type="button"
                               onClick={() => { setNewPartner({ ...newPartner, generation: gen }); setIsGenerationDropdownOpen(false); }}
                               className="w-full px-4 py-3 hover:bg-orange-50 text-left transition-colors first:rounded-t-xl last:rounded-b-xl">
-                              <span className="text-gray-900 font-medium">{gen}기</span>
+                              <span className="text-[#1c1917] font-medium">{gen}기</span>
                             </button>
                           ))}
                         </div>
@@ -539,13 +570,13 @@ export default function PartnersPage() {
                   </div>
                 </div>
               </div>
-              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-divider rounded-b-[28px]">
+              <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-divider rounded-b-xl">
                 <div className="flex gap-3">
-                  <button onClick={() => setIsAddModalOpen(false)} className="flex-1 h-14 text-gray-700 font-semibold bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                  <button onClick={() => setIsAddModalOpen(false)} className="flex-1 h-11 text-[#44403c] font-semibold bg-[#f5f5f4] hover:bg-[#ede9e6] rounded-xl transition-colors">
                     취소
                   </button>
                   <button onClick={handleAddPartner} disabled={!newPartner.name}
-                    className="flex-1 h-14 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:shadow-none shadow-lg shadow-orange-500/30">
+                    className="flex-1 h-11 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-colors disabled:bg-[#ede9e6] disabled:text-[#a8a29e] disabled:cursor-not-allowed disabled:shadow-none shadow-lg shadow-orange-500/30">
                     파트너 추가하기
                   </button>
                 </div>
@@ -577,11 +608,11 @@ export default function PartnersPage() {
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
               <div className="px-6 py-4 border-b border-divider">
-                <h2 className="text-xl font-bold text-gray-900">파트너 관리</h2>
+                <h2 className="text-base font-bold text-[#1c1917]">파트너 관리</h2>
               </div>
-              <div className="p-6">
-                <p className="text-gray-700 text-center mb-2">
-                  <span className="font-semibold text-gray-900">&quot;{partnerToDelete.name}&quot;</span> 파트너를<br />
+              <div className="p-4">
+                <p className="text-[#44403c] text-center mb-2">
+                  <span className="font-semibold text-[#1c1917]">&quot;{partnerToDelete.name}&quot;</span> 파트너를<br />
                   정말 삭제하시겠습니까?
                 </p>
                 <p className="text-sm text-orange-600 text-center">
@@ -590,7 +621,7 @@ export default function PartnersPage() {
               </div>
               <div className="px-4 sm:px-6 py-4 border-t border-divider flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
                 <button onClick={() => { setIsDeleteModalOpen(false); setPartnerToDelete(null); }}
-                  className="px-4 py-2.5 sm:py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors active:scale-[0.97] text-sm font-medium">취소</button>
+                  className="px-4 py-2.5 sm:py-2 text-[#44403c] hover:bg-[#f5f5f4] rounded-lg transition-colors active:scale-[0.97] text-sm font-medium">취소</button>
                 <button onClick={handleDeactivatePartner}
                   className="px-4 py-2.5 sm:py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors active:scale-[0.97] text-sm font-medium">비활성 등록</button>
                 <button onClick={handleConfirmDelete}
@@ -664,12 +695,12 @@ function InvitePartnerModal({ partners, onClose }: { partners: Partner[]; onClos
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative bg-gray-50 rounded-lg shadow-xl max-w-md w-full p-6"
+          className="relative bg-[#fafaf9] rounded-lg shadow-xl max-w-md w-full p-4"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[16px] font-bold">파트너 초대</h3>
-            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500">
+            <button onClick={onClose} className="p-1.5 hover:bg-[#f5f5f4] rounded-lg text-[#78716c]">
               <X size={16} />
             </button>
           </div>
@@ -794,7 +825,7 @@ function InvitePartnerModal({ partners, onClose }: { partners: Partner[]; onClos
                 )}
                 {selectedLegacy && (
                   <div className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-orange-600 font-semibold">
-                    ✓ {selectedLegacy.name}와 자동 매핑
+                    <Check size={11} /> {selectedLegacy.name}와 자동 매핑
                     <button
                       type="button"
                       onClick={() => { setLegacyHintId(''); setPartnerSearch(''); }}
@@ -815,7 +846,7 @@ function InvitePartnerModal({ partners, onClose }: { partners: Partner[]; onClos
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-[13px] text-gray-700 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2 text-[13px] text-[#44403c] hover:bg-[#f5f5f4] rounded-lg"
                 >
                   취소
                 </button>

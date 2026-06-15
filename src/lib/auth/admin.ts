@@ -1,65 +1,43 @@
 import { NextResponse } from 'next/server';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
-import { createClient as createServerSupabase } from '@/lib/supabase/server';
-import type { SupabaseClient, User } from '@supabase/supabase-js';
+import { auth } from '@/auth';
+import { db } from '@/db';
+import { userProfiles } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 /**
- * Admin role + service_role 헬퍼.
+ * Admin 권한 가드 (Auth.js 세션 + role).
  *
  * 사용:
  *   const guard = await requireAdmin();
  *   if (!guard.ok) return guard.response;
- *   const { user, admin } = guard;  // admin = service_role 클라이언트
+ *   const { user } = guard;       // { id, email, role:'admin' }
+ *
+ * 데이터 작업은 Drizzle(db) 직통 — 자체 PG엔 RLS 없음(app_vimoerp 풀권한).
+ * 세션 무효화(rank9): JWT가 아니라 DB의 현재 role을 **라이브 조회** — 강등·삭제 즉시 반영. DB 오류 시 fail-closed.
  */
-export type AdminGuardOk = {
-  ok: true;
-  user: User;
-  admin: SupabaseClient;
-};
-
-export type AdminGuardFail = {
-  ok: false;
-  response: NextResponse;
-};
+export type AdminUser = { id: string; email: string | null; role: string };
+export type AdminGuardOk = { ok: true; user: AdminUser };
+export type AdminGuardFail = { ok: false; response: NextResponse };
 
 export async function requireAdmin(): Promise<AdminGuardOk | AdminGuardFail> {
-  const serverSupabase = await createServerSupabase();
-  const { data: { user } } = await serverSupabase.auth.getUser();
-  if (!user) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: '인증 필요' }, { status: 401 }),
-    };
+  const session = await auth();
+  const u = session?.user;
+  if (!u?.id) {
+    return { ok: false, response: NextResponse.json({ error: '인증 필요' }, { status: 401 }) };
   }
-
-  const { data: profile } = await serverSupabase
-    .from('user_profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || profile.role !== 'admin') {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: '권한 없음' }, { status: 403 }),
-    };
+  let role: string | undefined;
+  try {
+    const [row] = await db
+      .select({ role: userProfiles.role })
+      .from(userProfiles)
+      .where(eq(userProfiles.id, u.id))
+      .limit(1);
+    role = row?.role;
+  } catch {
+    return { ok: false, response: NextResponse.json({ error: '권한 확인 실패' }, { status: 503 }) };
   }
-
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { error: 'SUPABASE_SERVICE_ROLE_KEY 환경변수가 설정되지 않았습니다' },
-        { status: 500 },
-      ),
-    };
+  if (role !== 'admin') {
+    return { ok: false, response: NextResponse.json({ error: '권한 없음' }, { status: 403 }) };
   }
-
-  const admin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { persistSession: false } },
-  );
-
-  return { ok: true, user, admin };
+  return { ok: true, user: { id: u.id, email: u.email ?? null, role } };
 }

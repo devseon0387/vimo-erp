@@ -1,19 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --accent: #f97316;
   --text-primary: #1c1917;
   --text-secondary: #78716c;
   --text-muted: #a8a29e;
 
-  /* 카드 토큰 */
+  /* 카드 토큰 — 시안8(데이터프로): 밀집 */
   --card-bg:     #ffffff;
   --card-border: #ede9e6;
-  --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --card-shadow: 0 1px 2px rgba(0,0,0,0.05);
+
+  /* radius 스케일 — 시안8 밀집(카드 기본 8px) */
+  --radius-sm:   6px;
+  --radius:      8px;
+  --radius-md:   10px;
+  --radius-lg:   12px;
+  --radius-pill: 999px;
+
+  /* 활성·강조 시맨틱 단일 SoT (= brand-500. layout/페이지의 raw #f97316 정리용) */
+  --accent:       #f97316;
+  --accent-hover: #ea580c;
+  --accent-fg:    #ffffff;
+  --accent-soft:  rgba(249,115,22,0.16);  /* 레일 활성칩 배경 */
+  --accent-pale:  #fef4ed;                /* 서브링크 활성·배지 배경 */
 }
 
 @theme inline {
-  --color-background: #f5f4f2;
+  --color-background: #fafafa;  /* 시안8: 뉴트럴 밀집 배경 */
   --color-foreground: var(--text-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -58,10 +71,14 @@
   --color-bad-500: #ef4444;
   --color-bad-600: #dc2626;
   --color-bad-700: #b91c1c;
+
+  /* 시안8: 카드 모서리 밀집 — rounded-xl/2xl 전역 축소(rounded-lg=8px 유지) */
+  --radius-xl: 0.625rem;   /* 12 → 10px */
+  --radius-2xl: 0.75rem;   /* 16 → 12px */
 }
 
 html {
-  background: #f5f4f2;
+  background: #fafafa;
   background-attachment: fixed;
   min-height: 100vh;
 }
@@ -83,7 +100,7 @@ html, body { cursor: default; }
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
-  border-radius: 14px;
+  border-radius: var(--radius);
 }
 
 /* ── Typography utilities ── */
@@ -109,6 +126,10 @@ html, body { cursor: default; }
 
   /* ── Modal overlay 표준 ── */
   .modal-overlay { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); }
+
+  /* ── 가로 스크롤 탭/필터 — 스크롤바 숨김(2줄 줄바꿈 대신 스크롤) ── */
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
 }
 
 /* ── Scrollbar ── */
@@ -118,7 +139,9 @@ html, body { cursor: default; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(168,162,158,0.6); }
 * { scrollbar-color: rgba(168,162,158,0.35) transparent; scrollbar-width: thin; }
 
-/* ── Focus ── */
+/* ── Focus ── (키보드 포커스 가시성 — WCAG 2.4.7) ── */
 *:focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 3px;
 }

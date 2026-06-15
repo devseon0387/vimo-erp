@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Box, Briefcase, LogOut, Clock } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { signOut } from 'next-auth/react';
+import { getSessionUser } from '@/lib/auth/session-info';
+import { getPartnerWelcomeData } from './actions';
 
 type PartnerStatus = 'pending' | 'active' | 'unknown';
 
@@ -12,36 +14,63 @@ export default function PartnerWelcomePage() {
   const [name, setName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [status, setStatus] = useState<PartnerStatus>('unknown');
+  const [viboxEnabled, setViboxEnabled] = useState(false);
+  const [viboxOpening, setViboxOpening] = useState(false);
+  const [viboxError, setViboxError] = useState<string>('');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const u = await getSessionUser();
+      if (!u) {
         router.replace('/signup');
         return;
       }
-      const meta = (user.user_metadata ?? {}) as { name?: string };
-      setName(meta.name ?? user.email?.split('@')[0] ?? '');
-      setEmail(user.email ?? '');
+      setName(u.name ?? u.email?.split('@')[0] ?? '');
+      setEmail(u.email ?? '');
 
-      // partner_meta.status 조회 — RLS 로 본인 행만 보임
-      const { data: pm } = await supabase
-        .from('partner_meta')
-        .select('status')
-        .eq('profile_id', user.id)
-        .maybeSingle();
-
-      setStatus((pm?.status as PartnerStatus | undefined) ?? 'unknown');
+      const welcome = await getPartnerWelcomeData();
+      setStatus((welcome?.status as PartnerStatus | undefined) ?? 'unknown');
+      setViboxEnabled(welcome?.viboxEnabled ?? false);
       requestAnimationFrame(() => setMounted(true));
     })();
   }, [router]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut({ redirect: false });
     router.replace('/signup');
+  };
+
+  const handleOpenVibox = async () => {
+    if (viboxOpening) return;
+    setViboxError('');
+    setViboxOpening(true);
+    // 팝업 차단 우회: 사용자 제스처 안에서 미리 탭을 연 뒤, fetch 후 URL 설정
+    const popup = window.open('about:blank', '_blank', 'noopener');
+    try {
+      const res = await fetch('/api/partner/vibox-handoff', { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? `handoff 실패 (${res.status})`);
+      }
+      const { token, exchangeUrl } = (await res.json()) as {
+        token: string;
+        exchangeUrl: string;
+      };
+      // SameSite=Lax + 3rd-party cookie 차단 환경 대비: top-level GET 으로 vibox 직행.
+      // vibox 가 token 을 검증 후 세션 쿠키 설정하고 / 로 리다이렉트.
+      const ssoUrl = `${exchangeUrl}?token=${encodeURIComponent(token)}`;
+      if (popup) {
+        popup.location.href = ssoUrl;
+      } else {
+        window.location.href = ssoUrl;
+      }
+    } catch (err) {
+      popup?.close();
+      setViboxError(err instanceof Error ? err.message : '비박스 열기에 실패했습니다.');
+    } finally {
+      setViboxOpening(false);
+    }
   };
 
   const isPending = status === 'pending' || status === 'unknown';
@@ -249,46 +278,56 @@ export default function PartnerWelcomePage() {
           )}
 
           <div className="pw-cards">
-            {isPending ? (
-              <>
-                <div className="pw-card disabled">
-                  <div className="pw-card-icon"><Box size={20} strokeWidth={2} /></div>
-                  <div className="pw-card-body">
-                    <div className="pw-card-name">비박스</div>
-                    <div className="pw-card-desc">영상 파일 공유·렌더링·협업</div>
+            {viboxEnabled ? (
+              <a
+                className="pw-card active"
+                href="#"
+                onClick={(e) => { e.preventDefault(); handleOpenVibox(); }}
+                aria-disabled={viboxOpening}
+              >
+                <div className="pw-card-icon"><Box size={20} strokeWidth={2} /></div>
+                <div className="pw-card-body">
+                  <div className="pw-card-name">비박스</div>
+                  <div className="pw-card-desc">
+                    {viboxOpening ? '비박스 여는 중…' : '영상 파일 공유·렌더링·협업'}
                   </div>
-                  <span className="pw-card-badge">승인 대기</span>
                 </div>
-                <div className="pw-card disabled">
-                  <div className="pw-card-icon"><Briefcase size={20} strokeWidth={2} /></div>
-                  <div className="pw-card-body">
-                    <div className="pw-card-name">비모 파트너 ERP</div>
-                    <div className="pw-card-desc">프로젝트·정산·거래처 관리</div>
-                  </div>
-                  <span className="pw-card-badge">승인 대기</span>
-                </div>
-              </>
+                <ArrowRight size={18} className="pw-card-arrow" />
+              </a>
             ) : (
-              <>
-                <a className="pw-card active" href="#" onClick={(e) => { e.preventDefault(); alert('비박스 SSO 브릿지는 다음 단계에서 연결합니다.'); }}>
-                  <div className="pw-card-icon"><Box size={20} strokeWidth={2} /></div>
-                  <div className="pw-card-body">
-                    <div className="pw-card-name">비박스</div>
-                    <div className="pw-card-desc">영상 파일 공유·렌더링·협업</div>
-                  </div>
-                  <ArrowRight size={18} className="pw-card-arrow" />
-                </a>
-                <div className="pw-card disabled">
-                  <div className="pw-card-icon"><Briefcase size={20} strokeWidth={2} /></div>
-                  <div className="pw-card-body">
-                    <div className="pw-card-name">비모 파트너 ERP</div>
-                    <div className="pw-card-desc">프로젝트·정산·거래처 관리</div>
-                  </div>
-                  <span className="pw-card-badge">준비 중</span>
+              <div className="pw-card disabled">
+                <div className="pw-card-icon"><Box size={20} strokeWidth={2} /></div>
+                <div className="pw-card-body">
+                  <div className="pw-card-name">비박스</div>
+                  <div className="pw-card-desc">영상 파일 공유·렌더링·협업</div>
                 </div>
-              </>
+                <span className="pw-card-badge">승인 대기</span>
+              </div>
             )}
+
+            <div className="pw-card disabled">
+              <div className="pw-card-icon"><Briefcase size={20} strokeWidth={2} /></div>
+              <div className="pw-card-body">
+                <div className="pw-card-name">비모 파트너 ERP</div>
+                <div className="pw-card-desc">프로젝트·정산·거래처 관리</div>
+              </div>
+              <span className="pw-card-badge">{isPending ? '승인 대기' : '준비 중'}</span>
+            </div>
           </div>
+
+          {viboxError && (
+            <div style={{
+              marginTop: 12,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              fontSize: 13,
+              color: '#dc2626',
+            }}>
+              {viboxError}
+            </div>
+          )}
 
           <div className="pw-foot">
             <span>{email}</span>
