@@ -55,8 +55,8 @@ export default function ChangePasswordPage() {
             <div className="inline-flex p-3 bg-orange-100 rounded-xl mb-4">
               <Lock size={28} className="text-orange-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">비밀번호 변경</h1>
-            <p className="text-sm text-gray-500 mt-2">
+            <h1 className="text-2xl font-bold text-[#1c1917]">비밀번호 변경</h1>
+            <p className="text-sm text-[#78716c] mt-2">
               보안을 위해 새 비밀번호를 설정해주세요.
             </p>
           </div>
@@ -64,7 +64,7 @@ export default function ChangePasswordPage() {
           {/* 폼 */}
           <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">현재 비밀번호</label>
+              <label className="block text-sm font-medium text-[#44403c] mb-1.5">현재 비밀번호</label>
               <input
                 type="password"
                 value={currentPassword}
@@ -77,7 +77,7 @@ export default function ChangePasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">새 비밀번호</label>
+              <label className="block text-sm font-medium text-[#44403c] mb-1.5">새 비밀번호</label>
               <div className="relative">
                 <input
                   type={showPw ? 'text' : 'password'}
@@ -90,7 +90,7 @@ export default function ChangePasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowPw(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a8a29e] hover:text-[#57534e]"
                 >
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -98,7 +98,7 @@ export default function ChangePasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">비밀번호 확인</label>
+              <label className="block text-sm font-medium text-[#44403c] mb-1.5">비밀번호 확인</label>
               <div className="relative">
                 <input
                   type={showConfirm ? 'text' : 'password'}
@@ -111,7 +111,7 @@ export default function ChangePasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirm(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a8a29e] hover:text-[#57534e]"
                 >
                   {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>

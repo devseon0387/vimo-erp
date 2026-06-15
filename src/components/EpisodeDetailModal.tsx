@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Episode, Partner, EpisodeWorkItem, WorkContentType } from '@/types';
 import { X, Edit2, Plus, Calendar, DollarSign, ChevronDown, ChevronRight, User } from 'lucide-react';
+import { StatusBadge, type StatusTone } from '@/components/StatusBadge';
 
 // 모든 작업 타입 정의
 const ALL_WORK_TYPES: WorkContentType[] = ['롱폼', '기획 숏폼', '본편 숏폼', '썸네일', 'OAP'];
@@ -350,6 +351,17 @@ export default function EpisodeDetailModal({
     return statusMap[status] || status;
   };
 
+  // status → StatusBadge tone (대기/검토 중=warn, 진행 중=brand, 완료=ok)
+  const getStatusTone = (status: string): StatusTone => {
+    const toneMap: Record<string, StatusTone> = {
+      waiting: 'warn',
+      in_progress: 'brand',
+      review: 'warn',
+      completed: 'ok',
+    };
+    return toneMap[status] || 'neutral';
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* 배경 오버레이 */}
@@ -371,9 +383,9 @@ export default function EpisodeDetailModal({
                 <h2 className="text-2xl font-bold text-gray-900">
                   {episode.episodeNumber}편
                 </h2>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(episode.status)}`}>
+                <StatusBadge tone={getStatusTone(episode.status)} className="px-3 py-1 text-xs">
                   {getStatusLabel(episode.status)}
-                </span>
+                </StatusBadge>
               </div>
               <button
                 onClick={handleClose}
@@ -462,9 +474,9 @@ export default function EpisodeDetailModal({
                               </span>
 
                               {/* 상태 배지 (작업 단계들의 상태에 따라 자동 계산) */}
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(getWorkTypeStatus(workType))}`}>
+                              <StatusBadge tone={getStatusTone(getWorkTypeStatus(workType))} className="text-xs">
                                 {getStatusLabel(getWorkTypeStatus(workType))}
-                              </span>
+                              </StatusBadge>
 
                               {/* 작업 단계 개수 */}
                               {workSteps[workType]?.length > 0 && (
@@ -482,7 +494,7 @@ export default function EpisodeDetailModal({
                                 className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50 rounded transition-colors"
                                 title="비용 상세"
                               >
-                                <span>💰</span>
+                                <DollarSign className="w-3.5 h-3.5" />
                                 <span>{getTotalBudget(workType).toLocaleString()}원</span>
                               </button>
                             </div>

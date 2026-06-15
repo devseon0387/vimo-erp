@@ -1,20 +1,24 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Fragment, Suspense } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   LayoutDashboard, Users, FolderOpen, Settings, Briefcase, Trash2,
-  Megaphone, LogOut, ClipboardCheck, Building2, Mail, Inbox, Send, MailPlus, Archive,
+  Megaphone, LogOut, ClipboardCheck, Mail, Inbox, Send, MailPlus, Archive,
   Wallet, Receipt, FileText, Shield, Layers, Menu, X, Calendar,
   MessageSquarePlus, CreditCard, Bot, RefreshCw, UserPlus,
-  MessageSquare, Video,
+  MessageSquare, Video, AtSign, UserCog, KeyRound, Wrench,
 } from 'lucide-react';
 import DashboardContent from '@/components/DashboardContent';
-import BibotWidget from '@/components/BibotWidget';
 import GlobalSearch from '@/components/GlobalSearch';
+import MailFolderPanel from '@/components/MailFolderPanel';
 import TutorialProvider from '@/components/tutorial/TutorialProvider';
-import TutorialOverlay from '@/components/tutorial/TutorialOverlay';
 import NotificationDropdown from '@/components/NotificationDropdown';
+
+// 무거운 클라이언트 위젯은 지연 로드 — 모든 대시보드 라우트 공통 청크에서 분리(초기 로드 경량화).
+const BibotWidget = dynamic(() => import('@/components/BibotWidget'), { ssr: false });
+const TutorialOverlay = dynamic(() => import('@/components/tutorial/TutorialOverlay'), { ssr: false });
 
 import FeedbackModal from '@/components/FeedbackModal';
 import { invalidateAll } from '@/lib/supabase/cache';
@@ -27,13 +31,32 @@ import { getSessionUser } from '@/lib/auth/session-info';
 import { getProjectById, getProjectEpisodes } from '@/lib/supabase/db';
 
 // ── 타입 정의
-type NavLink    = { type: 'link';    href: string; label: string; icon: React.ElementType; badge?: string; sub?: SubLink[] };
+type NavLink    = { type: 'link';    href: string; label: string; icon: React.ElementType; badge?: string; sub?: SubLink[]; adminOnly?: boolean };
 type NavDivider = { type: 'divider' };
-type NavItem    = NavLink | NavDivider;
+type NavHeading = { type: 'heading'; label: string };
+type NavItem    = NavLink | NavDivider | NavHeading;
 type SubLink    = { href: string; label: string; icon: React.ElementType; badge?: string };
-type Section    = { key: string; icon: React.ElementType; label: string; items: NavItem[] };
+type Section    = { key: string; icon: React.ElementType; label: string; items: NavItem[]; adminOnly?: boolean };
 
 const isLink = (i: NavItem): i is NavLink => i.type === 'link';
+
+// 전 섹션을 통틀어 현재 경로에 '가장 구체적으로(가장 긴 href)' 매칭되는 섹션을 찾는다.
+// 섹션-내부 best가 아니라 전역 best라서 크로스섹션 접두 충돌(예: /partners vs /partners/signups)을 올바르게 해소.
+function matchSection(pathname: string, sections: Section[]): { sec: Section; href: string; label: string } | null {
+  let best: { sec: Section; href: string; label: string } | null = null;
+  for (const sec of sections) {
+    for (const link of sec.items) {
+      if (link.type !== 'link') continue;
+      const candidates: { href: string; label: string }[] = [{ href: link.href, label: link.label }, ...(link.sub ?? [])];
+      for (const c of candidates) {
+        if (pathname === c.href || pathname.startsWith(c.href + '/')) {
+          if (!best || c.href.length > best.href.length) best = { sec, href: c.href, label: c.label };
+        }
+      }
+    }
+  }
+  return best;
+}
 
 // ── 섹션 정의 (레일 탭 기준)
 const SECTIONS: Section[] = [
@@ -49,7 +72,6 @@ const SECTIONS: Section[] = [
       { type: 'divider' },
       { type: 'link', href: '/clients',    label: '클라이언트 관리', icon: Briefcase       },
       { type: 'link', href: '/partners',   label: '파트너 관리',     icon: Users           },
-      { type: 'link', href: '/partners/signups', label: '파트너 가입 승인', icon: UserPlus    },
       { type: 'divider' },
       { type: 'link', href: '/feedback',   label: '피드백',   icon: MessageSquarePlus },
       { type: 'link', href: '/updates',    label: '업데이트', icon: Megaphone },
@@ -70,24 +92,18 @@ const SECTIONS: Section[] = [
   {
     key: 'finance',
     icon: Wallet,
-    label: '재무',
+    label: '재무·경영',
     items: [
+      { type: 'heading', label: '재무' },
       { type: 'link', href: '/finance/invoices',   label: '세금계산서',   icon: FileText,   badge: '준비중' },
       { type: 'link', href: '/finance/payments',   label: '입금 관리',    icon: Receipt,    badge: '준비중' },
       { type: 'link', href: '/finance/expenses',   label: '지출 관리',    icon: CreditCard },
-      { type: 'divider' },
-      { type: 'link', href: '/settlement', label: '정산',       icon: Receipt, badge: '준비중', sub: [
+      { type: 'link', href: '/settlement', label: '월별 손익',   icon: Receipt, badge: '준비중', sub: [
         { href: '/settlement/history', label: '월별 내역', icon: Calendar },
       ] },
-    ],
-  },
-  {
-    key: 'manage',
-    icon: Building2,
-    label: '경영',
-    items: [
+      { type: 'heading', label: '경영' },
       { type: 'link', href: '/contracts',    label: '계약',       icon: FileText, badge: '준비중' },
-      { type: 'link', href: '/operations', label: '운영',       icon: Layers,   badge: '준비중' },
+      { type: 'link', href: '/operations',   label: '운영',       icon: Layers,   badge: '준비중' },
     ],
   },
   {
@@ -109,8 +125,21 @@ const SECTIONS: Section[] = [
       { type: 'link', href: '/mail', label: '전체 메일함', icon: Archive },
       { type: 'link', href: '/mail/inbox', label: '받은 메일함', icon: Inbox },
       { type: 'link', href: '/mail/sent', label: '보낸 메일함', icon: Send },
+    ],
+  },
+  {
+    key: 'admin',
+    icon: Shield,
+    label: '대표',
+    adminOnly: true,
+    items: [
+      { type: 'link', href: '/settings/users',          label: '계정 관리',       icon: UserCog  },
+      { type: 'link', href: '/settings/app-access',      label: '앱 접근 권한',    icon: KeyRound },
+      { type: 'link', href: '/partners/signups',         label: '파트너 가입 승인', icon: UserPlus },
       { type: 'divider' },
-      { type: 'link', href: '/mail/trash', label: '휴지통', icon: Trash2 },
+      { type: 'link', href: '/settings/mail-addresses',  label: '메일 주소 관리',  icon: AtSign   },
+      { type: 'divider' },
+      { type: 'link', href: '/admin-fix',                label: '데이터 보정',     icon: Wrench   },
     ],
   },
 ];
@@ -122,7 +151,7 @@ const SYSTEM_ITEMS: NavLink[] = [
 ];
 
 const RAIL_W  = 52;   // 아이콘 레일 너비
-const PANEL_W = 200;  // 슬라이드 패널 너비
+const PANEL_W = 190;  // 슬라이드 패널 너비 (시안8 밀집)
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
@@ -183,13 +212,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // 현재 경로에 맞는 섹션 자동 선택
   useEffect(() => {
-    for (const sec of SECTIONS) {
-      const links = sec.items.filter(isLink);
-      const allHrefs = links.flatMap(i => [i.href, ...(i.sub ? i.sub.map(s => s.href) : [])]);
-      if (allHrefs.some(h => pathname === h || pathname.startsWith(h + '/'))) {
-        setActiveSection(sec.key);
-        return;
-      }
+    // 전역 best-href 매칭으로 단일 섹션 선택 (크로스섹션 접두 충돌 해소)
+    // 메일도 다른 섹션과 동일하게 슬라이드 패널을 사용(폴더 메뉴는 MailFolderPanel이 패널 안에 렌더)
+    const matched = matchSection(pathname, SECTIONS);
+    if (matched) {
+      setActiveSection(matched.sec.key);
+      return;
     }
     // 시스템 항목 경로면 섹션 패널 닫기
     if (SYSTEM_ITEMS.some(i => pathname === i.href || pathname.startsWith(i.href + '/'))) {
@@ -237,11 +265,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const userInitial = userEmail ? userEmail.charAt(0).toUpperCase() : '관';
-  const currentSection = SECTIONS.find(s => s.key === activeSection) ?? null;
+  // 관리자 전용 섹션은 admin 역할에게만 노출 (레일/패널/모바일 모두 이 목록 기준)
+  const visibleSections = SECTIONS.filter(s => !s.adminOnly || myRole === 'admin');
+  const currentSection = visibleSections.find(s => s.key === activeSection) ?? null;
+  // 현재 경로가 속한 섹션(전역 best-href). 레일 활성 점·브레드크럼이 단일 섹션만 활성화하도록 공유.
+  const matchedNav = matchSection(pathname, visibleSections);
+  const activeSecKey = matchedNav?.sec.key ?? null;
 
   return (
     <TutorialProvider>
-    <div style={{ minHeight: '100vh', background: '#f5f4f2' }}>
+    <div style={{ minHeight: '100vh', background: '#fafafa' }}>
       {/* 글로벌 검색 (Cmd+K / FAB로 열림, 버튼 UI는 숨기고 모달 리스너만 유지) */}
       <div className="hidden md:block" style={{ position: 'fixed', width: 0, height: 0, overflow: 'visible', pointerEvents: 'none', zIndex: 0 }}>
         <div style={{ pointerEvents: 'auto' }}><GlobalSearch /></div>
@@ -255,7 +288,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           left: calc(100% + 10px);
           top: 50%;
           transform: translateY(-50%);
-          background: #1c1917;
+          background: #18181b;
           color: #fff;
           font-size: 12px;
           font-weight: 500;
@@ -295,7 +328,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           display:       'flex',
           flexDirection: 'column',
           alignItems:    'center',
-          background:    '#1c1917',
+          background:    '#18181b',
           paddingTop:    '0',
           paddingBottom: '0',
         }}
@@ -327,70 +360,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* 섹션 아이콘들 */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 0', gap: '2px', width: '100%' }}>
-          {SECTIONS.map(sec => {
+          {visibleSections.map(sec => {
             const Icon      = sec.icon;
             const isSel     = activeSection === sec.key;
-            // 이 섹션에 활성 경로가 있는지
-            const hasActive = sec.items.filter(isLink).some(i => {
-              if (pathname === i.href || pathname.startsWith(i.href + '/')) return true;
-              if (i.sub) return i.sub.some(s => pathname.startsWith(s.href));
-              return false;
-            });
+            // 전역 best-href로 정해진 단일 섹션만 활성 표시 (크로스섹션 접두 충돌로 인한 이중 점 방지)
+            const hasActive = activeSecKey === sec.key;
 
             return (
-              <button
-                key={sec.key}
-                onClick={() => setActiveSection(isSel ? null : sec.key)}
-                data-rail-tip={sec.label}
-                style={{
-                  position:       'relative',
-                  width:          '36px',
-                  height:         '36px',
-                  borderRadius:   '10px',
-                  border:         'none',
-                  display:        'flex',
-                  alignItems:     'center',
-                  justifyContent: 'center',
-                  cursor:         'pointer',
-                  background:     isSel ? 'rgba(249,115,22,0.2)' : 'transparent',
-                  color:          isSel ? '#f97316' : hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
-                  transition:     'background 0.15s, color 0.15s',
-                }}
-                onMouseEnter={e => { if (!isSel) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; } }}
-                onMouseLeave={e => { if (!isSel) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)'; } }}
-              >
-                <Icon size={19} />
-                {/* 활성 경로 있으면 오렌지 점 */}
-                {hasActive && !isSel && (
-                  <span style={{ position: 'absolute', top: '5px', right: '5px', width: '5px', height: '5px', borderRadius: '50%', background: '#f97316' }} />
+              <Fragment key={sec.key}>
+                {/* 관리자 섹션은 일반 섹션과 시각적으로 분리 */}
+                {sec.adminOnly && (
+                  <div style={{ width: '22px', height: '1px', background: 'rgba(255,255,255,0.1)', margin: '5px 0' }} />
                 )}
-              </button>
+                <button
+                  onClick={() => setActiveSection(isSel ? null : sec.key)}
+                  data-rail-tip={sec.label}
+                  style={{
+                    position:       'relative',
+                    width:          '36px',
+                    height:         '36px',
+                    borderRadius:   '10px',
+                    border:         'none',
+                    display:        'flex',
+                    alignItems:     'center',
+                    justifyContent: 'center',
+                    cursor:         'pointer',
+                    background:     isSel ? 'var(--accent-soft)' : 'transparent',
+                    color:          isSel ? 'var(--accent)' : hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
+                    transition:     'background 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={e => { if (!isSel) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; } }}
+                  onMouseLeave={e => { if (!isSel) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)'; } }}
+                >
+                  <Icon size={19} />
+                  {/* 활성 경로 있으면 오렌지 점 */}
+                  {hasActive && !isSel && (
+                    <span style={{ position: 'absolute', top: '5px', right: '5px', width: '5px', height: '5px', borderRadius: '50%', background: 'var(--accent)' }} />
+                  )}
+                </button>
+              </Fragment>
             );
           })}
-
-          {/* 관리자 전용 */}
-          {myRole === 'admin' && (
-            <Link
-              href="/settings/users"
-              data-rail-tip="계정 관리"
-              style={{
-                position:       'relative',
-                width:          '36px',
-                height:         '36px',
-                borderRadius:   '10px',
-                display:        'flex',
-                alignItems:     'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                color:          'rgba(255,255,255,0.3)',
-                transition:     'background 0.15s, color 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; }}
-            >
-              <Shield size={18} />
-            </Link>
-          )}
         </div>
 
         {/* 하단 — 시스템 + 로그아웃 + 유저 아바타 */}
@@ -413,8 +423,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   alignItems:     'center',
                   justifyContent: 'center',
                   textDecoration: 'none',
-                  background:     sysActive ? 'rgba(249,115,22,0.2)' : 'transparent',
-                  color:          sysActive ? '#f97316' : 'rgba(255,255,255,0.35)',
+                  background:     sysActive ? 'var(--accent-soft)' : 'transparent',
+                  color:          sysActive ? 'var(--accent)' : 'rgba(255,255,255,0.35)',
                   transition:     'background 0.15s, color 0.15s',
                 }}
                 onMouseEnter={e => { if (!sysActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; } }}
@@ -457,7 +467,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               width:          '30px',
               height:         '30px',
               borderRadius:   '9px',
-              background:     '#f97316',
+              background:     'var(--accent)',
               display:        'flex',
               alignItems:     'center',
               justifyContent: 'center',
@@ -494,7 +504,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               display:            'flex',
               flexDirection:      'column',
               background:         '#ffffff',
-              borderRight:        '1px solid #ede9e6',
+              borderRight:        '1px solid var(--color-ink-200)',
               boxShadow:          '2px 0 12px rgba(0,0,0,0.05)',
               willChange:         'transform, opacity',
               backfaceVisibility: 'hidden',
@@ -512,15 +522,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             >
               <div>
-                <p style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#f97316', lineHeight: 1 }}>
+                <p style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.02em', color: 'var(--accent)', lineHeight: 1 }}>
                   {currentSection.label}
                 </p>
               </div>
             </div>
 
-            {/* 패널 네비게이션 */}
+            {/* 패널 네비게이션 — 메일은 폴더 패널(공용함·미분류·카운트)을 슬라이드 패널 안에 렌더 */}
             <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
-              {(() => {
+              {currentSection.key === 'mail' ? <Suspense fallback={null}><MailFolderPanel /></Suspense> : (() => {
                 // 섹션 내 가장 긴 매칭 href를 먼저 찾기
                 const linkItems = currentSection.items.filter(isLink);
                 let bestHref = '';
@@ -532,9 +542,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     }
                   }
                 }
-                return currentSection.items.map((item, idx) => {
+                return currentSection.items
+                  .filter((it) => it.type === 'divider' || it.type === 'heading' || !it.adminOnly || myRole === 'admin')
+                  .map((item, idx) => {
                 if (item.type === 'divider') {
                   return <div key={`div-${idx}`} style={{ height: '1px', background: '#f0ece9', margin: '6px 10px' }} />;
+                }
+                if (item.type === 'heading') {
+                  return (
+                    <div
+                      key={`head-${idx}`}
+                      style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-ink-400)', textTransform: 'uppercase', letterSpacing: '0.04em', padding: idx === 0 ? '2px 10px 5px' : '12px 10px 5px' }}
+                    >
+                      {item.label}
+                    </div>
+                  );
                 }
 
                 const Icon     = item.icon;
@@ -563,14 +585,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           cursor:         'pointer',
                           marginBottom:   '1px',
                           transition:     'background 0.12s, color 0.12s',
-                          background:     isActive ? '#f97316' : 'transparent',
-                          color:          isActive ? '#ffffff' : '#44403c',
+                          background:     isActive ? 'var(--accent)' : 'transparent',
+                          color:          isActive ? '#ffffff' : 'var(--color-ink-700)',
                         }}
                         onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#f5f3f1'; } }}
                         onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; } }}
                       >
                         <Icon size={16} style={{ flexShrink: 0, opacity: isActive ? 1 : 0.5 }} />
-                        <span style={{ fontSize: '15px', fontWeight: isActive ? 600 : 400, flex: 1, textAlign: 'left', whiteSpace: 'nowrap' }}>{item.label}</span>
+                        <span style={{ fontSize: '14px', fontWeight: isActive ? 600 : 400, flex: 1, textAlign: 'left', whiteSpace: 'nowrap' }}>{item.label}</span>
                         {item.badge && <PanelBadge label={item.badge} active={isActive} />}
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, opacity: 0.4, transform: isExp ? 'rotate(90deg)' : 'none', transition: 'transform 0.18s' }}>
                           <path d="M3 2l4 3-4 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -588,14 +610,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           textDecoration: 'none',
                           marginBottom:   '1px',
                           transition:     'background 0.12s, color 0.12s',
-                          background:     isActive ? '#f97316' : 'transparent',
-                          color:          isActive ? '#ffffff' : '#44403c',
+                          background:     isActive ? 'var(--accent)' : 'transparent',
+                          color:          isActive ? '#ffffff' : 'var(--color-ink-700)',
                         }}
                         onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#f5f3f1'; } }}
                         onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; } }}
                       >
                         <Icon size={16} style={{ flexShrink: 0, opacity: isActive ? 1 : 0.5 }} />
-                        <span style={{ fontSize: '15px', fontWeight: isActive ? 600 : 400, flex: 1, whiteSpace: 'nowrap' }}>{item.label}</span>
+                        <span style={{ fontSize: '14px', fontWeight: isActive ? 600 : 400, flex: 1, whiteSpace: 'nowrap' }}>{item.label}</span>
                         {item.badge && <PanelBadge label={item.badge} active={isActive} />}
                       </Link>
                     )}
@@ -624,16 +646,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     gap:            '8px',
                                     padding:        '7px 10px',
                                     borderRadius:   '8px',
-                                    background:     subActive ? '#fef4ed' : 'transparent',
-                                    color:          subActive ? '#f97316' : '#78716c',
+                                    background:     subActive ? 'var(--accent-pale)' : 'transparent',
+                                    color:          subActive ? 'var(--accent)' : 'var(--color-ink-500)',
                                     textDecoration: 'none',
                                     fontSize:       '14px',
                                     fontWeight:     subActive ? 600 : 400,
                                     marginBottom:   '1px',
                                     transition:     'background 0.12s, color 0.12s',
                                   }}
-                                  onMouseEnter={e => { if (!subActive) { e.currentTarget.style.background = '#f5f3f1'; e.currentTarget.style.color = '#44403c'; } }}
-                                  onMouseLeave={e => { if (!subActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#78716c'; } }}
+                                  onMouseEnter={e => { if (!subActive) { e.currentTarget.style.background = '#f5f3f1'; e.currentTarget.style.color = 'var(--color-ink-700)'; } }}
+                                  onMouseLeave={e => { if (!subActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-ink-500)'; } }}
                                 >
                                   <SubIcon size={14} style={{ flexShrink: 0, opacity: subActive ? 1 : 0.6 }} />
                                   <span style={{ whiteSpace: 'nowrap' }}>{s.label}</span>
@@ -678,7 +700,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           alignItems:  'center',
           gap:         '12px',
           background:  '#ffffff',
-          borderBottom:'1px solid #ede9e6',
+          borderBottom:'1px solid var(--color-ink-200)',
         }}
       >
         {/* 모바일 햄버거 */}
@@ -686,8 +708,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           className="vm-hamburger"
           onClick={() => {
             // 현재 페이지가 속한 섹션 자동 선택
-            const currentSec = SECTIONS.find(s => s.items.filter(isLink).some(i => pathname === i.href || pathname.startsWith(i.href + '/')));
-            setMobileSection(currentSec?.key ?? SECTIONS[0]?.key ?? null);
+            const currentSec = visibleSections.find(s => s.items.filter(isLink).some(i => pathname === i.href || pathname.startsWith(i.href + '/')));
+            setMobileSection(currentSec?.key ?? visibleSections[0]?.key ?? null);
             setMobileMenu(v => !v);
           }}
           style={{
@@ -695,7 +717,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             background: 'none',
             border:     'none',
             cursor:     'pointer',
-            color:      '#44403c',
+            color:      'var(--color-ink-700)',
             padding:    '4px',
           }}
         >
@@ -703,83 +725,70 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
 
         {(() => {
-          // 시스템 항목 체크
-          const sysItem = SYSTEM_ITEMS.find(i => pathname === i.href || pathname.startsWith(i.href + '/'));
-          if (sysItem) {
+          // 전역 best-href로 매칭된 섹션을 표기 (크로스섹션 접두 충돌 해소: /partners vs /partners/signups)
+          if (matchedNav) {
+            const sec = matchedNav.sec;
+            const found = { href: matchedNav.href, label: matchedNav.label };
+            const isProjectSubpage = found.label === '프로젝트' && pathname !== '/projects';
             return (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
-                <span style={{ color: '#a8a29e', fontWeight: 500 }}>시스템</span>
-                <span style={{ color: '#d6cec8' }}>/</span>
-                <span style={{ fontWeight: 600, color: '#1c1917' }}>{sysItem.label}</span>
-              </div>
-            );
-          }
-          // 일반 섹션 체크
-          for (const sec of SECTIONS) {
-            const links = sec.items.filter(isLink);
-            // 섹션 내 모든 href를 모아서 가장 긴 매칭 우선
-            let found: { href: string; label: string } | undefined;
-            for (const link of links) {
-              const allHrefs = [{ href: link.href, label: link.label }, ...(link.sub ?? [])];
-              for (const h of allHrefs) {
-                if (pathname === h.href || pathname.startsWith(h.href + '/')) {
-                  if (!found || h.href.length > found.href.length) {
-                    found = h;
-                  }
-                }
-              }
-            }
-            if (found) {
-                const isProjectSubpage = found.label === '프로젝트' && pathname !== '/projects';
-                return (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
                     <button
                       onClick={() => setActiveSection(activeSection === sec.key ? null : sec.key)}
                       style={{
                         background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                        color: '#a8a29e', fontWeight: 500, fontSize: '14px',
+                        color: 'var(--color-ink-400)', fontWeight: 500, fontSize: '14px',
                         transition: 'color 0.15s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#f97316'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = '#a8a29e'; }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-ink-400)'; }}
                     >
                       {sec.label}
                     </button>
                     <span style={{ color: '#d6cec8' }}>/</span>
                     {isProjectSubpage ? (
-                      <Link href="/projects" style={{ color: '#a8a29e', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = '#f97316'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = '#a8a29e'; }}
+                      <Link href="/projects" style={{ color: 'var(--color-ink-400)', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-ink-400)'; }}
                       >
                         {found.label}
                       </Link>
                     ) : (
-                      <span style={{ fontWeight: 600, color: '#1c1917' }}>{found.label}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--color-ink-900)' }}>{found.label}</span>
                     )}
                     {isProjectSubpage && breadcrumbProject && !breadcrumbEpisode && (
                       <>
                         <span style={{ color: '#d6cec8' }}>/</span>
-                        <span style={{ fontWeight: 600, color: '#1c1917', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}>{breadcrumbProject}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--color-ink-900)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}>{breadcrumbProject}</span>
                       </>
                     )}
                     {isProjectSubpage && breadcrumbEpisode && (
                       <>
                         <span style={{ color: '#d6cec8' }}>/</span>
                         {breadcrumbProject && (
-                          <Link href={`/projects/${pathname.match(/^\/projects\/([^/]+)/)?.[1]}`} style={{ color: '#a8a29e', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}
-                            onMouseEnter={e => { e.currentTarget.style.color = '#f97316'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = '#a8a29e'; }}
+                          <Link href={`/projects/${pathname.match(/^\/projects\/([^/]+)/)?.[1]}`} style={{ color: 'var(--color-ink-400)', fontWeight: 500, textDecoration: 'none', transition: 'color 0.15s', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-ink-400)'; }}
                           >
                             {breadcrumbProject}
                           </Link>
                         )}
                         <span style={{ color: '#d6cec8' }} className="hidden sm:inline">/</span>
-                        <span style={{ fontWeight: 600, color: '#1c1917', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle' }} className="hidden sm:inline-block">{breadcrumbEpisode}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--color-ink-900)', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'middle' }} className="hidden sm:inline-block">{breadcrumbEpisode}</span>
                       </>
                     )}
                   </div>
                 );
-              }
+          }
+          // 시스템 항목 체크 (섹션에 안 잡힌 /settings, /trash 등)
+          const sysItem = SYSTEM_ITEMS.find(i => pathname === i.href || pathname.startsWith(i.href + '/'));
+          if (sysItem) {
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
+                <span style={{ color: 'var(--color-ink-400)', fontWeight: 500 }}>시스템</span>
+                <span style={{ color: '#d6cec8' }}>/</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-ink-900)' }}>{sysItem.label}</span>
+              </div>
+            );
           }
           return null;
         })()}
@@ -816,7 +825,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 61, display: 'flex', width: 'auto', maxWidth: '85vw' }}
             >
               {/* 레일 (아이콘 바) */}
-              <div style={{ width: '56px', background: '#1c1917', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '8px', paddingBottom: '8px', flexShrink: 0 }}>
+              <div style={{ width: '56px', background: '#18181b', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '8px', paddingBottom: '8px', flexShrink: 0 }}>
                 {/* 닫기 */}
                 <button
                   onClick={() => setMobileMenu(false)}
@@ -825,10 +834,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <X size={18} />
                 </button>
                 {/* 섹션 아이콘 */}
-                {SECTIONS.map(sec => {
+                {visibleSections.map(sec => {
                   const Icon = sec.icon;
                   const isSel = mobileSection === sec.key;
-                  const hasActive = sec.items.filter(isLink).some(i => pathname === i.href || pathname.startsWith(i.href + '/'));
+                  const hasActive = activeSecKey === sec.key;
                   return (
                     <button
                       key={sec.key}
@@ -836,8 +845,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       style={{
                         width: '40px', height: '40px', borderRadius: '10px', border: 'none',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        background: isSel ? 'rgba(249,115,22,0.2)' : 'transparent',
-                        color: isSel ? '#f97316' : hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
+                        background: isSel ? 'var(--accent-soft)' : 'transparent',
+                        color: isSel ? 'var(--accent)' : hasActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
                         marginBottom: '4px',
                       }}
                     >
@@ -858,7 +867,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         style={{
                           width: '40px', height: '40px', borderRadius: '10px', textDecoration: 'none',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: active ? '#f97316' : 'rgba(255,255,255,0.35)',
+                          color: active ? 'var(--accent)' : 'rgba(255,255,255,0.35)',
                         }}
                       >
                         <Icon size={18} />
@@ -880,7 +889,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {/* 패널 (선택된 섹션의 메뉴) */}
               <AnimatePresence mode="wait">
                 {mobileSection && (() => {
-                  const sec = SECTIONS.find(s => s.key === mobileSection);
+                  const sec = visibleSections.find(s => s.key === mobileSection);
                   if (!sec) return null;
                   return (
                     <motion.div
@@ -889,11 +898,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -12 }}
                       transition={{ duration: 0.15 }}
-                      style={{ width: '220px', background: '#fff', borderRight: '1px solid #f0ece9', display: 'flex', flexDirection: 'column' }}
+                      style={{ width: PANEL_W, background: '#fff', borderRight: '1px solid #f0ece9', display: 'flex', flexDirection: 'column' }}
                     >
                       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px 8px' }}>
-                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#1c1917', padding: '4px 8px', marginBottom: '8px' }}>{sec.label}</p>
-                        {sec.items.filter(isLink).map(item => {
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink-900)', padding: '4px 8px', marginBottom: '8px' }}>{sec.label}</p>
+                        {sec.items.filter((it): it is NavLink | NavHeading => it.type === 'link' || it.type === 'heading').map((item, idx) => {
+                          if (item.type === 'heading') {
+                            return (
+                              <div key={`mh-${idx}`} style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-ink-400)', textTransform: 'uppercase', letterSpacing: '0.04em', padding: idx === 0 ? '2px 8px 5px' : '12px 8px 5px' }}>{item.label}</div>
+                            );
+                          }
                           const Icon = item.icon;
                           const active = pathname === item.href || pathname.startsWith(item.href + '/');
                           return (
@@ -904,8 +918,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '10px',
                                 padding: '10px 10px', borderRadius: '10px', textDecoration: 'none',
-                                background: active ? '#f97316' : 'transparent',
-                                color: active ? '#fff' : '#44403c',
+                                background: active ? 'var(--accent)' : 'transparent',
+                                color: active ? '#fff' : 'var(--color-ink-700)',
                                 fontSize: '14px', fontWeight: active ? 600 : 400,
                                 marginBottom: '2px',
                               }}
@@ -971,8 +985,8 @@ function PanelBadge({ label, active }: { label: string; active: boolean }) {
       borderRadius:'999px',
       whiteSpace:  'nowrap',
       flexShrink:  0,
-      background:  active ? 'rgba(255,255,255,0.25)' : '#fef4ed',
-      color:       active ? '#ffffff' : '#f97316',
+      background:  active ? 'rgba(255,255,255,0.25)' : 'var(--accent-pale)',
+      color:       active ? '#ffffff' : 'var(--accent)',
     }}>
       {label}
     </span>

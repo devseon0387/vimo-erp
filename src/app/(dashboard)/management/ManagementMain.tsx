@@ -9,10 +9,11 @@ import {
 } from '@/lib/supabase/db';
 import type { ChecklistRow } from '@/lib/supabase/db/users.types';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
-import { Calendar, Plus, Bell, Clock, X, Link2, Search, ChevronLeft, ChevronRight, User, FolderOpen, Building2 } from 'lucide-react';
+import { Calendar, Plus, Bell, Clock, X, Link2, Search, ChevronLeft, ChevronRight, User, FolderOpen, Building2, Film, SearchX, Check, ArrowRight, AlertTriangle } from 'lucide-react';
 import { Project, Episode, Partner, Client, WorkContentType, WorkStep } from '@/types';
 import Link from 'next/link';
-import ProjectWizardModal from '@/components/ProjectWizardModal';
+import dynamic from 'next/dynamic';
+const ProjectWizardModal = dynamic(() => import('@/components/ProjectWizardModal'), { ssr: false });
 import PartnerStatusStrip from './PartnerStatusStrip';
 import MiniCalendar from './MiniCalendar';
 import Checklist from './Checklist';
@@ -21,6 +22,8 @@ import { useToast } from '@/contexts/ToastContext';
 import DateTimePicker, { RepeatType } from '@/components/DateTimePicker';
 import { useTutorial } from '@/components/tutorial/useTutorial';
 import { APP_VERSION_LABEL } from '@/config/version';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 
 type LinkPickerType = 'episode' | 'project' | 'client' | 'partner' | null;
 
@@ -382,21 +385,28 @@ export default function ManagementMain() {
   };
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [projectsData, partnersData, clientsData, episodesData, checklistRows] = await Promise.all([
-      getProjects(),
-      getPartners(),
-      getClients(),
-      getAllEpisodes(),
-      getMyChecklists(),
-    ]);
-    setProjects(projectsData);
-    setPartners(partnersData);
-    setClients(clientsData);
-    setAllEpisodes(episodesData);
-    setChecklistItems(checklistRows.map(rowToItem));
-    setLoading(false);
+    try {
+      setLoadError(false);
+      const [projectsData, partnersData, clientsData, episodesData, checklistRows] = await Promise.all([
+        getProjects(),
+        getPartners(),
+        getClients(),
+        getAllEpisodes(),
+        getMyChecklists(),
+      ]);
+      setProjects(projectsData);
+      setPartners(partnersData);
+      setClients(clientsData);
+      setAllEpisodes(episodesData);
+      setChecklistItems(checklistRows.map(rowToItem));
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -423,7 +433,7 @@ export default function ManagementMain() {
       );
       if (itemsToNotify.length === 0) return;
       await Promise.all(itemsToNotify.map(item => {
-        new Notification('📋 Video Moment 체크리스트', {
+        new Notification('Video Moment 체크리스트', {
           body: item.text,
           icon: '/favicon.ico',
         });
@@ -548,10 +558,17 @@ export default function ManagementMain() {
   }, [projectsById, partnersById]);
 
   if (loading) {
+    return <LoadingState />;
+  }
+
+  if (loadError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-      </div>
+      <EmptyState
+        icon={AlertTriangle}
+        title="데이터를 불러오지 못했습니다"
+        description="네트워크 상태를 확인한 뒤 다시 시도해주세요"
+        action={{ label: '다시 시도', onClick: () => { setLoading(true); loadData(); } }}
+      />
     );
   }
 
@@ -577,6 +594,8 @@ export default function ManagementMain() {
                 {oneTimeItems.filter(i => !i.completed).map(item => (
                   <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg ${item.reminderTime ? 'bg-bad-50 border border-red-200' : ''}`}>
                     <button
+                      type="button"
+                      aria-label={`${item.text} 완료 처리`}
                       onClick={() => toggleChecklistItem(item.id)}
                       className="w-[18px] h-[18px] rounded-[5px] border-2 border-[var(--color-ink-300)] flex-shrink-0 flex items-center justify-center hover:border-brand-500 transition-colors"
                     />
@@ -598,7 +617,7 @@ export default function ManagementMain() {
                     <p className="text-[10px] text-[var(--color-ink-400)] mb-1">완료 · {oneTimeItems.filter(i => i.completed).length}개</p>
                     {oneTimeItems.filter(i => i.completed).map(item => (
                       <div key={item.id} className="flex items-center gap-2 p-1.5 opacity-40">
-                        <button onClick={() => toggleChecklistItem(item.id)} className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]">✓</button>
+                        <button onClick={() => toggleChecklistItem(item.id)} className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white"><Check size={11} strokeWidth={3} /></button>
                         <span className="text-[12px] line-through text-[var(--color-ink-400)]">{item.text}</span>
                       </div>
                     ))}
@@ -607,9 +626,9 @@ export default function ManagementMain() {
               </div>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-lg text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
+                className="w-full mt-2 p-2 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-lg text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors inline-flex items-center justify-center gap-1"
               >
-                + 할 일 추가
+                <Plus size={12} /> 할 일 추가
               </button>
             </div>
           )}
@@ -617,14 +636,14 @@ export default function ManagementMain() {
       </div>
 
       {/* C3 레이아웃: 타임라인 + 사이드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_560px] gap-4 relative">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_560px] gap-3 relative">
         {/* 왼쪽: 타임라인 */}
-        <div className="bg-white rounded-2xl border border-ink-100 p-4 sm:p-5">
+        <div className="bg-white rounded-2xl border border-ink-100 p-4">
           {/* 지연 */}
           {overdueEpisodes.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <div className="w-2 h-2 rounded-full bg-bad-500" />
                 <span className="text-[13px] font-bold text-bad-600">지연</span>
                 <span className="text-[11px] text-bad-500 font-semibold">{overdueEpisodes.length}</span>
               </div>
@@ -651,7 +670,7 @@ export default function ManagementMain() {
               <span className="text-[13px] font-bold">오늘</span>
               <span className="text-[11px] text-brand-500 font-semibold">{todayDeadlines.length}</span>
             </div>
-            <div className="ml-4 border-l-2 border-orange-200 pl-3.5 flex flex-col gap-1.5">
+            <div className="ml-4 border-l-2 border-brand-200 pl-3.5 flex flex-col gap-1.5">
               {todayDeadlines.length === 0 ? (
                 <p className="text-[12px] text-[var(--color-ink-400)] py-2">오늘 마감인 회차가 없습니다</p>
               ) : todayDeadlines.map(ep => {
@@ -659,7 +678,7 @@ export default function ManagementMain() {
                 return (
                   <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
                     <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-ink-400)] mt-0.5"><span>{project?.title}</span><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{partner?.name?.charAt(0) || '?'}</div><span>{partner?.name || '미정'}</span></div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-ink-400)] mt-0.5"><span>{project?.title}</span><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[9px] font-bold text-[var(--color-ink-500)]">{partner?.name?.charAt(0) || '?'}</div><span>{partner?.name || '미정'}</span></div>
                   </div>
                 );
               })}
@@ -670,7 +689,7 @@ export default function ManagementMain() {
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-amber-400" />
               <span className="text-[13px] font-bold">내일</span>
-              <span className="text-[11px] text-amber-500 font-semibold">{tomorrowDeadlines.length}</span>
+              <span className="text-[11px] text-warn-500 font-semibold">{tomorrowDeadlines.length}</span>
             </div>
             <div className="ml-4 border-l-2 border-amber-200 pl-3.5 flex flex-col gap-1.5">
               {tomorrowDeadlines.length === 0 ? (
@@ -689,7 +708,7 @@ export default function ManagementMain() {
           {/* 이번 주 */}
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-gray-300" />
+              <div className="w-2 h-2 rounded-full bg-ink-300" />
               <span className="text-[13px] font-bold">이번 주</span>
               <span className="text-[11px] text-[var(--color-ink-500)] font-semibold">{thisWeekDeadlines.length}</span>
             </div>
@@ -714,7 +733,7 @@ export default function ManagementMain() {
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-ok-500" />
                 <span className="text-[13px] font-bold text-ok-600">이번 주 완료</span>
-                <span className="text-[11px] text-green-500 font-semibold">{thisWeekCompleted.length}</span>
+                <span className="text-[11px] text-ok-500 font-semibold">{thisWeekCompleted.length}</span>
               </div>
               <div className="ml-4 border-l-2 border-green-200 pl-3.5 flex flex-col gap-1.5">
                 {thisWeekCompleted.map(ep => {
@@ -838,7 +857,7 @@ export default function ManagementMain() {
                     if (e.key === 'Enter' && !activeLinkPicker) addChecklistItem();
                     if (e.key === 'Escape') resetInlineForm();
                   }}
-                  className="w-full text-base text-ink-900 placeholder-gray-300 focus:outline-none bg-transparent border-b-2 border-ink-100 focus:border-orange-400 pb-2 transition-colors"
+                  className="w-full text-base text-ink-900 placeholder-ink-300 focus:outline-none bg-transparent border-b-2 border-ink-100 focus:border-brand-400 pb-2 transition-colors"
                 />
               </div>
 
@@ -860,7 +879,7 @@ export default function ManagementMain() {
                     {newItemReminder && (
                       <span
                         onClick={e => { e.stopPropagation(); setNewItemReminder(''); }}
-                        className="ml-1 text-orange-400 hover:text-brand-600"
+                        className="ml-1 text-brand-400 hover:text-brand-600"
                       >
                         <X size={12} />
                       </span>
@@ -878,26 +897,26 @@ export default function ManagementMain() {
                 {(formLink.episodeId || formLink.projectId || formLink.clientName || formLink.partnerId) && (
                   <div className="flex flex-wrap gap-2">
                     {formLink.episodeId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-full text-xs font-medium border border-brand-200">
                         <Link2 size={11} /> {formLink.episodeNumber}회차 {formLink.episodeTitle}
                         <button onClick={() => clearLink('episode')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>
                       </span>
                     )}
                     {formLink.projectId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-full text-xs font-medium border border-brand-200">
                         <FolderOpen className="inline align-middle w-2.5 h-2.5" /> {formLink.projectTitle}
                         {!formLink.episodeId && <button onClick={() => clearLink('project')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>}
                       </span>
                     )}
                     {formLink.clientName && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium border border-emerald-200">
-                        🏢 {formLink.clientName}
+                        <Building2 size={11} /> {formLink.clientName}
                         {!formLink.projectId && <button onClick={() => clearLink('client')} className="ml-0.5 hover:text-emerald-900"><X size={11} /></button>}
                       </span>
                     )}
                     {formLink.partnerId && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-orange-700 rounded-full text-xs font-medium border border-orange-200">
-                        👤 {formLink.partnerName}
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-700 rounded-full text-xs font-medium border border-brand-200">
+                        <User size={11} /> {formLink.partnerName}
                         {!formLink.projectId && <button onClick={() => clearLink('partner')} className="ml-0.5 hover:text-orange-900"><X size={11} /></button>}
                       </span>
                     )}
@@ -977,10 +996,10 @@ export default function ManagementMain() {
               {/* 모달 헤더 */}
               <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div className="flex items-center gap-2">
-                  {activeLinkPicker === 'episode' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">EP</span></div>}
-                  {activeLinkPicker === 'project' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
+                  {activeLinkPicker === 'episode' && <div className="w-6 h-6 rounded-md bg-brand-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">EP</span></div>}
+                  {activeLinkPicker === 'project' && <div className="w-6 h-6 rounded-md bg-brand-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
                   {activeLinkPicker === 'client' && <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center"><span className="text-[10px] font-bold text-emerald-600">C</span></div>}
-                  {activeLinkPicker === 'partner' && <div className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
+                  {activeLinkPicker === 'partner' && <div className="w-6 h-6 rounded-md bg-brand-100 flex items-center justify-center"><span className="text-[10px] font-bold text-brand-600">P</span></div>}
                   <h3 className="text-sm font-bold text-ink-900">
                     {activeLinkPicker === 'episode' && '회차 연결'}
                     {activeLinkPicker === 'project' && '프로젝트 연결'}
@@ -1012,7 +1031,7 @@ export default function ManagementMain() {
                     value={linkSearch}
                     onChange={e => setLinkSearch(e.target.value)}
                     onKeyDown={e => e.key === 'Escape' && (setActiveLinkPicker(null), setLinkSearch(''))}
-                    className="flex-1 text-sm bg-transparent focus:outline-none text-ink-700 placeholder-gray-400"
+                    className="flex-1 text-sm bg-transparent focus:outline-none text-ink-700 placeholder-ink-400"
                   />
                   {linkSearch && (
                     <button onClick={() => setLinkSearch('')} className="text-ink-400 hover:text-ink-600"><X size={13} /></button>
@@ -1021,7 +1040,7 @@ export default function ManagementMain() {
               </div>
 
               {/* 목록 */}
-              <div className="max-h-72 overflow-y-auto border-t border-gray-50 pb-2">
+              <div className="max-h-72 overflow-y-auto border-t border-ink-100 pb-2">
                 {activeLinkPicker === 'episode' && (() => {
                   const filtered = allEpisodes.filter(ep => !linkSearch || ep.title.includes(linkSearch) || String(ep.episodeNumber).includes(linkSearch)).slice(0, 12);
                   return filtered.length > 0 ? filtered.map(ep => {
@@ -1029,7 +1048,7 @@ export default function ManagementMain() {
                     return (
                       <button key={ep.id} onClick={() => selectEpisode(ep)}
                         className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
-                        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center">
+                        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center">
                           <span className="text-xs font-bold text-brand-600">{ep.episodeNumber}편</span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1039,13 +1058,12 @@ export default function ManagementMain() {
                       </button>
                     );
                   }) : (
-                    <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-ink-400" />
-                      </div>
-                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 회차가 없습니다'}</p>
-                      <p className="text-xs text-ink-400 mt-1">{linkSearch ? '다른 검색어를 입력해보세요' : '프로젝트에서 회차를 먼저 추가해주세요'}</p>
-                    </div>
+                    <EmptyState
+                      size="compact"
+                      icon={linkSearch ? SearchX : Film}
+                      title={linkSearch ? '검색 결과가 없습니다' : '등록된 회차가 없습니다'}
+                      description={linkSearch ? '다른 검색어를 입력해보세요' : '프로젝트에서 회차를 먼저 추가해주세요'}
+                    />
                   );
                 })()}
 
@@ -1054,7 +1072,7 @@ export default function ManagementMain() {
                   return filtered.length > 0 ? filtered.map(p => (
                     <button key={p.id} onClick={() => selectProject(p)}
                       className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
-                      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center">
                         <span className="text-xs font-bold text-brand-600">{p.title.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1063,12 +1081,12 @@ export default function ManagementMain() {
                       </div>
                     </button>
                   )) : (
-                    <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-ink-400" />
-                      </div>
-                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}</p>
-                    </div>
+                    <EmptyState
+                      size="compact"
+                      icon={linkSearch ? SearchX : FolderOpen}
+                      title={linkSearch ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}
+                      description={linkSearch ? '다른 검색어를 입력해보세요' : '프로젝트를 먼저 추가해주세요'}
+                    />
                   );
                 })()}
 
@@ -1086,12 +1104,12 @@ export default function ManagementMain() {
                       </div>
                     </button>
                   )) : (
-                    <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-ink-400" />
-                      </div>
-                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 클라이언트가 없습니다'}</p>
-                    </div>
+                    <EmptyState
+                      size="compact"
+                      icon={linkSearch ? SearchX : Building2}
+                      title={linkSearch ? '검색 결과가 없습니다' : '등록된 클라이언트가 없습니다'}
+                      description={linkSearch ? '다른 검색어를 입력해보세요' : '클라이언트를 먼저 추가해주세요'}
+                    />
                   );
                 })()}
 
@@ -1100,7 +1118,7 @@ export default function ManagementMain() {
                   return filtered.length > 0 ? filtered.map(p => (
                     <button key={p.id} onClick={() => selectPartner(p)}
                       className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3">
-                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center">
                         <span className="text-sm font-bold text-brand-600">{p.name.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1109,12 +1127,12 @@ export default function ManagementMain() {
                       </div>
                     </button>
                   )) : (
-                    <div className="py-12 text-center">
-                      <div className="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-ink-400" />
-                      </div>
-                      <p className="text-sm text-ink-500 font-medium">{linkSearch ? '검색 결과가 없습니다' : '등록된 파트너가 없습니다'}</p>
-                    </div>
+                    <EmptyState
+                      size="compact"
+                      icon={linkSearch ? SearchX : User}
+                      title={linkSearch ? '검색 결과가 없습니다' : '등록된 파트너가 없습니다'}
+                      description={linkSearch ? '다른 검색어를 입력해보세요' : '파트너를 먼저 추가해주세요'}
+                    />
                   );
                 })()}
               </div>
@@ -1207,9 +1225,9 @@ export default function ManagementMain() {
                           <button
                             onClick={() => toggleChecklistItem(item.id)}
                             className={`w-[18px] h-[18px] rounded-[5px] border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                              item.completed ? 'bg-ok-500 border-ok-500 text-white text-[10px]' : 'border-[var(--color-ink-300)] hover:border-brand-500'
+                              item.completed ? 'bg-ok-500 border-ok-500 text-white' : 'border-[var(--color-ink-300)] hover:border-brand-500'
                             }`}
-                          >{item.completed ? '✓' : ''}</button>
+                          >{item.completed ? <Check size={11} strokeWidth={3} /> : ''}</button>
                           <div className="flex-1 min-w-0">
                             <span className={`text-[13px] font-medium ${item.completed ? 'line-through text-[var(--color-ink-400)]' : ''}`}>{item.text}</span>
                             <div className="flex items-center gap-1.5 mt-0.5">
@@ -1217,7 +1235,7 @@ export default function ManagementMain() {
                                 <span className="text-[10px] text-brand-500"><Bell className="inline align-middle w-2.5 h-2.5" /> {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                               )}
                               {item.repeatType && item.repeatType !== 'none' && (
-                                <span className="text-[10px] text-brand-500 bg-orange-100 px-1.5 py-0.5 rounded-full">
+                                <span className="text-[10px] text-brand-500 bg-brand-100 px-1.5 py-0.5 rounded-full">
                                   {item.repeatType === 'daily' ? '매일' : item.repeatType === 'weekly' ? '매주' : item.repeatDays ? ['일','월','화','수','목','금','토'].filter((_, i) => item.repeatDays!.includes(i)).join('·') : ''}
                                 </span>
                               )}
@@ -1231,9 +1249,12 @@ export default function ManagementMain() {
 
                 {/* 빈 상태 */}
                 {totalCount === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-[13px] text-[var(--color-ink-400)]">이 날에는 일정이 없습니다</p>
-                  </div>
+                  <EmptyState
+                    size="compact"
+                    icon={Calendar}
+                    title="일정이 없습니다"
+                    description="이 날에는 등록된 일정이 없습니다"
+                  />
                 )}
               </div>
 
@@ -1241,9 +1262,9 @@ export default function ManagementMain() {
               <div className="px-5 pb-4">
                 <button
                   onClick={() => { setSelectedCalendarDay(null); setShowAddForm(true); }}
-                  className="w-full p-2.5 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-xl text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors"
+                  className="w-full p-2.5 border-[1.5px] border-dashed border-[var(--color-ink-200)] rounded-xl text-[12px] text-[var(--color-ink-400)] hover:border-[var(--color-ink-300)] transition-colors inline-flex items-center justify-center gap-1"
                 >
-                  + 이 날짜에 할 일 추가
+                  <Plus size={12} /> 이 날짜에 할 일 추가
                 </button>
               </div>
             </motion.div>
@@ -1316,7 +1337,7 @@ export default function ManagementMain() {
                       </div>
                       <div className="flex items-center gap-1.5 mt-1 text-[11px] text-[var(--color-ink-400)]">
                         <span>{project?.title}</span>
-                        {assignee && <><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{assignee.name.charAt(0)}</div><span>{assignee.name}</span></>}
+                        {assignee && <><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[9px] font-bold text-[var(--color-ink-500)]">{assignee.name.charAt(0)}</div><span>{assignee.name}</span></>}
                         {finalDueDate && <><span className="text-[var(--color-ink-200)]">·</span><span>마감 {(() => { const d = new Date(finalDueDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
                       </div>
                     </div>
@@ -1371,7 +1392,12 @@ export default function ManagementMain() {
                 {/* 작업 타입별 체크리스트 */}
                 <div className="px-6 py-4">
                   {workTypes.length === 0 ? (
-                    <p className="text-center text-[13px] text-[var(--color-ink-400)] py-8">작업이 없습니다</p>
+                    <EmptyState
+                      size="compact"
+                      icon={Film}
+                      title="작업이 없습니다"
+                      description="이 회차에 등록된 작업이 없습니다"
+                    />
                   ) : (
                     <div className="space-y-5">
                       {workTypes.map(workType => {
@@ -1404,15 +1430,15 @@ export default function ManagementMain() {
                                           handleStepStatusChange(workType, step.id, next);
                                         }}
                                         className={`w-[20px] h-[20px] rounded-[6px] border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                                          step.status === 'completed' ? 'bg-ok-500 border-ok-500 text-white text-[10px]' : step.status === 'in_progress' ? 'border-warn-500 bg-warn-50' : 'border-[var(--color-ink-300)] hover:border-brand-500'
+                                          step.status === 'completed' ? 'bg-ok-500 border-ok-500 text-white' : step.status === 'in_progress' ? 'border-warn-500 bg-warn-50' : 'border-[var(--color-ink-300)] hover:border-brand-500'
                                         }`}
                                       >
-                                        {step.status === 'completed' ? '✓' : step.status === 'in_progress' ? <div className="w-2 h-2 rounded-full bg-warn-500" /> : ''}
+                                        {step.status === 'completed' ? <Check size={12} strokeWidth={3} /> : step.status === 'in_progress' ? <div className="w-2 h-2 rounded-full bg-warn-500" /> : ''}
                                       </button>
                                       <div className="flex-1 min-w-0">
                                         <span className={`text-[12px] font-semibold ${step.status === 'completed' ? 'line-through text-[var(--color-ink-400)]' : ''}`}>{step.label}</span>
                                         <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-[var(--color-ink-400)]">
-                                          {stepPartner && <><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[6px] font-bold text-[var(--color-ink-500)]">{stepPartner.name.charAt(0)}</div><span>{stepPartner.name}</span></>}
+                                          {stepPartner && <><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[9px] font-bold text-[var(--color-ink-500)]">{stepPartner.name.charAt(0)}</div><span>{stepPartner.name}</span></>}
                                           {step.startDate && <><span className="text-[var(--color-ink-200)]">·</span><span>{(() => { const d = new Date(step.startDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
                                           {step.dueDate && <><span className="text-[var(--color-ink-300)]">→</span><span className="text-[var(--color-brand-600)] font-semibold">{(() => { const d = new Date(step.dueDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}</span></>}
                                         </div>
@@ -1438,10 +1464,10 @@ export default function ManagementMain() {
                 <div className="px-6 pb-5">
                   <Link
                     href={`/projects/${ep.projectId}/episodes/${ep.id}`}
-                    className="block w-full text-center py-2.5 bg-brand-500 text-white rounded-xl text-[13px] font-semibold hover:bg-brand-600 transition-colors"
+                    className="flex items-center justify-center gap-1 w-full text-center py-2.5 bg-brand-500 text-white rounded-xl text-[13px] font-semibold hover:bg-brand-600 transition-colors"
                     onClick={() => setQuickViewEpisode(null)}
                   >
-                    상세 보기 →
+                    상세 보기 <ArrowRight size={14} />
                   </Link>
                 </div>
               </motion.div>

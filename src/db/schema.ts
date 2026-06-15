@@ -207,6 +207,29 @@ export const sentEmails = pgTable("sent_emails", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 });
 
+// 메일 주소 디렉토리 — catch-all 수신을 직원별/공용함으로 분류하는 기준.
+// type: personal(개인, owner_user_id) | shared(공용, members가 담당자)
+export const mailAddresses = pgTable("mail_addresses", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	address: text().notNull(),
+	type: text().default('personal').notNull(),
+	ownerUserId: uuid("owner_user_id"),
+	label: text(),
+	active: boolean().default(true).notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+}, (table) => [
+	uniqueIndex("ux_mail_addresses_address_lower").using("btree", sql`lower(address)`),
+]);
+
+export const mailAddressMembers = pgTable("mail_address_members", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	addressId: uuid("address_id").notNull(),
+	userId: uuid("user_id").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+}, (table) => [
+	uniqueIndex("ux_mail_address_members_pair").using("btree", table.addressId.asc().nullsLast(), table.userId.asc().nullsLast()),
+]);
+
 export const auditLog = pgTable("audit_log", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	tableName: text("table_name").notNull(),

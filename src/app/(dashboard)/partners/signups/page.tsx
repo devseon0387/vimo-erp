@@ -2,14 +2,17 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, UserPlus, Link2, X, Search, Mail, Phone, AlertTriangle, Check, Eye } from 'lucide-react';
+import { ArrowLeft, UserPlus, Link2, X, Mail, Phone, AlertTriangle, Check, Eye } from 'lucide-react';
 import {
   getPendingPartnerSignups, mapToExistingPartner, createAndMapNewPartner, rejectPartnerSignup,
 } from '@/lib/supabase/db/partner_signups';
 import type { PendingPartnerSignup } from '@/lib/supabase/db/partner_signups.types';
-import { getPartners } from '@/lib/supabase/db';
+import { getPartners, getMyProfile } from '@/lib/supabase/db';
 import type { Partner } from '@/types';
 import { useToast } from '@/contexts/ToastContext';
+import EmptyState from '@/components/EmptyState';
+import { LoadingState } from '@/components/LoadingState';
+import { SearchInput } from '@/components/SearchInput';
 
 type ConfirmAction =
   | { kind: 'createNew'; signup: PendingPartnerSignup }
@@ -27,6 +30,9 @@ export default function PartnerSignupsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
+    // 관리자 전용 — 비관리자는 가입 신청 PII를 보지 못하도록 데이터 로드 전에 차단
+    const profile = await getMyProfile();
+    if (!profile || profile.role !== 'admin') { router.replace('/management'); return; }
     setLoading(true);
     const [s, p] = await Promise.all([getPendingPartnerSignups(), getPartners()]);
     setSignups(s);
@@ -116,7 +122,7 @@ export default function PartnerSignupsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/partners')}
-            className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
+            className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[#f5f5f4] text-[#78716c] hover:text-[#1c1917] transition-colors"
             title="파트너 목록으로"
           >
             <ArrowLeft size={18} />
@@ -141,14 +147,16 @@ export default function PartnerSignupsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-        </div>
+        <LoadingState />
       ) : signups.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-divider p-16 text-center">
-          <Check size={36} className="mx-auto mb-3 text-green-500" />
-          <p className="text-[15px] font-bold text-gray-900">대기 중인 가입 신청이 없어요</p>
-          <p className="text-[12px] text-gray-500 mt-2">새 파트너가 가입하면 여기에 표시됩니다</p>
+        <div className="bg-white rounded-2xl border border-divider">
+          <EmptyState
+            icon={Check}
+            title="대기 중인 가입 신청이 없어요"
+            description="새 파트너가 가입하면 여기에 표시됩니다"
+            iconColor="text-green-500"
+            iconBgColor="bg-green-50"
+          />
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-divider overflow-hidden">
@@ -213,9 +221,9 @@ function ConfirmModal({
           iconBg: 'bg-orange-50',
           body: (
             <>
-              <span className="font-bold text-gray-900">{action.signup.name}</span>
-              <span className="text-gray-500"> ({action.signup.email})</span>
-              을(를) 비모 ERP의 <b className="text-gray-900">partners 테이블에 신규 등록</b>하고 매핑할까요?
+              <span className="font-bold text-[#1c1917]">{action.signup.name}</span>
+              <span className="text-[#78716c]"> ({action.signup.email})</span>
+              을(를) 비모 ERP의 <b className="text-[#1c1917]">partners 테이블에 신규 등록</b>하고 매핑할까요?
               <br />
               <span className="text-[12.5px] text-orange-600 mt-1.5 inline-block">
                 매핑 후 회차 배정·정산 데이터가 표시됩니다.
@@ -232,9 +240,9 @@ function ConfirmModal({
           iconBg: 'bg-orange-50',
           body: (
             <>
-              <span className="font-bold text-gray-900">{action.signup.name}</span>
+              <span className="font-bold text-[#1c1917]">{action.signup.name}</span>
               의 가입을 기존 파트너{' '}
-              <span className="font-bold text-gray-900">"{action.partnerName}"</span>
+              <span className="font-bold text-[#1c1917]">"{action.partnerName}"</span>
               과 연결할까요?
               <br />
               <span className="text-[12.5px] text-orange-600 mt-1.5 inline-block">
@@ -251,8 +259,8 @@ function ConfirmModal({
           iconBg: 'bg-red-50',
           body: (
             <>
-              <span className="font-bold text-gray-900">{action.signup.name}</span>
-              <span className="text-gray-500"> ({action.signup.email})</span>
+              <span className="font-bold text-[#1c1917]">{action.signup.name}</span>
+              <span className="text-[#78716c]"> ({action.signup.email})</span>
               의 가입을 거부할까요?
               <br />
               <span className="text-[12.5px] text-red-600 mt-1.5 inline-block">
@@ -269,7 +277,7 @@ function ConfirmModal({
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative bg-gray-50 rounded-lg shadow-xl max-w-md w-full p-6"
+          className="relative bg-[#fafaf9] rounded-lg shadow-xl max-w-md w-full p-4"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start gap-3 mb-4">
@@ -277,18 +285,18 @@ function ConfirmModal({
               {config.icon}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-[16px] font-bold text-gray-900">{config.title}</h3>
+              <h3 className="text-[16px] font-bold text-[#1c1917]">{config.title}</h3>
             </div>
           </div>
 
-          <p className="text-[13.5px] text-gray-700 leading-relaxed mb-6">{config.body}</p>
+          <p className="text-[13.5px] text-[#44403c] leading-relaxed mb-6">{config.body}</p>
 
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={onCancel}
               disabled={submitting}
-              className="px-4 py-2 text-[13px] font-semibold text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-[13px] font-semibold text-[#44403c] hover:bg-[#f5f5f4] rounded-lg transition-colors disabled:opacity-50"
             >
               취소
             </button>
@@ -317,7 +325,7 @@ function SignupRow({
 }) {
   const days = Math.floor((Date.now() - new Date(signup.signupAt).getTime()) / (1000 * 60 * 60 * 24));
   return (
-    <div className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-[#fafaf9] transition-colors flex-wrap">
+    <div className="px-5 py-4 flex items-center justify-between gap-3 hover:bg-[#fafaf9] transition-colors flex-wrap">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-[14px] flex-shrink-0"
@@ -409,7 +417,7 @@ function LinkPartnerModal({
             <h3 className="text-[15px] font-bold">기존 파트너와 연결</h3>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-500"
+              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#f5f5f4] text-[#78716c]"
             >
               <X size={16} />
             </button>
@@ -420,27 +428,23 @@ function LinkPartnerModal({
         </div>
 
         <div className="px-4 pt-3">
-          <div className="flex items-center gap-2 px-3 py-2 bg-[#fafaf9] rounded-lg border border-[#ede9e6]">
-            <Search size={14} className="text-[#a8a29e] flex-shrink-0" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="이름·이메일·전화로 검색..."
-              className="flex-1 bg-transparent border-none outline-none text-[13px]"
-            />
-          </div>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="이름·이메일·전화로 검색..."
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-1">
           {filtered.length === 0 ? (
-            <div className="py-12 text-center">
-              <AlertTriangle size={28} className="mx-auto mb-3 text-amber-400" />
-              <p className="text-[13px] font-bold">매칭되는 파트너가 없어요</p>
-              <p className="text-[11.5px] text-[#78716c] mt-1">
-                "신규 등록" 버튼으로 새 파트너로 등록하세요
-              </p>
-            </div>
+            <EmptyState
+              icon={AlertTriangle}
+              title="매칭되는 파트너가 없어요"
+              description='"신규 등록" 버튼으로 새 파트너로 등록하세요'
+              iconColor="text-amber-400"
+              iconBgColor="bg-amber-50"
+              size="compact"
+            />
           ) : (
             filtered.map(p => (
               <button

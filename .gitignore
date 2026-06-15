@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Strategy data
 data/strategy.json
+
+# 받은편지함 개발용 샘플 메일 (배포/커밋 제외)
+_inbound_samples/

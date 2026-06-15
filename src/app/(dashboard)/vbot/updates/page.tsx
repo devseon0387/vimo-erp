@@ -5,6 +5,8 @@ import {
   Bot, RefreshCw, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { getAppUpdates } from '@/lib/supabase/db/app-updates';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 
 interface AppUpdate {
   id: string;
@@ -85,21 +87,13 @@ export default function VbotUpdatesPage() {
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
       {loading ? (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '60px 0', color: '#a8a29e', fontSize: '14px',
-        }}>
-          <RefreshCw size={18} style={{ marginRight: '8px', animation: 'spin 1s linear infinite' }} />
-          업데이트 내역을 불러오는 중...
-        </div>
+        <LoadingState label="업데이트 내역을 불러오는 중..." />
       ) : updates.length === 0 ? (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: '60px 0', color: '#a8a29e',
-        }}>
-          <Bot size={40} style={{ marginBottom: '12px', opacity: 0.3 }} />
-          <p style={{ fontSize: '14px', margin: 0 }}>아직 업데이트 내역이 없습니다</p>
-        </div>
+        <EmptyState
+          icon={Bot}
+          title="아직 업데이트 내역이 없습니다"
+          description="비봇의 릴리즈 노트와 변경 내역이 여기에 표시됩니다."
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {updates.map((update, idx) => {

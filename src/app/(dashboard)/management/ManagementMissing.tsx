@@ -4,10 +4,13 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Save, Sparkles, Check, ChevronDown, User, Search, Wallet, Users, Calendar } from 'lucide-react';
 import { Project, Partner, Episode } from '@/types';
+import { TabBar } from '@/components/TabBar';
 import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { useToast } from '@/contexts/ToastContext';
 import DateTripleModal from '@/components/DateTripleModal';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 
 // ── 제목에서 금액 힌트 추출
 function extractPriceHint(title: string): number | null {
@@ -469,7 +472,7 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
   return (
     <div className="space-y-5">
       {/* 통합 카드 */}
-      <div className="bg-white rounded-xl sm:rounded-2xl border border-ink-100">
+      <div className="bg-white rounded-2xl border border-ink-100">
         {/* 툴바 */}
         <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-[var(--color-ink-200)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
@@ -485,26 +488,12 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {/* 탭 */}
-            <div className="inline-flex gap-0.5 p-1 bg-[#f5f4f2] rounded-xl">
-              {tabs.map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setFilter(tab.key)}
-                  className="relative px-2.5 py-1.5 rounded-lg text-[11px] sm:text-[12px] font-semibold"
-                >
-                  {filter === tab.key && (
-                    <motion.div
-                      layoutId="batch-tab"
-                      className="absolute inset-0 bg-brand-500 rounded-lg shadow-sm shadow-orange-500/20"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  <span className={`relative z-10 whitespace-nowrap ${filter === tab.key ? 'text-white' : 'text-[var(--color-ink-500)]'}`}>
-                    {tab.label} {tab.count}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <TabBar
+              items={tabs.map(tab => ({ key: tab.key, label: tab.label, count: tab.count }))}
+              active={filter}
+              onChange={(key) => setFilter(key as FilterKey)}
+              fullWidthMobile={false}
+            />
 
             {/* 저장 */}
             <button
@@ -528,15 +517,14 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
 
         {/* 스플릿 뷰 */}
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-          </div>
+          <LoadingState />
         ) : filtered.length === 0 ? (
-          <div className="py-20 text-center">
-            <Check className="mx-auto mb-3 text-ok-500" size={36} />
-            <p className="font-medium text-ink-500">미입력 항목이 없습니다</p>
-            <p className="text-xs mt-1 text-[var(--color-ink-400)]">모든 에피소드의 정보가 입력되었습니다</p>
-          </div>
+          <EmptyState
+            icon={Check}
+            title="미입력 항목이 없습니다"
+            description="모든 에피소드의 정보가 입력되었습니다"
+            size="compact"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] min-h-[560px]">
             {/* 왼쪽 리스트 */}
@@ -751,7 +739,7 @@ function DetailPane({
       </div>
 
       {/* 헤더 */}
-      <div className="px-6 pt-4 pb-5 flex justify-between items-start gap-4">
+      <div className="px-6 pt-4 pb-5 flex justify-between items-start gap-3">
         <div className="min-w-0">
           <div className="text-[12px] text-[var(--color-ink-500)] font-semibold">{idx + 1} / {total}</div>
           <div className="text-[20px] font-bold mt-1 truncate">

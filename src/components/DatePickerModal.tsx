@@ -90,7 +90,7 @@ export default function DatePickerModal({ value, onChange, placeholder, classNam
             onClick={(e) => { e.stopPropagation(); onChange(''); }}
             className="text-gray-300 hover:text-gray-500 transition-colors text-[10px] leading-none cursor-pointer ml-1"
           >
-            ✕
+            <X className="w-2.5 h-2.5" />
           </span>
         )}
       </button>

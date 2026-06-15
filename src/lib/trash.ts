@@ -26,8 +26,10 @@ export async function addToTrash(
   type: TrashItemType,
   data: Project | Episode | Client | Partner,
   originalProjectId?: string
-): Promise<void> {
-  await insertTrash(type, data, originalProjectId);
+): Promise<boolean> {
+  // 휴지통 백업 성공 여부 반환 — 삭제 전 백업 확인용(insertTrash 는 실패 시 null)
+  const saved = await insertTrash(type, data, originalProjectId);
+  return saved !== null;
 }
 
 /**

@@ -9,6 +9,7 @@ import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import DateRangePicker from '@/components/DateRangePicker';
 import DatePicker from '@/components/DatePicker';
 import ShareLinkButton from '@/components/ShareLinkButton';
+import { StatusBadge, type StatusTone } from '@/components/StatusBadge';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // 모든 작업 타입 정의
@@ -427,17 +428,19 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
     };
   }, [editedEpisode, workSteps, workBudgets, episodeId, projectId]);
 
+  // hook은 early return 앞에서 항상 호출되어야 함(Rules of Hooks). partnersById는 partners에만 의존.
+  const partnersById = useMemo(() => new Map(partners.map(p => [p.id, p])), [partners]);
+
   if (!episode || !editedEpisode || !project) {
     return (
-      <div className="min-h-screen bg-[#f5f4f2] flex items-center justify-center">
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
         <div className="text-center bg-white rounded-xl border border-divider px-8 py-6">
-          <p className="text-gray-500">로딩 중...</p>
+          <p className="text-[#78716c]">로딩 중...</p>
         </div>
       </div>
     );
   }
 
-  const partnersById = useMemo(() => new Map(partners.map(p => [p.id, p])), [partners]);
   const partner = editedEpisode.assignee ? partnersById.get(editedEpisode.assignee) : undefined;
   const managerPartner = editedEpisode.manager ? partnersById.get(editedEpisode.manager) : undefined;
 
@@ -794,6 +797,17 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
     return statusMap[status] || statusMap.waiting;
   };
 
+  // 상태 → StatusBadge 톤 매핑 (waiting=대기/회색, in_progress=진행중/앰버, review=검토중/주황, completed=완료/초록)
+  const statusTone = (status: string): StatusTone => {
+    const toneMap: Record<string, StatusTone> = {
+      waiting: 'neutral',
+      in_progress: 'warn',
+      review: 'brand',
+      completed: 'ok',
+    };
+    return toneMap[status] || 'neutral';
+  };
+
   const getStatusLabel = (status: string) => {
     const statusMap: Record<string, string> = {
       waiting: '대기',
@@ -895,9 +909,9 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                 {(() => {
                   const overallStatus = getOverallEpisodeStatus();
                   return (
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${getStatusColor(overallStatus)}`}>
+                    <StatusBadge tone={statusTone(overallStatus)} className="flex-shrink-0">
                       {getStatusLabel(overallStatus)}
-                    </span>
+                    </StatusBadge>
                   );
                 })()}
               </div>
@@ -1582,9 +1596,9 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                             </span>
 
                             {/* 상태 배지 */}
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(getWorkTypeStatus(workType))}`}>
+                            <StatusBadge tone={statusTone(getWorkTypeStatus(workType))}>
                               {getStatusLabel(getWorkTypeStatus(workType))}
-                            </span>
+                            </StatusBadge>
 
                             {/* 작업 단계 개수 */}
                             {workSteps[workType]?.length > 0 && (
@@ -2351,15 +2365,9 @@ export default function EpisodeDetailPanel({ projectId, episodeId, embedded = fa
                       const status = getWorkTypeStatus(selectedWorkTypeModal);
                       return (
                         <>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            status === 'completed'
-                              ? 'bg-green-100 text-green-800'
-                              : status === 'in_progress'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
+                          <StatusBadge tone={statusTone(status)}>
                             {status === 'completed' ? '완료' : status === 'in_progress' ? '진행중' : '대기'}
-                          </span>
+                          </StatusBadge>
                           <span className="text-sm text-gray-600">
                             {completedCount}/{steps.length} 완료
                           </span>

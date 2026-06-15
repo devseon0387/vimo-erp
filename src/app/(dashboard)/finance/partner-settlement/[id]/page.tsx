@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Copy, Check, Landmark, Receipt, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, CheckCircle, Clock, Coins, Download } from 'lucide-react';
-import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Partner, Episode } from '@/types';
 import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
@@ -12,18 +11,10 @@ import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
 import DatePicker from '@/components/DatePicker';
-
-function calcNetAmount(amount: number, partnerType?: 'freelancer' | 'business') {
-  if (partnerType === 'business') return Math.round(amount * 1.1);
-  if (partnerType === 'freelancer') return Math.round(amount * (1 - 0.033));
-  return amount;
-}
-
-function getNetLabel(partnerType?: 'freelancer' | 'business') {
-  if (partnerType === 'business') return '부가세 10%';
-  if (partnerType === 'freelancer') return '3.3%';
-  return '';
-}
+import { TabBar } from '@/components/TabBar';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
+import { calcNetAmount, getNetLabel } from '@/lib/finance/net-amount';
 
 function getDday(dateStr: string) {
   const today = new Date();
@@ -51,6 +42,7 @@ export default function PartnerSettlementDetailPage() {
   const [partner, setPartner] = useState<Partner | null>(null);
   const [allEpisodes, setAllEpisodes] = useState<(Episode & { projectId: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [editingEp, setEditingEp] = useState<(Episode & { projectId: string; projectTitle: string }) | null>(null);
   const [editDate, setEditDate] = useState('');
@@ -75,6 +67,7 @@ export default function PartnerSettlementDetailPage() {
   const nextMonth = () => setSelectedDate(prev => prev.month === 12 ? { year: prev.year + 1, month: 1 } : { year: prev.year, month: prev.month + 1 });
 
   const loadData = useCallback(() => {
+    setError(false);
     setLoading(true);
     Promise.all([getProjects(), getPartners(), getAllEpisodes()]).then(
       ([p, pa, ep]) => {
@@ -83,7 +76,7 @@ export default function PartnerSettlementDetailPage() {
         setAllEpisodes(ep);
         setLoading(false);
       }
-    ).catch(() => setLoading(false));
+    ).catch(() => { setError(true); setLoading(false); });
   }, [id]);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -166,6 +159,7 @@ export default function PartnerSettlementDetailPage() {
       el.style.top = '0';
       el.style.zIndex = '9999';
       await new Promise(r => setTimeout(r, 200));
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(el, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true });
       el.style.position = 'fixed';
       el.style.left = '-9999px';
@@ -199,15 +193,24 @@ export default function PartnerSettlementDetailPage() {
     loadData();
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" /></div>;
-  if (!partner) return <div className="flex flex-col items-center justify-center h-64 gap-4"><p className="text-gray-500">파트너를 찾을 수 없습니다.</p><Link href="/finance/partner-settlement" className="text-sm text-orange-500">← 목록으로</Link></div>;
+  if (loading) return <LoadingState />;
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-4">
+      <p className="text-[#78716c]">데이터를 불러오는데 실패했습니다.</p>
+      <div className="flex items-center gap-2">
+        <button onClick={loadData} className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-sm font-medium">다시 시도</button>
+        <Link href="/finance/partner-settlement" className="px-4 py-2 text-sm text-[#78716c]">목록으로</Link>
+      </div>
+    </div>
+  );
+  if (!partner) return <div className="flex flex-col items-center justify-center h-64 gap-3"><p className="text-[#78716c]">파트너를 찾을 수 없습니다.</p><Link href="/finance/partner-settlement" className="text-sm text-orange-500">← 목록으로</Link></div>;
 
   return (
     <div className="space-y-5">
       {/* 헤더 카드 */}
       <div className="bg-white rounded-2xl border border-divider px-5 py-4">
         <div className="flex items-center gap-3">
-          <Link href="/finance/partner-settlement" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+          <Link href="/finance/partner-settlement" className="p-2 hover:bg-[#f5f5f4] rounded-xl transition-colors">
             <ArrowLeft size={18} className="text-[#a8a29e]" />
           </Link>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white ${partner.position === 'executive' ? 'bg-purple-500' : 'bg-orange-500'}`}>
@@ -251,17 +254,17 @@ export default function PartnerSettlementDetailPage() {
       {/* 월 이동 + 모두 정산 완료 */}
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1 bg-white border border-divider rounded-[10px] px-1 py-1 w-fit">
-          <button onClick={prevMonth} disabled={isMinMonth} className={`p-1.5 rounded-lg transition-colors ${isMinMonth ? 'invisible' : 'hover:bg-gray-100'}`}>
+          <button onClick={prevMonth} disabled={isMinMonth} className={`p-1.5 rounded-lg transition-colors ${isMinMonth ? 'invisible' : 'hover:bg-[#f5f5f4]'}`}>
             <ChevronLeft size={14} className="text-[#a8a29e]" />
           </button>
           <div className="px-2.5 py-1 min-w-[90px] text-center overflow-hidden">
             <AnimatePresence mode="wait" initial={false}>
-              <motion.span key={`${selectedDate.year}-${selectedDate.month}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="block text-[13px] font-semibold text-gray-800 tabular-nums">
+              <motion.span key={`${selectedDate.year}-${selectedDate.month}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="block text-[13px] font-semibold text-[#1c1917] tabular-nums">
                 {String(selectedDate.year).slice(2)}년 {String(selectedDate.month).padStart(2, '0')}월
               </motion.span>
             </AnimatePresence>
           </div>
-          <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+          <button onClick={nextMonth} className="p-1.5 hover:bg-[#f5f5f4] rounded-lg transition-colors">
             <ChevronRight size={14} className="text-[#a8a29e]" />
           </button>
         </div>
@@ -310,11 +313,12 @@ export default function PartnerSettlementDetailPage() {
         {/* 모바일: 시안 3B — 컴팩트 회차 행 (펼침) */}
         <div className="sm:hidden">
           {allItems.length === 0 ? (
-            <div className="py-20 text-center text-gray-400">
-              <Receipt className="mx-auto mb-3 text-gray-200" size={36} />
-              <p className="font-medium text-gray-500">정산 내역이 없어요</p>
-              <p className="text-xs mt-1">{selectedDate.year}년 {selectedDate.month}월에 해당하는 내역이 없습니다</p>
-            </div>
+            <EmptyState
+              icon={Receipt}
+              title="정산 내역이 없어요"
+              description={`${selectedDate.year}년 ${selectedDate.month}월에 해당하는 내역이 없습니다`}
+              size="compact"
+            />
           ) : (
             <>
               {/* 합계 카드 */}
@@ -326,17 +330,16 @@ export default function PartnerSettlementDetailPage() {
               </div>
 
               {/* 필터 칩 */}
-              <div className="px-4 py-3 flex gap-1.5 border-b border-[#f0ece9] overflow-x-auto">
-                {(['all', 'pending', 'completed'] as const).map(f => {
-                  const cnt = f === 'all' ? allItems.length : allItems.filter(i => f === 'completed' ? i.episode.paymentStatus === 'completed' : i.episode.paymentStatus !== 'completed').length;
-                  const label = f === 'all' ? '전체' : f === 'pending' ? '미정산' : '완료';
-                  const active = mobileFilter === f;
-                  return (
-                    <button key={f} onClick={() => setMobileFilter(f)} className={`flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold transition-colors ${active ? 'bg-orange-500 text-white' : 'bg-white border border-divider text-[#44403c]'}`}>
-                      {label} {cnt}
-                    </button>
-                  );
-                })}
+              <div className="px-4 py-3 border-b border-[#f0ece9]">
+                <TabBar
+                  items={(['all', 'pending', 'completed'] as const).map(f => ({
+                    key: f,
+                    label: f === 'all' ? '전체' : f === 'pending' ? '미정산' : '완료',
+                    count: f === 'all' ? allItems.length : allItems.filter(i => f === 'completed' ? i.episode.paymentStatus === 'completed' : i.episode.paymentStatus !== 'completed').length,
+                  }))}
+                  active={mobileFilter}
+                  onChange={setMobileFilter}
+                />
               </div>
 
               {/* 회차 리스트 */}
@@ -344,9 +347,12 @@ export default function PartnerSettlementDetailPage() {
                 const filteredItems = allItems.filter(i => mobileFilter === 'all' ? true : mobileFilter === 'completed' ? i.episode.paymentStatus === 'completed' : i.episode.paymentStatus !== 'completed');
                 if (filteredItems.length === 0) {
                   return (
-                    <div className="py-10 text-center text-[12px] text-[#a8a29e]">
-                      해당 상태의 정산 내역이 없습니다
-                    </div>
+                    <EmptyState
+                      icon={Receipt}
+                      title="정산 내역이 없어요"
+                      description="해당 상태의 정산 내역이 없습니다"
+                      size="compact"
+                    />
                   );
                 }
                 return (
@@ -417,7 +423,7 @@ export default function PartnerSettlementDetailPage() {
         {/* 데스크탑: 기존 테이블 */}
         <div className="hidden sm:block" style={{ overflowX: 'clip' }}>
           <div className="min-w-[700px]">
-            <div className="grid grid-cols-[1fr_120px_100px_90px_100px] gap-2 px-5 py-2.5 text-[11px] font-semibold text-[#a8a29e] border-b border-[#f0ece9]">
+            <div className="grid grid-cols-[1fr_120px_100px_110px_100px] gap-2 px-5 py-2.5 text-[11px] font-semibold text-ink-400 border-b border-[#f0ece9]">
               <span>프로젝트 · 회차</span>
               <span className="text-right">정산일</span>
               <span className="text-right">금액</span>
@@ -425,13 +431,14 @@ export default function PartnerSettlementDetailPage() {
               <span className="text-right">실 수령</span>
             </div>
             {allItems.length === 0 ? (
-              <div className="py-20 text-center text-gray-400">
-                <Receipt className="mx-auto mb-3 text-gray-200" size={36} />
-                <p className="font-medium text-gray-500">정산 내역이 없어요</p>
-                <p className="text-xs mt-1">{selectedDate.year}년 {selectedDate.month}월에 해당하는 내역이 없습니다</p>
-              </div>
+              <EmptyState
+                icon={Receipt}
+                title="정산 내역이 없어요"
+                description={`${selectedDate.year}년 ${selectedDate.month}월에 해당하는 내역이 없습니다`}
+                size="compact"
+              />
             ) : (
-              <div className="divide-y divide-[#f8f7f6]">
+              <div className="divide-y divide-[#f0ece9]">
                 {allItems.map(({ episode: ep, project }, idx) => {
                   const epAmount = ep.budget?.partnerPayment ?? 0;
                   const epNet = calcNetAmount(epAmount, partner.partnerType);
@@ -446,27 +453,27 @@ export default function PartnerSettlementDetailPage() {
                     >
                       <div
                         onClick={() => openEdit(ep, project.title)}
-                        className="grid grid-cols-[1fr_120px_100px_90px_100px] gap-2 px-5 py-3 items-center hover:bg-[#fafaf9] transition-colors cursor-pointer"
+                        className="grid grid-cols-[1fr_120px_100px_110px_100px] gap-2 px-5 py-3 items-center hover:bg-[#fafaf9] transition-colors cursor-pointer"
                       >
-                        <div className="min-w-0">
+                        <div className="min-w-0 truncate">
                           <span className="text-[13px] font-semibold">{project.title}</span>
-                          <span className="text-[12px] text-[#a8a29e] ml-1.5">{ep.episodeNumber}편 {ep.title || ''}</span>
+                          <span className="text-[12px] text-ink-400 ml-1.5">{ep.episodeNumber}편 {ep.title || ''}</span>
                         </div>
                         <div className="text-right whitespace-nowrap">
                           {ep.paymentDueDate ? (
                             <div className="flex items-center justify-end gap-1.5">
-                              <span className="text-[12px] tabular-nums text-[#44403c]">{fmtDate(ep.paymentDueDate)}</span>
+                              <span className="text-[12px] tabular-nums text-ink-700">{fmtDate(ep.paymentDueDate)}</span>
                               {dday && (
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                                  dday.urgent ? 'bg-red-100 text-red-600' : 'bg-[#f5f5f4] text-[#a8a29e]'
+                                  dday.urgent ? 'bg-red-100 text-red-600' : 'bg-[#f5f5f4] text-ink-400'
                                 }`}>{dday.label}</span>
                               )}
                             </div>
-                          ) : <span className="text-[12px] text-[#d6d3d1]">-</span>}
+                          ) : <span className="text-[12px] text-ink-300">-</span>}
                         </div>
-                        <span className="text-[14px] font-semibold text-right tabular-nums">{epAmount.toLocaleString()}</span>
-                        <span className="text-[12px] text-[#a8a29e] text-right tabular-nums">{partner.partnerType === 'business' ? '+' : '−'}{taxAmount.toLocaleString()}</span>
-                        <span className="text-[14px] font-bold text-blue-600 text-right tabular-nums">{epNet.toLocaleString()}</span>
+                        <span className="text-[14px] font-semibold text-right tabular-nums whitespace-nowrap">{epAmount.toLocaleString()}</span>
+                        <span className="text-[12px] text-ink-400 text-right tabular-nums whitespace-nowrap">{partner.partnerType === 'business' ? '+' : '−'}{taxAmount.toLocaleString()}</span>
+                        <span className="text-[14px] font-bold text-blue-600 text-right tabular-nums whitespace-nowrap">{epNet.toLocaleString()}</span>
                       </div>
                     </motion.div>
                   );
@@ -650,7 +657,7 @@ export default function PartnerSettlementDetailPage() {
                   <h3 className="text-[15px] font-bold">{editingEp.projectTitle}</h3>
                   <p className="text-[12px] text-[#a8a29e]">{editingEp.episodeNumber}편 {editingEp.title || ''}</p>
                 </div>
-                <button onClick={() => setEditingEp(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <button onClick={() => setEditingEp(null)} className="p-2 hover:bg-[#f5f5f4] rounded-xl transition-colors">
                   <X size={18} className="text-[#a8a29e]" />
                 </button>
               </div>

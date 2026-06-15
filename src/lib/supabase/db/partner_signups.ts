@@ -53,6 +53,22 @@ async function requireAdmin() {
   return user;
 }
 
+// 트랜잭션 핸들 타입(db.transaction 콜백 인자)을 파생 — 별도 import 없이 tx를 타입 안전하게 받기 위함.
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// 승인 시 파트너에게 부여하는 기본 앱 접근권: 파트너 ERP + Vibox(파트너 워크스페이스). 멱등 upsert.
+async function grantPartnerApps(tx: Tx, userId: string) {
+  for (const [appCode, role] of [['partner_erp', 'partner'], ['vibox', 'member']] as const) {
+    await tx
+      .insert(appAccess)
+      .values({ userId, appCode, role, status: 'active' })
+      .onConflictDoUpdate({
+        target: [appAccess.userId, appAccess.appCode],
+        set: { role, status: 'active' },
+      });
+  }
+}
+
 // ─── CRUD ────────────────────────────────────────────────────────────────────
 
 // 매핑 안 된 (status='pending' OR legacy_partner_id IS NULL) 파트너 가입자 조회
@@ -103,16 +119,20 @@ export async function mapToExistingPartner(profileId: string, legacyPartnerId: s
   if (!user) return false;
   try {
     const now = new Date().toISOString();
-    await db
-      .update(partnerMeta)
-      .set({
-        legacyPartnerId,
-        legacyMappedAt: now,
-        legacyMappedBy: user.id,
-        status: 'active',
-        updatedAt: now,
-      })
-      .where(eq(partnerMeta.profileId, profileId));
+    // 승인 = 거래처 매핑(active) + 접근권 부여를 한 트랜잭션으로 묶어 '승인했는데 못 쓰는' 고아를 막는다.
+    await db.transaction(async (tx) => {
+      await tx
+        .update(partnerMeta)
+        .set({
+          legacyPartnerId,
+          legacyMappedAt: now,
+          legacyMappedBy: user.id,
+          status: 'active',
+          updatedAt: now,
+        })
+        .where(eq(partnerMeta.profileId, profileId));
+      await grantPartnerApps(tx, profileId);
+    });
     return true;
   } catch (e) {
     console.error('mapToExistingPartner error:', e instanceof Error ? e.message : e);
@@ -144,35 +164,40 @@ export async function createAndMapNewPartner(profileId: string): Promise<boolean
       .where(eq(partnerMeta.profileId, profileId))
       .limit(1);
 
-    // 2. partners 테이블에 row 생성
-    const [newPartner] = await db
-      .insert(partners)
-      .values({
-        name: profile.name ?? '',
-        email: profile.email,
-        phone: profile.phone,
-        partnerType: meta?.type ?? 'freelancer',
-        status: 'active',
-      })
-      .returning({ id: partners.id });
-
-    if (!newPartner) {
-      console.error('createAndMapNewPartner partners insert: no row returned');
-      return false;
-    }
-
-    // 3. partner_meta에 legacy_partner_id 매핑
+    // 거래처 생성 + 매핑(active) + 접근권 부여를 한 트랜잭션으로 (부분 실패로 인한 고아 방지).
     const now = new Date().toISOString();
-    await db
-      .update(partnerMeta)
-      .set({
-        legacyPartnerId: newPartner.id,
-        legacyMappedAt: now,
-        legacyMappedBy: user.id,
-        status: 'active',
-        updatedAt: now,
-      })
-      .where(eq(partnerMeta.profileId, profileId));
+    await db.transaction(async (tx) => {
+      // 2. partners 테이블에 row 생성
+      const [newPartner] = await tx
+        .insert(partners)
+        .values({
+          name: profile.name ?? '',
+          email: profile.email,
+          phone: profile.phone,
+          partnerType: meta?.type ?? 'freelancer',
+          status: 'active',
+        })
+        .returning({ id: partners.id });
+
+      if (!newPartner) {
+        throw new Error('createAndMapNewPartner partners insert: no row returned');
+      }
+
+      // 3. partner_meta에 legacy_partner_id 매핑
+      await tx
+        .update(partnerMeta)
+        .set({
+          legacyPartnerId: newPartner.id,
+          legacyMappedAt: now,
+          legacyMappedBy: user.id,
+          status: 'active',
+          updatedAt: now,
+        })
+        .where(eq(partnerMeta.profileId, profileId));
+
+      // 4. 승인 = 접근권 부여 (partner_erp + Vibox 워크스페이스)
+      await grantPartnerApps(tx, profileId);
+    });
 
     return true;
   } catch (e) {

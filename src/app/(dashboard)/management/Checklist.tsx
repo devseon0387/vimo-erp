@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, FolderOpen, Film } from 'lucide-react';
 
 /** ManagementMain 내부 ChecklistItem 과 동일 shape (camelCase UI 타입) */
 export interface ChecklistItemView {
@@ -55,13 +56,13 @@ export default function Checklist({ oneTimeItems, checklistItems, onToggle, onAd
                   <span className="text-[12px] font-medium block truncate">{item.text}</span>
                   <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                     {item.reminderTime && (
-                      <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded">🔴 {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-[10px] font-semibold text-bad-500 bg-bad-100 px-1.5 py-0.5 rounded"><Clock className="inline align-middle w-2.5 h-2.5" /> {new Date(item.reminderTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
                     )}
                     {item.linkedProjectTitle && (
-                      <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">📁 {item.linkedProjectTitle}</span>
+                      <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded"><FolderOpen className="inline align-middle w-2.5 h-2.5" /> {item.linkedProjectTitle}</span>
                     )}
                     {item.linkedEpisodeTitle && (
-                      <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded">🎬 {item.linkedEpisodeNumber}편</span>
+                      <span className="text-[10px] text-[var(--color-ink-500)] bg-[var(--color-ink-100)] px-1.5 py-0.5 rounded"><Film className="inline align-middle w-2.5 h-2.5" /> {item.linkedEpisodeNumber}편</span>
                     )}
                   </div>
                 </div>

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth/admin';
 import { db } from '@/db';
-import { userProfiles } from '@/db/schema';
+import { userProfiles, profiles, appAccess } from '@/db/schema';
 
 // 신규 사용자 생성 — Auth.js 체제: user_profiles 행 + bcrypt 해시 (Supabase auth.admin.createUser 대체).
 export async function POST(req: NextRequest) {
@@ -27,27 +27,44 @@ export async function POST(req: NextRequest) {
 
     const normEmail = String(email).trim().toLowerCase();
 
-    // 이메일 중복 체크 (authorize는 이메일로 조회하므로 유니크 보장)
-    const existing = await db
-      .select({ id: userProfiles.id })
-      .from(userProfiles)
-      .where(eq(userProfiles.email, normEmail))
-      .limit(1);
-    if (existing[0]) {
+    // 이메일 중복 체크 — 직원/파트너 둘 다 이메일로 로그인 조회되므로 두 정체성 테이블 모두 검사.
+    const [dupUp] = await db.select({ id: userProfiles.id }).from(userProfiles).where(eq(userProfiles.email, normEmail)).limit(1);
+    const [dupP] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.email, normEmail)).limit(1);
+    if (dupUp || dupP) {
       return NextResponse.json({ error: '이미 존재하는 이메일입니다' }, { status: 409 });
     }
 
     const userId = crypto.randomUUID();
     const passwordHash = await bcrypt.hash(password, 10);
+    const resolvedRole = role || 'manager';
+    // 비모 ERP 접근권 role: 대표(admin)는 'admin'(isVimoAdmin 충족), 그 외는 'staff'.
+    const appAccessRole = resolvedRole === 'admin' ? 'admin' : 'staff';
 
-    await db.insert(userProfiles).values({
-      id: userId,
-      name: name.trim(),
-      email: normEmail,
-      role: role || 'manager',
-      approved: true,
-      needsPasswordChange: true,
-      passwordHash,
+    // 직원 정체성은 세 곳을 한 트랜잭션으로 만들어야 온보딩이 UI만으로 완결된다:
+    //  user_profiles(로그인) + profiles(user_type=staff: 권한게이트·표시·앱권한목록) + app_access(vimo_erp: 미들웨어 접근권).
+    await db.transaction(async (tx) => {
+      await tx.insert(userProfiles).values({
+        id: userId,
+        name: name.trim(),
+        email: normEmail,
+        role: resolvedRole,
+        approved: true,
+        needsPasswordChange: true,
+        passwordHash,
+      });
+      await tx.insert(profiles).values({
+        id: userId,
+        userType: 'staff',
+        name: name.trim(),
+        email: normEmail,
+        passwordHash,
+      });
+      await tx.insert(appAccess).values({
+        userId,
+        appCode: 'vimo_erp',
+        role: appAccessRole,
+        status: 'active',
+      });
     });
 
     return NextResponse.json({ ok: true, userId });

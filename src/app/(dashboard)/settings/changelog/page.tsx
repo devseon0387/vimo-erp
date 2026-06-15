@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Plus, X, ChevronDown, ChevronUp, Sparkles, Wrench, Zap, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, X, ChevronDown, ChevronUp, Sparkles, Wrench, Zap, AlertCircle, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 import { defaultChangelogs, type UpdateType, type ChangelogItem } from '@/config/changelog';
+import EmptyState from '@/components/EmptyState';
 
 const TYPE_CONFIG: Record<UpdateType, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   feature: { label: '새 기능', color: 'text-orange-700', bg: 'bg-orange-100', icon: <Sparkles size={14} /> },
@@ -87,13 +88,13 @@ export default function ChangelogPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/settings">
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <ArrowLeft size={24} className="text-gray-600" />
+            <button className="p-2 hover:bg-[#f5f5f4] rounded-lg transition-colors">
+              <ArrowLeft size={24} className="text-[#57534e]" />
             </button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">업데이트 기록</h1>
-            <p className="text-gray-500 mt-1">기능 추가 및 변경 이력</p>
+            <h1 className="text-page">업데이트 기록</h1>
+            <p className="text-[#78716c] mt-1">기능 추가 및 변경 이력</p>
           </div>
         </div>
         <button
@@ -107,17 +108,17 @@ export default function ChangelogPage() {
 
       {/* 추가 폼 */}
       {isAdding && (
-        <div className="bg-white border-2 border-green-200 rounded-2xl p-6 shadow-lg space-y-4">
+        <div className="bg-white border-2 border-green-200 rounded-2xl p-4 shadow-lg space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-bold text-gray-900">새 업데이트 추가</h2>
-            <button onClick={() => setIsAdding(false)} className="p-1 hover:bg-gray-100 rounded-full">
-              <X size={20} className="text-gray-500" />
+            <h2 className="text-lg font-bold text-[#1c1917]">새 업데이트 추가</h2>
+            <button onClick={() => setIsAdding(false)} className="p-1 hover:bg-[#f5f5f4] rounded-full">
+              <X size={20} className="text-[#78716c]" />
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">버전</label>
+              <label className="text-sm font-medium text-[#44403c]">버전</label>
               <input
                 type="text"
                 placeholder="예: v1.2.0"
@@ -127,7 +128,7 @@ export default function ChangelogPage() {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">날짜</label>
+              <label className="text-sm font-medium text-[#44403c]">날짜</label>
               <input
                 type="date"
                 value={newItem.date || ''}
@@ -138,7 +139,7 @@ export default function ChangelogPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">유형</label>
+            <label className="text-sm font-medium text-[#44403c]">유형</label>
             <div className="flex gap-2 flex-wrap">
               {(Object.keys(TYPE_CONFIG) as UpdateType[]).map(type => {
                 const cfg = TYPE_CONFIG[type];
@@ -150,7 +151,7 @@ export default function ChangelogPage() {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border-2 transition-all ${
                       isSelected
                         ? `${cfg.bg} ${cfg.color} border-current`
-                        : 'bg-white text-gray-500 border-divider hover:border-gray-300'
+                        : 'bg-white text-[#78716c] border-divider hover:border-gray-300'
                     }`}
                   >
                     {cfg.icon}
@@ -162,7 +163,7 @@ export default function ChangelogPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">제목</label>
+            <label className="text-sm font-medium text-[#44403c]">제목</label>
             <input
               type="text"
               placeholder="업데이트 제목"
@@ -173,7 +174,7 @@ export default function ChangelogPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">설명</label>
+            <label className="text-sm font-medium text-[#44403c]">설명</label>
             <textarea
               placeholder="간단한 설명 (선택)"
               value={newItem.description || ''}
@@ -184,7 +185,7 @@ export default function ChangelogPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">상세 항목</label>
+            <label className="text-sm font-medium text-[#44403c]">상세 항목</label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -196,7 +197,7 @@ export default function ChangelogPage() {
               />
               <button
                 onClick={handleAddDetail}
-                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                className="px-3 py-2 bg-[#f5f5f4] text-[#44403c] rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
               >
                 추가
               </button>
@@ -204,10 +205,10 @@ export default function ChangelogPage() {
             {(newItem.details || []).length > 0 && (
               <ul className="space-y-1 mt-2">
                 {newItem.details!.map((detail, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                  <li key={i} className="flex items-center gap-2 text-sm text-[#44403c]">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
                     <span className="flex-1">{detail}</span>
-                    <button onClick={() => handleRemoveDetail(i)} className="text-gray-400 hover:text-red-500 transition-colors">
+                    <button onClick={() => handleRemoveDetail(i)} className="text-[#a8a29e] hover:text-red-500 transition-colors">
                       <X size={14} />
                     </button>
                   </li>
@@ -219,14 +220,14 @@ export default function ChangelogPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setIsAdding(false)}
-              className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors text-sm"
+              className="flex-1 py-2.5 bg-[#f5f5f4] text-[#44403c] rounded-xl font-medium hover:bg-gray-200 transition-colors text-sm"
             >
               취소
             </button>
             <button
               onClick={handleSave}
               disabled={!newItem.version || !newItem.title || !newItem.date}
-              className="flex-1 py-2.5 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors text-sm disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="flex-1 py-2.5 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors text-sm disabled:bg-gray-200 disabled:text-[#a8a29e] disabled:cursor-not-allowed"
             >
               저장
             </button>
@@ -237,44 +238,45 @@ export default function ChangelogPage() {
       {/* 타임라인 */}
       <div className="space-y-4">
         {changelogs.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
-            <ClipboardListIcon />
-            <p className="mt-4 font-medium">업데이트 기록이 없습니다</p>
-            <p className="text-sm mt-1">오른쪽 상단 버튼으로 추가해보세요</p>
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            title="업데이트 기록이 없습니다"
+            description="오른쪽 상단 버튼으로 추가해보세요"
+            action={{ label: '업데이트 추가', onClick: () => setIsAdding(true) }}
+          />
         )}
         {changelogs.map(item => {
           const cfg = TYPE_CONFIG[item.type];
           const isExpanded = expandedIds.has(item.id);
           return (
             <div key={item.id} className="bg-white border border-divider rounded-2xl shadow-sm overflow-hidden">
-              <div className="flex items-start gap-4 hover:bg-gray-50 transition-colors">
+              <div className="flex items-start gap-3 hover:bg-[#fafaf9] transition-colors">
                 <div
                   className="flex-1 min-w-0 p-5 cursor-pointer"
                   onClick={() => toggleExpand(item.id)}
                 >
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-sm font-bold text-gray-400 font-mono">{item.version}</span>
+                    <span className="text-sm font-bold text-[#a8a29e] font-mono">{item.version}</span>
                     <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.color}`}>
                       {cfg.icon}
                       {cfg.label}
                     </span>
-                    <span className="text-xs text-gray-400">{item.date}</span>
+                    <span className="text-xs text-[#a8a29e]">{item.date}</span>
                   </div>
-                  <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                  <h3 className="font-semibold text-[#1c1917]">{item.title}</h3>
                   {item.description && (
-                    <p className="text-sm text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>
+                    <p className="text-sm text-[#78716c] mt-0.5 line-clamp-1">{item.description}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 p-5">
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 text-[#a8a29e] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <X size={14} />
                   </button>
                   <div className="cursor-pointer" onClick={() => toggleExpand(item.id)}>
-                    {isExpanded ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+                    {isExpanded ? <ChevronUp size={18} className="text-[#a8a29e]" /> : <ChevronDown size={18} className="text-[#a8a29e]" />}
                   </div>
                 </div>
               </div>
@@ -283,7 +285,7 @@ export default function ChangelogPage() {
                 <div className="px-5 pb-5 border-t border-divider">
                   <ul className="space-y-2 mt-4">
                     {item.details.map((detail, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700">
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-[#44403c]">
                         <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.bg.replace('bg-', 'bg-').replace('100', '500')}`} />
                         {detail}
                       </li>
@@ -296,13 +298,5 @@ export default function ChangelogPage() {
         })}
       </div>
     </div>
-  );
-}
-
-function ClipboardListIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-    </svg>
   );
 }

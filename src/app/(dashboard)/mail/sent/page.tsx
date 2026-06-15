@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
-import { Send, RefreshCw, Mail, X, AlertCircle } from 'lucide-react';
+import { Send, Mail, X, AlertCircle } from 'lucide-react';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 
 interface SentEmail {
   id: string;
@@ -16,201 +18,139 @@ interface SentEmail {
   createdAt: string;
 }
 
+function formatDate(dateStr: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const isToday = d.toDateString() === new Date().toDateString();
+  return isToday
+    ? d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+}
+
 export default function SentMailPage() {
   // 메일 발송 기록 라우트(/api/mail/sent) 미구현 — 빈 상태 + 배너 안내로 고정
   const [emails] = useState<SentEmail[]>([]);
   const [loading] = useState(false);
   const [selected, setSelected] = useState<SentEmail | null>(null);
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    const now = new Date();
-    const isToday = d.toDateString() === now.toDateString();
-    if (isToday) {
-      return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    }
-    return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-  };
-
-  const recipientDisplay = (email: SentEmail) => {
-    return email.to.join(', ');
-  };
-
   return (
-    <div style={{ maxWidth: '960px', margin: '0 auto' }} className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* 헤더 */}
       <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-gray-900">보낸 메일함</h1>
-        </div>
-        <p className="text-gray-500 mt-2">발송한 메일 내역을 확인합니다.</p>
+        <h1 className="text-page">보낸 메일함</h1>
+        <p className="text-ink-500 mt-1 text-sm">발송한 메일 내역을 확인합니다</p>
       </div>
 
-      {/* 백엔드 미연결 안내 */}
-      <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: '#fef3c7', border: '1px solid #fde68a' }}>
-        <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: '1px' }} />
+      {/* 백엔드 미연결 배너 */}
+      <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
+        <AlertCircle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
         <div>
-          <p style={{ fontWeight: 600, color: '#92400e', fontSize: '14px' }}>메일 백엔드 연결 준비 중</p>
-          <p style={{ color: '#a16207', fontSize: '13px', marginTop: '4px' }}>
+          <p className="text-[13px] font-semibold text-amber-900">메일 백엔드 연결 준비 중</p>
+          <p className="text-[12px] text-amber-800 mt-0.5">
             발송 기록 조회 API가 아직 구현되지 않아 보낸 메일함을 일시 비활성화했습니다. 후속 릴리스에서 복원됩니다.
           </p>
         </div>
       </div>
 
-      {/* 메일 목록 */}
-      <div className="bg-white rounded-lg shadow" style={{ border: '1px solid #ede9e6' }}>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid #f0ece9' }}>
-          <div className="flex items-center gap-2">
-            <Send size={20} style={{ color: '#f97316' }} />
-            <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1c1917' }}>보낸 메일</h2>
-            {!loading && <span style={{ fontSize: '13px', color: '#a8a29e' }}>({emails.length})</span>}
-          </div>
+      {/* 메일 목록 카드 */}
+      <div className="bg-white rounded-2xl border border-ink-100">
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-ink-100">
+          <Send size={16} className="text-orange-500" />
+          <h2 className="text-section">보낸 메일</h2>
+          {!loading && emails.length > 0 && (
+            <span className="text-[11px] font-semibold text-ink-400">{emails.length}건</span>
+          )}
         </div>
 
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-
         {loading ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-            <RefreshCw size={24} style={{ color: '#d6d3d1', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
-            <p style={{ color: '#a8a29e', fontSize: '14px', marginTop: '12px' }}>메일을 불러오는 중...</p>
-          </div>
+          <LoadingState size="compact" label="메일을 불러오는 중..." />
         ) : emails.length === 0 ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-            <Mail size={32} style={{ color: '#d6d3d1', margin: '0 auto' }} />
-            <p style={{ color: '#a8a29e', fontSize: '14px', marginTop: '12px' }}>보낸 메일이 없습니다.</p>
-          </div>
+          <EmptyState
+            icon={Mail}
+            title="보낸 메일이 없습니다"
+            description="발송한 메일이 여기에 표시됩니다."
+            size="compact"
+          />
         ) : (
-          <div>
-            {emails.map(email => (
-              <button
-                key={email.id}
-                onClick={() => setSelected(email)}
-                style={{
-                  display: 'flex',
-                  width: '100%',
-                  padding: '14px 24px',
-                  gap: '16px',
-                  alignItems: 'flex-start',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBlockEnd: '1px solid #f5f3f1',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background 0.12s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#fafaf9'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                {/* 아바타 */}
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: '#fef4ed',
-                  color: '#f97316',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  flexShrink: 0,
-                }}>
-                  <Send size={14} />
-                </div>
-
-                {/* 내용 */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#1c1917', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {recipientDisplay(email)}
-                    </span>
-                    <span style={{ fontSize: '12px', color: '#a8a29e', flexShrink: 0 }}>{formatDate(email.createdAt)}</span>
+          <ul>
+            {emails.map((email, idx) => (
+              <li key={email.id}>
+                <button
+                  onClick={() => setSelected(email)}
+                  className={`w-full flex items-start gap-3 px-6 py-3.5 text-left hover:bg-ink-50 transition-colors ${
+                    idx < emails.length - 1 ? 'border-b border-ink-100' : ''
+                  }`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center flex-shrink-0">
+                    <Send size={14} />
                   </div>
-                  <p style={{ fontSize: '14px', color: '#44403c', fontWeight: 500, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {email.subject}
-                  </p>
-                  <p style={{ fontSize: '13px', color: '#a8a29e', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {email.content.replace(/<[^>]*>/g, '').slice(0, 100) || '(본문 없음)'}
-                  </p>
-                </div>
-              </button>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[13px] font-semibold text-ink-900 truncate">
+                        {email.to.join(', ')}
+                      </span>
+                      <span className="text-[11px] text-ink-400 flex-shrink-0">
+                        {formatDate(email.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-[13px] font-medium text-ink-700 mt-0.5 truncate">
+                      {email.subject}
+                    </p>
+                    <p className="text-[12px] text-ink-400 mt-0.5 truncate">
+                      {email.content.replace(/<[^>]*>/g, '').slice(0, 100) || '(본문 없음)'}
+                    </p>
+                  </div>
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
 
       {/* 메일 상세 모달 */}
       {selected && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.4)',
-          }}
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setSelected(null)}
         >
           <div
-            style={{
-              background: '#fff',
-              borderRadius: '12px',
-              width: '90%',
-              maxWidth: '700px',
-              maxHeight: '85vh',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-            }}
-            onClick={e => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* 모달 헤더 */}
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0ece9', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-              <div style={{ minWidth: 0 }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1c1917', wordBreak: 'break-word' }}>
+            <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-ink-100">
+              <div className="min-w-0">
+                <h3 className="text-[16px] font-semibold text-ink-900 break-words">
                   {selected.subject}
                 </h3>
-                <div style={{ marginTop: '8px', fontSize: '13px', color: '#78716c' }} className="space-y-1">
-                  <p><strong>보낸 사람:</strong> {selected.senderEmail}</p>
-                  <p><strong>받는 사람:</strong> {selected.to.join(', ')}</p>
-                  {selected.cc && selected.cc.length > 0 && <p><strong>참조:</strong> {selected.cc.join(', ')}</p>}
-                  {selected.bcc && selected.bcc.length > 0 && <p><strong>숨은 참조:</strong> {selected.bcc.join(', ')}</p>}
-                  <p><strong>날짜:</strong> {new Date(selected.createdAt).toLocaleString('ko-KR')}</p>
+                <div className="mt-2 text-[12px] text-ink-500 space-y-0.5">
+                  <p><strong className="font-semibold">보낸 사람:</strong> {selected.senderEmail}</p>
+                  <p><strong className="font-semibold">받는 사람:</strong> {selected.to.join(', ')}</p>
+                  {selected.cc && selected.cc.length > 0 && <p><strong className="font-semibold">참조:</strong> {selected.cc.join(', ')}</p>}
+                  {selected.bcc && selected.bcc.length > 0 && <p><strong className="font-semibold">숨은 참조:</strong> {selected.bcc.join(', ')}</p>}
+                  <p><strong className="font-semibold">날짜:</strong> {new Date(selected.createdAt).toLocaleString('ko-KR')}</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelected(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a8a29e', padding: '4px', flexShrink: 0 }}
+                className="text-ink-400 hover:text-ink-700 p-1 flex-shrink-0"
+                aria-label="닫기"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* 모달 본문 */}
-            <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+            <div className="flex-1 overflow-auto px-6 py-5">
               <div
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selected.content) }}
-                style={{ fontSize: '14px', lineHeight: '1.7', color: '#1c1917' }}
+                className="text-[13px] leading-relaxed text-ink-900 overflow-x-auto [&_img]:max-w-full [&_table]:max-w-full"
               />
             </div>
 
-            {/* 모달 하단 */}
-            <div style={{ padding: '12px 24px', borderTop: '1px solid #f0ece9', display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="flex justify-end px-6 py-3 border-t border-ink-100">
               <button
                 onClick={() => setSelected(null)}
-                style={{
-                  padding: '8px 20px',
-                  borderRadius: '8px',
-                  border: '1px solid #d6d3d1',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  color: '#44403c',
-                  fontWeight: 500,
-                }}
+                className="px-4 py-1.5 rounded-lg border border-divider bg-white text-[12px] font-medium text-ink-700 hover:bg-ink-50"
               >
                 닫기
               </button>

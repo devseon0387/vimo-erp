@@ -50,6 +50,12 @@ export default auth((request) => {
     return okResponse;
   }
 
+  // 비봇 strategy MCP 엔드포인트: 라우트 내부 authorizeMcp(x-api-key=API_SECRET_KEY)로
+  // 자체 인증 + rate limit. 미들웨어 로그인 게이트(307)를 우회해 MCP 핸드셰이크 허용. (2026-06-13)
+  if (pathname.startsWith('/api/mcp')) {
+    return okResponse;
+  }
+
   // Auth.js 엔드포인트(session/signin/signout/callback/csrf)는 항상 통과 — 게이트 우회.
   if (pathname.startsWith('/api/auth')) {
     return okResponse;

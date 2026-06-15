@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Receipt, Check, AlertTriangle, Clock } from 'lucide-react';
 import { Episode, Project } from '@/types';
-import { motion } from 'framer-motion';
+import { TabBar } from '@/components/TabBar';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 import { getAllEpisodes, getProjects, updateEpisodeFields } from '@/lib/supabase/db';
 
 type PaymentFilter = 'all' | 'pending' | 'completed' | 'overdue';
@@ -98,37 +100,22 @@ export default function PaymentsPage() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">입금 관리</h1>
-        <p className="text-gray-500 mt-2">입금 현황을 추적하고 관리하세요</p>
+        <h1 className="text-page">입금 관리</h1>
+        <p className="text-[#78716c] mt-2">입금 현황을 추적하고 관리하세요</p>
       </div>
 
       {/* 필터 탭 */}
-      <div className="bg-white rounded-2xl p-2 shadow-sm border border-divider inline-flex gap-2">
-        {filters.map(({ key, label }) => (
-          <button key={key} onClick={() => { setFilter(key); setSelected(new Set()); }} className="relative px-5 py-2.5 rounded-xl font-semibold text-sm">
-            {filter === key && (
-              <motion.div
-                layoutId="payment-filter-pill"
-                className="absolute inset-0 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/30"
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              />
-            )}
-            <span className={`relative transition-colors duration-200 ${filter === key ? 'text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-              {label}
-            </span>
-          </button>
-        ))}
-      </div>
+      <TabBar<PaymentFilter>
+        items={filters}
+        active={filter}
+        onChange={(key) => { setFilter(key); setSelected(new Set()); }}
+      />
 
       {/* 요약 바 */}
       <div className="bg-orange-50 border border-orange-200 rounded-2xl px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-6 flex-wrap">
@@ -156,7 +143,7 @@ export default function PaymentsPage() {
             <Check size={14} />
             {updating ? '처리 중...' : `입금 완료 처리 (${selected.size}건)`}
           </button>
-          <button onClick={() => setSelected(new Set())} className="text-sm text-gray-500 hover:text-gray-700">선택 해제</button>
+          <button onClick={() => setSelected(new Set())} className="text-sm text-[#78716c] hover:text-[#44403c]">선택 해제</button>
         </div>
       )}
 
@@ -165,10 +152,7 @@ export default function PaymentsPage() {
         {/* 모바일 카드 */}
         <div className="sm:hidden">
           {filtered.length === 0 ? (
-            <div className="py-16 text-center text-gray-400">
-              <Receipt className="mx-auto mb-3 text-gray-200" size={36} />
-              <p className="font-medium text-gray-500">데이터가 없습니다</p>
-            </div>
+            <EmptyState icon={Receipt} title="데이터가 없습니다" description="조건에 맞는 입금 내역이 없습니다." size="compact" />
           ) : (
             <div className="divide-y divide-gray-50">
               {filtered.map(({ episode, project, isOverdue }) => {
@@ -176,7 +160,7 @@ export default function PaymentsPage() {
                 return (
                   <div
                     key={episode.id}
-                    className={`px-4 py-3 flex items-start gap-3 transition-colors ${isOverdue ? 'bg-red-50' : 'hover:bg-gray-50'}`}
+                    className={`px-4 py-3 flex items-start gap-3 transition-colors ${isOverdue ? 'bg-red-50' : 'hover:bg-[#fafaf9]'}`}
                   >
                     {isPending && (
                       <input
@@ -188,10 +172,10 @@ export default function PaymentsPage() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-gray-900 text-sm truncate">{project?.title ?? '-'}</p>
-                        <span className="text-sm font-bold text-gray-900 flex-shrink-0 tabular-nums">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</span>
+                        <p className="font-medium text-[#1c1917] text-sm truncate">{project?.title ?? '-'}</p>
+                        <span className="text-sm font-bold text-[#1c1917] flex-shrink-0 tabular-nums">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</span>
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-gray-500">
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-[#78716c]">
                         <span className="font-medium">{episode.episodeNumber}회차</span>
                         <span className="text-gray-300">·</span>
                         <span className="truncate">{episode.client ?? project?.client ?? '-'}</span>
@@ -218,7 +202,7 @@ export default function PaymentsPage() {
         {/* 데스크탑 테이블 */}
         <div className="hidden sm:block overflow-x-auto">
           <div className="min-w-[750px]">
-            <div className="px-6 py-3 bg-gray-50 grid grid-cols-[32px_1fr_100px_120px_100px_100px_80px] gap-4 text-xs font-semibold text-gray-400 uppercase tracking-wide items-center">
+            <div className="px-4 py-3 bg-[#fafaf9] grid grid-cols-[32px_1fr_100px_120px_100px_100px_80px] gap-3 text-xs font-semibold text-[#a8a29e] uppercase tracking-wide items-center">
               <span>
                 <input
                   type="checkbox"
@@ -236,18 +220,15 @@ export default function PaymentsPage() {
             </div>
             <div className="divide-y divide-gray-50">
               {filtered.length === 0 ? (
-                <div className="py-16 text-center text-gray-400">
-                  <Receipt className="mx-auto mb-3 text-gray-200" size={36} />
-                  <p className="font-medium text-gray-500">데이터가 없습니다</p>
-                </div>
+                <EmptyState icon={Receipt} title="데이터가 없습니다" description="조건에 맞는 입금 내역이 없습니다." size="compact" />
               ) : (
                 filtered.map(({ episode, project, isOverdue }) => {
                   const isPending = episode.paymentStatus === 'pending';
                   return (
                     <div
                       key={episode.id}
-                      className={`px-6 py-4 transition-colors grid grid-cols-[32px_1fr_100px_120px_100px_100px_80px] gap-4 items-center ${
-                        isOverdue ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'
+                      className={`px-4 py-4 transition-colors grid grid-cols-[32px_1fr_100px_120px_100px_100px_80px] gap-3 items-center ${
+                        isOverdue ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-[#fafaf9]'
                       }`}
                     >
                       <span>
@@ -260,11 +241,11 @@ export default function PaymentsPage() {
                           />
                         )}
                       </span>
-                      <p className="font-medium text-gray-900 truncate">{project?.title ?? '-'}</p>
-                      <p className="text-sm text-gray-600">{episode.episodeNumber}회차</p>
-                      <p className="text-sm text-gray-600 truncate">{episode.client ?? project?.client ?? '-'}</p>
-                      <p className="text-sm font-semibold text-gray-900 text-right">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</p>
-                      <p className={`text-sm ${isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                      <p className="font-medium text-[#1c1917] truncate">{project?.title ?? '-'}</p>
+                      <p className="text-sm text-[#57534e]">{episode.episodeNumber}회차</p>
+                      <p className="text-sm text-[#57534e] truncate">{episode.client ?? project?.client ?? '-'}</p>
+                      <p className="text-sm font-semibold text-[#1c1917] text-right">{((episode.budget?.totalAmount ?? 0) / 10000).toFixed(0)}만</p>
+                      <p className={`text-sm ${isOverdue ? 'text-red-600 font-semibold' : 'text-[#78716c]'}`}>
                         {episode.paymentDueDate ?? '-'}
                       </p>
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${

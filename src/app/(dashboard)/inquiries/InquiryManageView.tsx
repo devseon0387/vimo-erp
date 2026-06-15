@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search,
   MessageSquare,
   Mail,
   Clock,
@@ -14,6 +13,7 @@ import {
   Save,
   ExternalLink,
   Phone,
+  Play,
   User,
   Briefcase,
   DollarSign,
@@ -32,15 +32,20 @@ import {
 } from '@/lib/supabase/db';
 import { useToast } from '@/contexts/ToastContext';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
+import { TabBar } from '@/components/TabBar';
+import { StatusBadge, type StatusTone } from '@/components/StatusBadge';
+import EmptyState from '@/components/EmptyState';
+import { LoadingState } from '@/components/LoadingState';
+import { SearchInput } from '@/components/SearchInput';
 
 type FilterStatus = 'all' | InquiryStatus;
 
-const STATUS_CONFIG: Record<InquiryStatus, { label: string; bgColor: string; textColor: string; dotColor: string }> = {
-  new: { label: '새 문의', bgColor: 'bg-blue-100', textColor: 'text-blue-800', dotColor: 'bg-blue-500' },
-  contacted: { label: '연락 완료', bgColor: 'bg-yellow-100', textColor: 'text-yellow-800', dotColor: 'bg-yellow-500' },
-  in_progress: { label: '진행 중', bgColor: 'bg-orange-100', textColor: 'text-orange-800', dotColor: 'bg-orange-500' },
-  completed: { label: '완료', bgColor: 'bg-green-100', textColor: 'text-green-800', dotColor: 'bg-green-500' },
-  rejected: { label: '거절', bgColor: 'bg-red-100', textColor: 'text-red-800', dotColor: 'bg-red-500' },
+const STATUS_CONFIG: Record<InquiryStatus, { label: string; tone: StatusTone; dotColor: string }> = {
+  new: { label: '새 문의', tone: 'info', dotColor: 'bg-blue-500' },
+  contacted: { label: '연락 완료', tone: 'info', dotColor: 'bg-blue-500' },
+  in_progress: { label: '진행 중', tone: 'brand', dotColor: 'bg-orange-500' },
+  completed: { label: '완료', tone: 'ok', dotColor: 'bg-green-500' },
+  rejected: { label: '거절', tone: 'danger', dotColor: 'bg-red-500' },
 };
 
 const STATUS_OPTIONS: { value: InquiryStatus; label: string }[] = [
@@ -51,11 +56,12 @@ const STATUS_OPTIONS: { value: InquiryStatus; label: string }[] = [
   { value: 'rejected', label: '거절' },
 ];
 
-export default function InquiriesPage() {
+export default function InquiryManageView() {
   const toast = useToast();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,17 +76,43 @@ export default function InquiriesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [playingVideoUrl, setPlayingVideoUrl] = useState<string | null>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
 
   const loadData = useCallback(async () => {
-    const [items, portfolio] = await Promise.all([getInquiries(), getPortfolioItems()]);
-    setInquiries(items);
-    setPortfolioItems(portfolio);
-    setLoading(false);
+    try {
+      setLoadError(false);
+      const [items, portfolio] = await Promise.all([getInquiries(), getPortfolioItems()]);
+      setInquiries(items);
+      setPortfolioItems(portfolio);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   useSupabaseRealtime(['inquiries'], loadData);
+
+  // 상태 드롭다운: 바깥 클릭 / Esc 닫기
+  useEffect(() => {
+    if (!isStatusDropdownOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setIsStatusDropdownOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsStatusDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isStatusDropdownOpen]);
 
   // 포트폴리오 레퍼런스 문자열에서 매칭되는 포트폴리오 아이템 찾기
   const findPortfolioItem = (ref: string | { id: string; title: string; category: string; client: string }): PortfolioItem | undefined => {
@@ -200,7 +232,7 @@ export default function InquiriesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <style jsx global>{`
         @keyframes inquiry-modal-in {
           from { opacity: 0; transform: scale(0.95) translateY(8px); }
@@ -209,176 +241,112 @@ export default function InquiriesPage() {
         .animate-inquiry-modal { animation: inquiry-modal-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}</style>
 
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <a href="/marketing" className="text-gray-500 hover:text-gray-700 transition-colors">
-              마케팅
-            </a>
-            <span className="text-gray-400">/</span>
-            <h1 className="text-3xl font-bold text-gray-900">문의 관리</h1>
-          </div>
-          <p className="text-gray-500 mt-2">홈페이지에서 접수된 문의를 관리하세요</p>
-        </div>
-      </div>
-
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">전체 문의</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
-            </div>
-            <div className="p-3 bg-orange-100 rounded-full">
-              <MessageSquare className="text-orange-500" size={24} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">새 문의</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{stats.new}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Mail className="text-blue-500" size={24} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">진행 중</p>
-              <p className="text-3xl font-bold text-orange-600 mt-2">{stats.in_progress}</p>
-            </div>
-            <div className="p-3 bg-orange-100 rounded-full">
-              <Clock className="text-orange-500" size={24} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">완료</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{stats.completed}</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <CheckCircle className="text-green-500" size={24} />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* 컨트롤 바 */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="flex-1 max-w-md relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="이름, 연락처, 프로젝트 유형 검색..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex items-center gap-2 border border-gray-300 rounded-lg p-1">
-              {([
-                { value: 'all' as FilterStatus, label: '전체' },
-                { value: 'new' as FilterStatus, label: '새 문의' },
-                { value: 'contacted' as FilterStatus, label: '연락 완료' },
-                { value: 'in_progress' as FilterStatus, label: '진행 중' },
-                { value: 'completed' as FilterStatus, label: '완료' },
-                { value: 'rejected' as FilterStatus, label: '거절' },
-              ]).map(f => (
-                <button
-                  key={f.value}
-                  type="button"
-                  onClick={() => setFilter(f.value)}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                    filter === f.value ? 'bg-orange-500 text-white' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="이름, 연락처, 프로젝트 유형 검색..."
+          className="flex-1 min-w-[200px] max-w-md"
+        />
+        <div className="flex-1 sm:flex-none">
+          <TabBar<FilterStatus>
+            items={[
+              { key: 'all', label: '전체' },
+              { key: 'new', label: '새 문의' },
+              { key: 'contacted', label: '연락 완료' },
+              { key: 'in_progress', label: '진행 중' },
+              { key: 'completed', label: '완료' },
+              { key: 'rejected', label: '거절' },
+            ]}
+            active={filter}
+            onChange={setFilter}
+            fullWidthMobile={false}
+          />
         </div>
       </div>
 
       {/* 문의 목록 테이블 */}
       {loading ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
-          로딩 중...
+        <div className="bg-white rounded-2xl border border-ink-100">
+          <LoadingState label="로딩 중..." />
+        </div>
+      ) : loadError ? (
+        <div className="bg-white rounded-2xl border border-ink-100">
+          <EmptyState
+            icon={AlertCircle}
+            title="문의를 불러오지 못했습니다"
+            description="네트워크 상태를 확인한 뒤 다시 시도해 주세요"
+            iconColor="text-red-500"
+            iconBgColor="bg-red-50"
+            action={{ label: '다시 시도', onClick: () => { setLoading(true); loadData(); } }}
+          />
         </div>
       ) : filteredInquiries.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <MessageSquare className="mx-auto mb-4 text-gray-400" size={64} />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">문의가 없습니다</h3>
-          <p className="text-gray-500">
-            {searchQuery
-              ? '검색 조건에 맞는 문의가 없습니다'
-              : filter !== 'all'
-              ? '해당 상태의 문의가 없습니다'
-              : '아직 접수된 문의가 없습니다'}
-          </p>
+        <div className="bg-white rounded-2xl border border-ink-100">
+          <EmptyState
+            icon={MessageSquare}
+            title="문의가 없습니다"
+            description={
+              searchQuery
+                ? '검색 조건에 맞는 문의가 없습니다'
+                : filter !== 'all'
+                ? '해당 상태의 문의가 없습니다'
+                : '아직 접수된 문의가 없습니다'
+            }
+          />
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-2xl border border-ink-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-divider">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">프로젝트 유형</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">예산</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+                <tr className="bg-[#fafaf9] border-b border-[#f8f7f6]">
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-[var(--color-ink-500)] uppercase tracking-wider">이름</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-[var(--color-ink-500)] uppercase tracking-wider">연락처</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-[var(--color-ink-500)] uppercase tracking-wider">프로젝트 유형</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-[var(--color-ink-500)] uppercase tracking-wider">예산</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-[var(--color-ink-500)] uppercase tracking-wider">상태</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-[var(--color-ink-500)] uppercase tracking-wider">날짜</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-[#f8f7f6]">
                 {filteredInquiries.map((inquiry) => {
                   const statusConfig = STATUS_CONFIG[inquiry.status];
                   return (
                     <tr
                       key={inquiry.id}
                       onClick={() => openDetail(inquiry)}
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="hover:bg-[#fafaf9] transition-colors cursor-pointer"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User size={14} className="text-orange-500" />
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center flex-shrink-0">
+                            <User size={13} className="text-orange-500" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{inquiry.name}</p>
+                            <p className="text-[13px] font-semibold text-[#1c1917]">{inquiry.name}</p>
                             {inquiry.email && (
-                              <p className="text-xs text-gray-500">{inquiry.email}</p>
+                              <p className="text-[11px] text-[var(--color-ink-400)]">{inquiry.email}</p>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <td className="px-6 py-3 whitespace-nowrap text-[12px] text-[#44403c]">
                         {inquiry.phone}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <td className="px-6 py-3 whitespace-nowrap text-[12px] text-[#44403c]">
                         {inquiry.projectType}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      <td className="px-6 py-3 whitespace-nowrap text-[12px] text-[#44403c]">
                         {formatBudget(inquiry.budget)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotColor}`} />
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <StatusBadge tone={statusConfig.tone} dot>
                           {statusConfig.label}
-                        </span>
+                        </StatusBadge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-3 whitespace-nowrap text-[11px] text-[var(--color-ink-400)]">
                         {formatDate(inquiry.createdAt)}
                       </td>
                     </tr>
@@ -395,65 +363,64 @@ export default function InquiriesPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsDetailModalOpen(false)} />
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full animate-inquiry-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full animate-inquiry-modal" onClick={(e) => e.stopPropagation()}>
               {/* 모달 헤더 */}
-              <div className="px-6 py-4 border-b border-divider flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-bold text-gray-900">문의 상세</h2>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_CONFIG[selectedInquiry.status].bgColor} ${STATUS_CONFIG[selectedInquiry.status].textColor}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[selectedInquiry.status].dotColor}`} />
+              <div className="px-6 py-4 border-b border-[#f8f7f6] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[16px] font-bold text-[#1c1917]">문의 상세</h2>
+                  <StatusBadge tone={STATUS_CONFIG[selectedInquiry.status].tone} dot>
                     {STATUS_CONFIG[selectedInquiry.status].label}
-                  </span>
+                  </StatusBadge>
                 </div>
-                <button type="button" onClick={() => setIsDetailModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <X size={20} className="text-gray-500" />
+                <button type="button" onClick={() => setIsDetailModalOpen(false)} className="p-1.5 hover:bg-[#fafaf9] rounded-lg transition-colors" aria-label="닫기">
+                  <X size={16} className="text-[var(--color-ink-400)]" />
                 </button>
               </div>
 
               {/* 모달 내용 */}
               <div className="px-6 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
                 {/* 기본 정보 */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex items-start gap-3">
-                    <User size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <User size={16} className="text-[var(--color-ink-400)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">이름</p>
-                      <p className="text-sm font-medium text-gray-900">{selectedInquiry.name}</p>
+                      <p className="text-xs text-[#78716c]">이름</p>
+                      <p className="text-sm font-medium text-[#1c1917]">{selectedInquiry.name}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Mail size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Mail size={16} className="text-[var(--color-ink-400)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">이메일</p>
-                      <p className="text-sm font-medium text-gray-900">{selectedInquiry.email || '-'}</p>
+                      <p className="text-xs text-[#78716c]">이메일</p>
+                      <p className="text-sm font-medium text-[#1c1917]">{selectedInquiry.email || '-'}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Phone size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Phone size={16} className="text-[var(--color-ink-400)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">연락처</p>
-                      <p className="text-sm font-medium text-gray-900">{selectedInquiry.phone}</p>
+                      <p className="text-xs text-[#78716c]">연락처</p>
+                      <p className="text-sm font-medium text-[#1c1917]">{selectedInquiry.phone}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Briefcase size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Briefcase size={16} className="text-[var(--color-ink-400)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">프로젝트 유형</p>
-                      <p className="text-sm font-medium text-gray-900">{selectedInquiry.projectType}</p>
+                      <p className="text-xs text-[#78716c]">프로젝트 유형</p>
+                      <p className="text-sm font-medium text-[#1c1917]">{selectedInquiry.projectType}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <DollarSign size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <DollarSign size={16} className="text-[var(--color-ink-400)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">예산</p>
-                      <p className="text-sm font-medium text-gray-900">{formatBudget(selectedInquiry.budget)}</p>
+                      <p className="text-xs text-[#78716c]">예산</p>
+                      <p className="text-sm font-medium text-[#1c1917]">{formatBudget(selectedInquiry.budget)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Calendar size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <Calendar size={16} className="text-[var(--color-ink-400)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">접수일</p>
-                      <p className="text-sm font-medium text-gray-900">{formatDate(selectedInquiry.createdAt)}</p>
+                      <p className="text-xs text-[#78716c]">접수일</p>
+                      <p className="text-sm font-medium text-[#1c1917]">{formatDate(selectedInquiry.createdAt)}</p>
                     </div>
                   </div>
                 </div>
@@ -461,10 +428,10 @@ export default function InquiriesPage() {
                 {/* 유입 경로 */}
                 {selectedInquiry.referralSource && (
                   <div className="flex items-start gap-3">
-                    <ExternalLink size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <ExternalLink size={16} className="text-[var(--color-ink-400)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500">유입 경로</p>
-                      <p className="text-sm font-medium text-gray-900">{selectedInquiry.referralSource}</p>
+                      <p className="text-xs text-[#78716c]">유입 경로</p>
+                      <p className="text-sm font-medium text-[#1c1917]">{selectedInquiry.referralSource}</p>
                     </div>
                   </div>
                 )}
@@ -472,11 +439,11 @@ export default function InquiriesPage() {
                 {/* 문의 내용 */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <FileText size={16} className="text-gray-400" />
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">문의 내용</p>
+                    <FileText size={16} className="text-[var(--color-ink-400)]" />
+                    <p className="text-xs font-medium text-[#78716c] uppercase tracking-wider">문의 내용</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{selectedInquiry.message}</p>
+                  <div className="bg-[#fafaf9] rounded-lg p-4">
+                    <p className="text-sm text-[#1c1917] whitespace-pre-wrap">{selectedInquiry.message}</p>
                   </div>
                 </div>
 
@@ -484,8 +451,8 @@ export default function InquiriesPage() {
                 {selectedInquiry.referencesLinks && selectedInquiry.referencesLinks.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Link2 size={16} className="text-gray-400" />
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">참고 링크</p>
+                      <Link2 size={16} className="text-[var(--color-ink-400)]" />
+                      <p className="text-xs font-medium text-[#78716c] uppercase tracking-wider">참고 링크</p>
                     </div>
                     <div className="space-y-1">
                       {selectedInquiry.referencesLinks.map((link, idx) => (
@@ -508,8 +475,8 @@ export default function InquiriesPage() {
                 {selectedInquiry.portfolioReferences && selectedInquiry.portfolioReferences.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Briefcase size={16} className="text-gray-400" />
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">참고 포트폴리오</p>
+                      <Briefcase size={16} className="text-[var(--color-ink-400)]" />
+                      <p className="text-xs font-medium text-[#78716c] uppercase tracking-wider">참고 포트폴리오</p>
                     </div>
                     <div className="space-y-2">
                       {selectedInquiry.portfolioReferences.map((ref, idx) => {
@@ -530,23 +497,23 @@ export default function InquiriesPage() {
                                 if (embedUrl) setPlayingVideoUrl(embedUrl);
                               }
                             }}
-                            className={`w-full flex items-center gap-3 bg-gray-50 rounded-lg p-3 text-left transition-colors ${hasVideo ? 'hover:bg-orange-50 cursor-pointer' : 'cursor-default'}`}
+                            className={`w-full flex items-center gap-3 bg-[#fafaf9] rounded-lg p-3 text-left transition-colors ${hasVideo ? 'hover:bg-orange-50 cursor-pointer' : 'cursor-default'}`}
                           >
                             <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${hasVideo ? 'bg-red-100' : 'bg-orange-100'}`}>
                               {hasVideo ? (
-                                <div className="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[9px] border-l-red-500 ml-0.5" />
+                                <Play size={14} className="text-red-500 fill-red-500" />
                               ) : (
                                 <Briefcase size={14} className="text-orange-500" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{label}</p>
+                              <p className="text-sm font-medium text-[#1c1917] truncate">{label}</p>
                               {category && (
-                                <p className="text-xs text-gray-500">{category}{client ? ` · ${client}` : ''}</p>
+                                <p className="text-xs text-[#78716c]">{category}{client ? ` · ${client}` : ''}</p>
                               )}
                             </div>
                             {hasVideo && (
-                              <ExternalLink size={14} className="text-gray-300 flex-shrink-0" />
+                              <ExternalLink size={14} className="text-[var(--color-ink-300)] flex-shrink-0" />
                             )}
                           </button>
                         );
@@ -558,30 +525,34 @@ export default function InquiriesPage() {
                 {/* 상태 변경 */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle size={16} className="text-gray-400" />
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">상태 변경</p>
+                    <AlertCircle size={16} className="text-[var(--color-ink-400)]" />
+                    <p className="text-xs font-medium text-[#78716c] uppercase tracking-wider">상태 변경</p>
                   </div>
-                  <div className="relative">
+                  <div className="relative" ref={statusDropdownRef}>
                     <button
                       type="button"
                       onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white flex items-center justify-between"
+                      aria-haspopup="listbox"
+                      aria-expanded={isStatusDropdownOpen}
+                      className="w-full px-3 py-2 border border-divider rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[editStatus].dotColor}`} />
-                        <span className="text-sm text-gray-900">{STATUS_CONFIG[editStatus].label}</span>
+                        <span className="text-sm text-[#1c1917]">{STATUS_CONFIG[editStatus].label}</span>
                       </div>
-                      <ChevronDown size={16} className="text-gray-400" />
+                      <ChevronDown size={16} className="text-[var(--color-ink-400)]" />
                     </button>
                     {isStatusDropdownOpen && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden">
+                      <div role="listbox" className="absolute z-10 w-full mt-1 bg-white border border-divider rounded-lg shadow-lg overflow-hidden">
                         {STATUS_OPTIONS.map((option) => (
                           <button
                             key={option.value}
                             type="button"
+                            role="option"
+                            aria-selected={editStatus === option.value}
                             onClick={() => handleStatusChange(option.value)}
-                            className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm ${
-                              editStatus === option.value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-700'
+                            className={`w-full px-3 py-2 text-left hover:bg-[#fafaf9] transition-colors flex items-center gap-2 text-sm ${
+                              editStatus === option.value ? 'bg-orange-50 text-orange-700 font-medium' : 'text-[#44403c]'
                             }`}
                           >
                             <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[option.value].dotColor}`} />
@@ -596,15 +567,15 @@ export default function InquiriesPage() {
                 {/* 메모 */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <FileText size={16} className="text-gray-400" />
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">메모</p>
+                    <FileText size={16} className="text-[var(--color-ink-400)]" />
+                    <p className="text-xs font-medium text-[#78716c] uppercase tracking-wider">메모</p>
                   </div>
                   <textarea
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
                     rows={4}
                     placeholder="문의에 대한 메모를 작성하세요..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm"
+                    className="w-full px-3 py-2 border border-divider rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm"
                   />
                   <div className="flex justify-end mt-2">
                     <button
@@ -637,7 +608,7 @@ export default function InquiriesPage() {
                       <button
                         type="button"
                         onClick={() => setShowDeleteConfirm(false)}
-                        className="px-3 py-1.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+                        className="px-3 py-1.5 text-[#44403c] hover:bg-[var(--color-ink-100)] rounded-lg transition-colors text-sm"
                       >
                         취소
                       </button>
@@ -656,7 +627,7 @@ export default function InquiriesPage() {
                 <button
                   type="button"
                   onClick={() => setIsDetailModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+                  className="px-4 py-2 text-[#44403c] hover:bg-[var(--color-ink-100)] rounded-lg transition-colors text-sm"
                 >
                   닫기
                 </button>

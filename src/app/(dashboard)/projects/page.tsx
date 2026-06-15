@@ -1,17 +1,25 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getProjects, insertProject, insertClient, getClients as fetchClients, getAllEpisodes, getPartners, upsertEpisodes } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
-import { Calendar, User, X, ChevronDown, Search, ArrowRight, Plus, Building2 } from 'lucide-react';
+import { Calendar, User, X, ChevronDown, ArrowRight, Plus, Building2 } from 'lucide-react';
 import { calculateReserve, getComputedProjectStatus, compareProjects, ComputedProjectStatus } from '@/lib/utils';
 import Link from 'next/link';
 import { Project, Client, Episode, WorkContentType, Partner } from '@/types';
 import { updateEpisodeFields } from '@/lib/supabase/db';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
 import { motion, AnimatePresence } from 'framer-motion';
-import ProjectWizardModal from '@/components/ProjectWizardModal';
+import dynamic from 'next/dynamic';
+// 대형 마법사 모달(1.4k줄)은 라우트 초기 청크에서 분리 — 열릴 때 로드(닫힌 상태는 동일하게 무표시).
+const ProjectWizardModal = dynamic(() => import('@/components/ProjectWizardModal'), { ssr: false });
 import { useToast } from '@/contexts/ToastContext';
+import { TabBar } from '@/components/TabBar';
+import { StatusBadge as StatusChip } from '@/components/StatusBadge';
+import { SearchInput } from '@/components/SearchInput';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
+import { Inbox } from 'lucide-react';
 
 
 interface EpisodeWithProjectId extends Episode {
@@ -94,17 +102,20 @@ export default function ProjectsPage() {
     }, 200);
   };
 
-  // 프로젝트별 에피소드 & 계산된 상태 캐싱
-  const projectEpisodesMap = new Map<string, Episode[]>();
-  const projectStatusMap = new Map<string, ComputedProjectStatus>();
-  projects.forEach(project => {
-    const projectEpisodes = episodes.filter(e => e.projectId === project.id);
-    projectEpisodesMap.set(project.id, projectEpisodes);
-    projectStatusMap.set(project.id, getComputedProjectStatus(projectEpisodes));
-  });
+  // 프로젝트별 에피소드 & 계산된 상태 — 데이터 변경 시에만 재계산(검색 타이핑마다 Map 재생성 방지).
+  const { projectEpisodesMap, projectStatusMap } = useMemo(() => {
+    const projectEpisodesMap = new Map<string, Episode[]>();
+    const projectStatusMap = new Map<string, ComputedProjectStatus>();
+    projects.forEach(project => {
+      const projectEpisodes = episodes.filter(e => e.projectId === project.id);
+      projectEpisodesMap.set(project.id, projectEpisodes);
+      projectStatusMap.set(project.id, getComputedProjectStatus(projectEpisodes));
+    });
+    return { projectEpisodesMap, projectStatusMap };
+  }, [projects, episodes]);
 
-  // 필터링 및 정렬된 프로젝트 목록
-  const filteredAndSortedProjects = projects
+  // 필터링 및 정렬된 프로젝트 목록 — 필터/검색/정렬·데이터 변경 시에만.
+  const filteredAndSortedProjects = useMemo(() => projects
     .filter(project => {
       // 필터 적용
       // 아카이브 필터
@@ -143,26 +154,28 @@ export default function ProjectsPage() {
         return a.title.localeCompare(b.title);
       }
       return 0;
-    });
+    }), [projects, episodes, projectEpisodesMap, projectStatusMap, activeFilter, searchQuery, sortBy]);
 
   // 통계 계산
-  const stats = {
+  const stats = useMemo(() => ({
     total: projects.length,
     inProgress: projects.filter(p => p.status === 'in_progress').length,
     totalRevenue: projects.reduce((sum, p) => sum + p.budget.totalAmount, 0),
     avgMargin: projects.length > 0
       ? projects.reduce((sum, p) => sum + p.budget.marginRate, 0) / projects.length
       : 0,
-  };
+  }), [projects]);
 
   // 오늘 전달할 회차 계산
-  const today = new Date().toISOString().split('T')[0];
-  const todayDeliveries = episodes.filter(episode => episode.dueDate === today)
-    .map(episode => {
-      const project = projects.find(p => p.id === episode.projectId);
-      return { episode, project };
-    })
-    .filter(item => item.project); // 프로젝트가 있는 것만
+  const todayDeliveries = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return episodes.filter(episode => episode.dueDate === today)
+      .map(episode => {
+        const project = projects.find(p => p.id === episode.projectId);
+        return { episode, project };
+      })
+      .filter(item => item.project); // 프로젝트가 있는 것만
+  }, [episodes, projects]);
 
   const handleWizardComplete = async (data: any) => {
     try {
@@ -233,15 +246,11 @@ export default function ProjectsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <style jsx global>{`
         @keyframes modal-overlay-in {
           from { opacity: 0; }
@@ -281,21 +290,23 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-page">프로젝트</h1>
-          <p className="text-gray-500 mt-1 text-sm">진행 중인 프로젝트를 한눈에 관리하세요</p>
+          <p className="text-ink-500 mt-1 text-sm">진행 중인 프로젝트를 한눈에 관리하세요</p>
         </div>
         <button
           data-tour="tour-proj-new"
           onClick={() => setIsAddModalOpen(true)}
-          className="px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors flex-shrink-0"
+          className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors flex-shrink-0 inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
         >
-          + 새 프로젝트
+          <Plus size={16} />
+          새 프로젝트
         </button>
       </div>
 
       {/* 필터 탭 + 정렬 */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div data-tour="tour-proj-filters" className="flex sm:inline-flex gap-1 p-1 bg-white border border-divider rounded-xl w-full sm:w-fit">
-          {(isMobile ? [
+        <TabBar
+          data-tour="tour-proj-filters"
+          items={isMobile ? [
             { key: 'all' as const,              label: '전체',       count: projects.length },
             { key: 'active' as const,           label: '진행 중',    count: projects.filter(p => projectStatusMap.get(p.id) === 'active').length },
             { key: 'standby_dormant' as const,  label: '대기·휴면',  count: projects.filter(p => { const s = projectStatusMap.get(p.id); return s === 'standby' || s === 'dormant'; }).length },
@@ -308,59 +319,31 @@ export default function ProjectsPage() {
             { key: 'dormant' as const,  label: '휴면',   count: projects.filter(p => p.status !== 'archived' && projectStatusMap.get(p.id) === 'dormant').length },
             { key: 'inactive' as const, label: '비활성', count: projects.filter(p => p.status !== 'archived' && projectStatusMap.get(p.id) === 'inactive').length },
             { key: 'archived' as const, label: '아카이브', count: projects.filter(p => p.status === 'archived').length },
-          ]).map(({ key, label, count }) => (
-            <button
-              key={key}
-              onClick={() => setActiveFilter(key)}
-              className="relative flex-1 sm:flex-initial px-2 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[12px] sm:text-[14px] font-semibold"
-            >
-              {activeFilter === key && (
-                <motion.div
-                  layoutId="project-filter-pill"
-                  className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                />
-              )}
-              <div className={`relative flex items-center justify-center gap-1 sm:gap-1.5 transition-colors duration-200 ${
-                activeFilter === key ? 'text-white' : 'text-[#78716c]'
-              }`}>
-                <span>{label}</span>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors duration-200 ${
-                  activeFilter === key ? 'bg-white/22 text-white' : 'bg-gray-100 text-[#78716c]'
-                }`}>
-                  {count}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
+          ]}
+          active={activeFilter}
+          onChange={setActiveFilter}
+        />
 
         {/* 검색 + 정렬 */}
         <div data-tour="tour-proj-search" className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex-1 sm:flex-initial flex items-center gap-2 bg-white border border-divider rounded-xl px-3 py-2.5">
-            <Search size={15} className="text-gray-400 flex-shrink-0" />
-            <input
-              type="text"
-              placeholder="검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent focus:outline-none text-sm text-gray-700 placeholder-gray-400 w-full sm:w-36"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="text-gray-300 hover:text-gray-500">
-                <X size={14} />
-              </button>
-            )}
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="검색..."
+            className="flex-1 sm:flex-initial sm:w-44"
+          />
+          <div className="relative flex items-center rounded-lg bg-[#f5f5f4] flex-shrink-0">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'recent' | 'amount' | 'name')}
+              className="appearance-none bg-transparent pl-3 pr-7 py-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 text-[12.5px] text-ink-600 cursor-pointer"
+            >
+              <option value="recent">일정순</option>
+              <option value="amount">금액순</option>
+              <option value="name">이름순</option>
+            </select>
+            <ChevronDown size={13} className="absolute right-2 text-ink-400 pointer-events-none" />
           </div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'recent' | 'amount' | 'name')}
-            className="px-3 py-2.5 bg-white border border-divider rounded-xl focus:outline-none text-xs text-gray-600"
-          >
-            <option value="recent">일정순</option>
-            <option value="amount">금액순</option>
-            <option value="name">이름순</option>
-          </select>
         </div>
       </div>
 
@@ -368,15 +351,20 @@ export default function ProjectsPage() {
       <AnimatePresence mode="wait">
         <motion.div
           key={activeFilter + '|' + searchQuery + '|' + sortBy}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.12 }}
         >
           {filteredAndSortedProjects.length === 0 ? (
-            <div className="col-span-full py-20 text-center text-gray-400 text-sm">
-              프로젝트가 없습니다
+            <div className="col-span-full">
+              <EmptyState
+                icon={Inbox}
+                title="프로젝트가 없습니다"
+                description="조건에 맞는 프로젝트가 없습니다."
+                size="compact"
+              />
             </div>
           ) : filteredAndSortedProjects.map((project, cardIndex) => {
             const partner = allPartners.find(p => p.id === project.partnerId);
@@ -400,35 +388,47 @@ export default function ProjectsPage() {
               >
                 <Link
                   href={`/projects/${project.id}`}
-                  className="group block bg-white rounded-xl border border-divider hover:border-divider hover:shadow-sm transition-all duration-200 p-4"
+                  className="group block bg-white rounded-2xl border border-divider hover:border-ink-300 hover:shadow-sm transition-all duration-200 p-3.5"
                 >
                   {/* 클라이언트 + 상태 */}
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-gray-500 truncate">{project.client}</span>
-                    <StatusBadge status={projectStatusMap.get(project.id) || 'inactive'} />
+                    <span className="text-xs font-medium text-ink-500 truncate">{project.client}</span>
+                    {(() => {
+                      const cs = projectStatusMap.get(project.id) || 'inactive';
+                      const map: Record<string, { tone: 'ok' | 'info' | 'warn' | 'neutral'; label: string }> = {
+                        active: { tone: 'ok', label: '진행 중' },
+                        standby: { tone: 'info', label: '대기' },
+                        dormant: { tone: 'warn', label: '휴면' },
+                        inactive: { tone: 'neutral', label: '비활성' },
+                      };
+                      const { tone, label } = map[cs] || map.inactive;
+                      return <StatusChip tone={tone}>{label}</StatusChip>;
+                    })()}
                   </div>
 
                   {/* 프로젝트명 */}
-                  <h3 className="font-semibold text-gray-900 group-hover:text-orange-600 transition-colors text-lg leading-snug line-clamp-1 mb-3">
+                  <h3 className="font-semibold text-ink-900 group-hover:text-orange-600 transition-colors text-[15px] leading-snug line-clamp-1 mb-2.5">
                     {project.title}
                   </h3>
 
                   {/* 파트너 */}
-                  <div className="flex items-center gap-3 text-xs text-gray-400 mb-2">
-                    {partner ? (
-                      <div className="flex items-center gap-1 flex-1 min-w-0">
-                        <div className="w-4 h-4 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User size={8} className="text-orange-500" />
+                  {(partner || projectEpisodes.length > 0) && (
+                    <div className="flex items-center gap-3 text-xs text-ink-400 mb-2">
+                      {partner ? (
+                        <div className="flex items-center gap-1 flex-1 min-w-0">
+                          <div className="w-4 h-4 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <User size={8} className="text-orange-500" />
+                          </div>
+                          <span className="truncate">{partner.name}</span>
                         </div>
-                        <span className="truncate">{partner.name}</span>
-                      </div>
-                    ) : (
-                      <div className="flex-1" />
-                    )}
-                    {projectEpisodes.length > 0 && (
-                      <span className="flex-shrink-0">{completedEpisodes}/{projectEpisodes.length}회차</span>
-                    )}
-                  </div>
+                      ) : (
+                        <div className="flex-1" />
+                      )}
+                      {projectEpisodes.length > 0 && (
+                        <span className="flex-shrink-0">{completedEpisodes}/{projectEpisodes.length}회차</span>
+                      )}
+                    </div>
+                  )}
 
                   {/* 작업 현황 */}
                   {projectEpisodes.length > 0 && (() => {
@@ -447,18 +447,18 @@ export default function ProjectsPage() {
                     ).length;
 
                     return (
-                      <div className="pt-2 border-t border-gray-50 space-y-1 text-[11px]">
+                      <div className="pt-2 border-t border-divider space-y-1 text-[11px]">
                         <div className="flex items-center gap-1.5">
                           <span className="w-1 h-1 rounded-full bg-green-500 flex-shrink-0" />
-                          <span className="text-gray-500">작업 진행 중</span>
+                          <span className="text-ink-500">작업 진행 중</span>
                           <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">롱폼 {inProgressLong}개</span>
-                          <span className="px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">숏폼 {inProgressShort}개</span>
+                          <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">숏폼 {inProgressShort}개</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />
-                          <span className="text-gray-400">누적 작업 수</span>
-                          <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">롱폼 {totalLong}개</span>
-                          <span className="px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">숏폼 {totalShort}개</span>
+                          <span className="w-1 h-1 rounded-full bg-ink-300 flex-shrink-0" />
+                          <span className="text-ink-400">누적 작업 수</span>
+                          <span className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-500 font-medium">롱폼 {totalLong}개</span>
+                          <span className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-500 font-medium">숏폼 {totalShort}개</span>
                         </div>
                       </div>
                     );
@@ -513,25 +513,19 @@ export default function ProjectsPage() {
                 {/* 헤더 */}
                 <div className="sticky top-0 bg-white px-6 py-4 border-b border-divider flex items-center justify-between z-10">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-bold text-gray-900">{workType} 작업 목록</h2>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      status === 'completed'
-                        ? 'bg-green-100 text-green-800'
-                        : status === 'in_progress'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <h2 className="text-base font-bold text-[#1c1917]">{workType} 작업 목록</h2>
+                    <StatusChip tone={status === 'completed' ? 'ok' : status === 'in_progress' ? 'warn' : 'neutral'}>
                       {status === 'completed' ? '완료' : status === 'in_progress' ? '진행중' : '대기'}
-                    </span>
-                    <span className="text-sm text-gray-600">
+                    </StatusChip>
+                    <span className="text-sm text-[#57534e]">
                       {completedCount}/{steps.length} 완료
                     </span>
                   </div>
                   <button
                     onClick={closeModal}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="p-2 hover:bg-[#f5f5f4] rounded-full transition-colors"
                   >
-                    <X size={20} className="text-gray-500" />
+                    <X size={20} className="text-[#78716c]" />
                   </button>
                 </div>
 
@@ -539,7 +533,7 @@ export default function ProjectsPage() {
                 <div className="p-6">
                   {steps.length === 0 ? (
                     <div className="text-center py-12">
-                      <p className="text-gray-500 mb-4">작업 단계가 없습니다.</p>
+                      <p className="text-[#78716c] mb-4">작업 단계가 없습니다.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -549,12 +543,12 @@ export default function ProjectsPage() {
                         return (
                           <div
                             key={step.id}
-                            className={`p-4 rounded-lg border-2 transition-all ${
+                            className={`p-4 rounded-lg border transition-all ${
                               step.status === 'completed'
                                 ? 'bg-green-50 border-green-200'
                                 : step.status === 'in_progress'
-                                ? 'bg-yellow-50 border-yellow-200'
-                                : 'bg-gray-50 border-divider'
+                                ? 'bg-amber-50 border-amber-200'
+                                : 'bg-[#fafafa] border-divider'
                             }`}
                           >
                             <div className="flex items-center justify-between">
@@ -564,27 +558,21 @@ export default function ProjectsPage() {
                                   step.status === 'completed'
                                     ? 'bg-green-500 text-white'
                                     : step.status === 'in_progress'
-                                    ? 'bg-yellow-500 text-white'
-                                    : 'bg-gray-300 text-gray-700'
+                                    ? 'bg-amber-500 text-white'
+                                    : 'bg-[#e7e5e4] text-[#57534e]'
                                 }`}>
                                   {index + 1}
                                 </div>
 
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-semibold text-gray-900">{step.label}</span>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                      step.status === 'completed'
-                                        ? 'bg-green-100 text-green-800'
-                                        : step.status === 'in_progress'
-                                        ? 'bg-yellow-100 text-yellow-800'
-                                        : 'bg-gray-100 text-gray-800'
-                                    }`}>
+                                    <span className="font-semibold text-[#1c1917]">{step.label}</span>
+                                    <StatusChip tone={step.status === 'completed' ? 'ok' : step.status === 'in_progress' ? 'warn' : 'neutral'}>
                                       {step.status === 'completed' ? '완료' : step.status === 'in_progress' ? '진행중' : '대기'}
-                                    </span>
+                                    </StatusChip>
                                   </div>
 
-                                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <div className="flex items-center gap-4 text-sm text-[#57534e]">
                                     {partner && (
                                       <div className="flex items-center gap-1">
                                         <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -638,7 +626,7 @@ export default function ProjectsPage() {
                                       }
                                       globalToast.success(`"${step.label || `작업 ${index + 1}`}"을(를) 완료로 표시했습니다.`);
                                     }}
-                                    className="px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm font-medium"
+                                    className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
                                   >
                                     완료로 표시
                                   </button>
@@ -670,7 +658,7 @@ export default function ProjectsPage() {
                                       }
                                       globalToast.success(`"${step.label || `작업 ${index + 1}`}"을(를) 진행중으로 변경했습니다.`);
                                     }}
-                                    className="px-3 py-1.5 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors text-sm font-medium"
+                                    className="px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
                                   >
                                     진행중으로 변경
                                   </button>
@@ -688,7 +676,7 @@ export default function ProjectsPage() {
                 <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-divider flex justify-end">
                   <button
                     onClick={closeModal}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                    className="px-4 py-2 bg-[#f5f5f4] text-[#57534e] rounded-lg hover:bg-[#e7e5e4] transition-colors font-medium"
                   >
                     닫기
                   </button>
@@ -703,44 +691,3 @@ export default function ProjectsPage() {
   );
 }
 
-// 탭 버튼 컴포넌트
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active?: boolean;
-  onClick?: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-3 font-medium text-sm transition-colors ${
-        active
-          ? 'text-orange-600 border-b-2 border-orange-600'
-          : 'text-gray-600 hover:text-gray-900'
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-// 상태 배지 컴포넌트
-function StatusBadge({ status }: { status: string }) {
-  const statusMap: Record<string, { label: string; color: string }> = {
-    active: { label: '진행 중', color: 'bg-green-50 text-green-600' },
-    standby: { label: '대기', color: 'bg-blue-50 text-blue-700' },
-    dormant: { label: '휴면', color: 'bg-orange-50 text-orange-600' },
-    inactive: { label: '비활성', color: 'bg-gray-100 text-gray-500' },
-  };
-
-  const { label, color } = statusMap[status] || statusMap.inactive;
-
-  return (
-    <span className={`px-2 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap flex-shrink-0 ${color}`}>
-      {label}
-    </span>
-  );
-}

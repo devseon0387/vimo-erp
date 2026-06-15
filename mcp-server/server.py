@@ -804,7 +804,9 @@ async def _get_upcoming_deadlines(supabase: Client, args: dict) -> list:
 
 
 async def _list_partners(supabase: Client, args: dict) -> list:
-    query = supabase.table("partners").select("*").order("created_at", desc=True)
+    # 보안: partners_safe 뷰로 조회 — service_role 는 is_admin()=false 라
+    # email/phone/bank/bank_account 가 NULL 마스킹됨(슬랙/Vbot 으로 PII 유출 방지).
+    query = supabase.table("partners_safe").select("*").order("created_at", desc=True)
     if status := args.get("status"):
         query = query.eq("status", status)
     return query.execute().data or []

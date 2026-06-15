@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { X, Calendar } from 'lucide-react';
+import { X, Calendar, ListChecks } from 'lucide-react';
+import EmptyState from '@/components/EmptyState';
 import type { Episode, Project, Partner, WorkContentType, WorkStep } from '@/types';
 
 interface Props {
@@ -104,7 +105,7 @@ export default function EpisodeQuickViewContent({ ep, projects, partners, onClos
       {/* 작업 타입별 체크리스트 */}
       <div className="px-6 py-4">
         {workTypes.length === 0 ? (
-          <p className="text-center text-[13px] text-[var(--color-ink-400)] py-8">작업이 없습니다</p>
+          <EmptyState icon={ListChecks} title="작업이 없습니다" description="이 회차에 등록된 작업 단계가 없습니다." size="compact" />
         ) : (
           <div className="space-y-5">
             {workTypes.map(workType => {

@@ -271,7 +271,7 @@ export default function BibotWidget() {
           id: string; project_id: string; episode_number: number; title: string;
           status: string; assignee: string | null; project_title?: string;
         }>;
-        if (eps.length === 0) return finish({ text: '오늘 마감인 회차가 없어요. 🎉' });
+        if (eps.length === 0) return finish({ text: '오늘 마감인 회차가 없어요.' });
         finish({
           text: `오늘(${data.today}) 마감 회차 ${eps.length}개입니다.`,
           cards: eps.map(e => ({
@@ -311,7 +311,7 @@ export default function BibotWidget() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      finish({ text: `⚠️ 조회 실패: ${msg}` });
+      finish({ text: `조회 실패: ${msg}` });
     }
   };
 
@@ -399,7 +399,7 @@ export default function BibotWidget() {
               }
               setMessages(prev => prev.map(m =>
                 m.id === assistantMsg.id
-                  ? { ...m, text: `⚠️ ${parsed.message}`, pending: false }
+                  ? { ...m, text: `${parsed.message}`, pending: false }
                   : m
               ));
             }
@@ -410,7 +410,7 @@ export default function BibotWidget() {
       const msg = err instanceof Error ? err.message : String(err);
       setMessages(prev => prev.map(m =>
         m.id === assistantMsg.id
-          ? { ...m, text: `⚠️ 요청 실패: ${msg}`, pending: false }
+          ? { ...m, text: `요청 실패: ${msg}`, pending: false }
           : m
       ));
     } finally {

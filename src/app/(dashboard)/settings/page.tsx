@@ -104,41 +104,41 @@ export default function SettingsPage() {
     <div className="space-y-8">
       {/* 헤더 */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">설정</h1>
-        <p className="text-gray-500 mt-2">시스템 설정 및 계정 관리</p>
+        <h1 className="text-page">설정</h1>
+        <p className="text-ink-500 mt-2">내 계정 · 시스템 설정 (전사 계정은 대표 메뉴의 &lsquo;계정 관리&rsquo;에서)</p>
       </div>
 
       {/* 바로가기 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Link href="/settings/design/components">
-          <div className="bg-gradient-to-br from-orange-50 to-orange-50 border-2 border-orange-200/50 rounded-xl shadow-md p-6 hover:shadow-lg transition-all cursor-pointer h-full">
+          <div className="bg-white border border-divider rounded-xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer h-full">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-orange-500 rounded-lg">
-                <Palette className="text-white" size={24} />
+              <div className="p-2 bg-brand-50 rounded-lg">
+                <Palette className="text-brand-500" size={18} />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">디자인 시스템</h2>
+              <h2 className="text-[15px] font-semibold text-ink-900">디자인 시스템</h2>
             </div>
-            <p className="text-gray-600">컴포넌트, 토스트, 모달 등 디자인 요소 보기</p>
+            <p className="text-sm text-ink-600">컴포넌트, 토스트, 모달 등 디자인 요소 보기</p>
           </div>
         </Link>
         <Link href="/settings/changelog">
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200/50 rounded-xl shadow-md p-6 hover:shadow-lg transition-all cursor-pointer h-full">
+          <div className="bg-white border border-divider rounded-xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer h-full">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-green-500 rounded-lg">
-                <ClipboardList className="text-white" size={24} />
+              <div className="p-2 bg-green-50 rounded-lg">
+                <ClipboardList className="text-green-600" size={18} />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">업데이트 기록</h2>
+              <h2 className="text-[15px] font-semibold text-ink-900">업데이트 기록</h2>
             </div>
-            <p className="text-gray-600">기능 추가, 수정 사항 등 변경 이력 확인</p>
+            <p className="text-sm text-ink-600">기능 추가, 수정 사항 등 변경 이력 확인</p>
           </div>
         </Link>
       </div>
 
       {/* 계정 설정 */}
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* 계정 정보 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">계정 정보</h2>
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-[15px] font-semibold text-ink-900 mb-4">계정 정보</h2>
           <div className="space-y-4">
             <FloatingLabelInput
               label="이름"
@@ -171,8 +171,8 @@ export default function SettingsPage() {
         </div>
 
         {/* 비밀번호 변경 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">비밀번호 변경</h2>
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-[15px] font-semibold text-ink-900 mb-4">비밀번호 변경</h2>
           <div className="space-y-4">
             <FloatingLabelInput
               label="현재 비밀번호"
@@ -214,43 +214,43 @@ export default function SettingsPage() {
         <PushNotificationSetup />
 
         {/* 알림 설정 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">알림 설정</h2>
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-[15px] font-semibold text-ink-900 mb-4">알림 설정</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">새 프로젝트 알림</p>
-                <p className="text-sm text-gray-500">새로운 프로젝트가 생성되면 알림을 받습니다</p>
+                <p className="font-medium text-ink-900">새 프로젝트 알림</p>
+                <p className="text-sm text-ink-500">새로운 프로젝트가 생성되면 알림을 받습니다</p>
               </div>
               <input
                 type="checkbox"
                 checked={notifNewProject}
                 onChange={(e) => setNotifNewProject(e.target.checked)}
-                className="w-5 h-5 text-orange-500"
+                className="w-5 h-5 text-orange-500 accent-[#f97316]"
               />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">파트너 가입 알림</p>
-                <p className="text-sm text-gray-500">새로운 파트너가 가입하면 알림을 받습니다</p>
+                <p className="font-medium text-ink-900">파트너 가입 알림</p>
+                <p className="text-sm text-ink-500">새로운 파트너가 가입하면 알림을 받습니다</p>
               </div>
               <input
                 type="checkbox"
                 checked={notifNewPartner}
                 onChange={(e) => setNotifNewPartner(e.target.checked)}
-                className="w-5 h-5 text-orange-500"
+                className="w-5 h-5 text-orange-500 accent-[#f97316]"
               />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">프로젝트 완료 알림</p>
-                <p className="text-sm text-gray-500">프로젝트가 완료되면 알림을 받습니다</p>
+                <p className="font-medium text-ink-900">프로젝트 완료 알림</p>
+                <p className="text-sm text-ink-500">프로젝트가 완료되면 알림을 받습니다</p>
               </div>
               <input
                 type="checkbox"
                 checked={notifProjectDone}
                 onChange={(e) => setNotifProjectDone(e.target.checked)}
-                className="w-5 h-5 text-orange-500"
+                className="w-5 h-5 text-orange-500 accent-[#f97316]"
               />
             </div>
             {notifMsg && (

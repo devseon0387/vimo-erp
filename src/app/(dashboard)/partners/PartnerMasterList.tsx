@@ -1,7 +1,8 @@
 'use client';
 
-import { Search, X, Plus, AlertCircle, User, Briefcase } from 'lucide-react';
+import { Plus, AlertCircle, User, Briefcase } from 'lucide-react';
 import type { Partner } from '@/types';
+import { SearchInput } from '@/components/SearchInput';
 
 export type PartnerGroupStatus = 'active' | 'standby' | 'dormant' | 'inactive';
 
@@ -44,11 +45,11 @@ function Avatar({
   inactive?: boolean;
   size?: number;
 }) {
-  const bg = inactive
-    ? 'linear-gradient(135deg, #d6d3d1, #a8a29e)'
+  const tint = inactive
+    ? { bg: 'var(--color-ink-100)', fg: 'var(--color-ink-400)' }
     : business
-      ? 'linear-gradient(135deg, #60a5fa, #2563eb)'
-      : 'linear-gradient(135deg, var(--color-brand-400), var(--color-brand-600))';
+      ? { bg: '#eff6ff', fg: '#2563eb' }
+      : { bg: 'var(--color-brand-50)', fg: 'var(--color-brand-600)' };
   const Icon = business ? Briefcase : User;
   return (
     <div
@@ -56,9 +57,10 @@ function Avatar({
         width: size,
         height: size,
         borderRadius: size >= 40 ? 12 : 8,
-        background: bg,
+        background: tint.bg,
+        color: tint.fg,
       }}
-      className="shrink-0 text-white inline-flex items-center justify-center select-none"
+      className="shrink-0 inline-flex items-center justify-center select-none"
       title={business ? '사업자' : '프리랜서'}
     >
       <Icon size={Math.round(size * 0.55)} strokeWidth={2.2} />
@@ -150,25 +152,12 @@ export function PartnerMasterList({ partners, selectedId, onSelect, searchQuery,
     >
       {/* 검색 + 새 추가 */}
       <div className="flex items-center gap-1.5 px-2 pt-1.5 pb-1">
-        <div
-          className="flex-1 flex items-center gap-2 rounded-lg px-2.5 py-1.5"
-          style={{ background: 'var(--color-ink-100)' }}
-        >
-          <Search size={13} style={{ color: 'var(--color-ink-400)' }} />
-          <input
-            type="text"
-            placeholder="검색..."
-            value={searchQuery}
-            onChange={(e) => onSearch(e.target.value)}
-            className="flex-1 bg-transparent focus:outline-none text-[12.5px]"
-            style={{ color: 'var(--color-ink-700)' }}
-          />
-          {searchQuery && (
-            <button onClick={() => onSearch('')} style={{ color: 'var(--color-ink-400)' }}>
-              <X size={13} />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={onSearch}
+          placeholder="검색..."
+          className="flex-1"
+        />
         <button
           type="button"
           onClick={onAdd}

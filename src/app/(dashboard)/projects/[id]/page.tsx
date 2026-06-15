@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Project, Client, Episode, Partner, WorkContentType, WorkStep, WorkTypeBudget } from '@/types';
-import { ArrowLeft, Calendar, User, DollarSign, Tag, Edit, Trash2, TrendingUp, ChevronRight, X, UserCircle, FileText, Users, Video, Palette, Image, CheckCircle2, Clock, Pause, Target, ChevronDown, ClipboardCheck, Building2, Tv, Youtube, Monitor, Camera } from 'lucide-react';
+import { ArrowLeft, Calendar, User, DollarSign, Tag, Edit, Trash2, TrendingUp, ChevronRight, X, UserCircle, FileText, Users, Video, Palette, Image, CheckCircle2, Clock, Pause, Target, ChevronDown, ClipboardCheck, Building2, Tv, Youtube, Monitor, Camera, Film, FileX, Plus } from 'lucide-react';
 import { addToTrash } from '@/lib/trash';
 import { getProjectById, updateProject, deleteProject, getClients as fetchClients, getProjectEpisodes, getPartners, upsertEpisode, updateEpisodeFields, deleteEpisode, deleteProjectEpisodes } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
@@ -12,13 +12,18 @@ import { getComputedProjectStatus } from '@/lib/utils';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
 import ProjectChecklistModal from '@/components/ProjectChecklistModal';
 import EpisodeDetailModal from '@/components/EpisodeDetailModal';
-import EpisodeDetailPanel from '@/components/EpisodeDetailPanel';
+import dynamic from 'next/dynamic';
+// 대형 회차 상세 패널(2.8k줄·framer-motion)은 초기 청크에서 분리 — 회차 열 때 로드.
+const EpisodeDetailPanel = dynamic(() => import('@/components/EpisodeDetailPanel'), { ssr: false });
 import EpisodeListItem, { type EpisodeEditDraft } from './EpisodeListItem';
 import DateRangePicker from '@/components/DateRangePicker';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTutorial } from '@/components/tutorial/useTutorial';
 import { useToast } from '@/contexts/ToastContext';
 import { StatusBadge, EpisodeStatusBadge } from './StatusBadges';
+import { TabBar } from '@/components/TabBar';
+import { LoadingState } from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
 
 interface EpisodeWithProjectId extends Episode {
   projectId: string;
@@ -80,6 +85,7 @@ export default function ProjectDetailPage() {
   const [deleteEpisodeId, setDeleteEpisodeId] = useState<string | null>(null);
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [activeTab, setActiveTab] = useState<'in-progress' | 'episodes' | 'overview'>('in-progress');
   const [tabDirection, setTabDirection] = useState(1);
   const TAB_ORDER = ['in-progress', 'episodes', 'overview'] as const;
@@ -128,42 +134,48 @@ export default function ProjectDetailPage() {
   const [isWorkContentDropdownOpen, setIsWorkContentDropdownOpen] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [foundProject, clientsData, partnersData, eps] = await Promise.all([
-      getProjectById(projectId),
-      fetchClients(),
-      getPartners(),
-      getProjectEpisodes(projectId),
-    ]);
-    setProject(foundProject);
-    if (foundProject) {
-      setPartnerIds(foundProject.partnerIds);
-      setManagerIds(foundProject.managerIds);
-      setSelectedClient(foundProject.client || '');
-      setSelectedCategory(foundProject.category || '');
-      const defaultCosts = {
-        '롱폼': { partnerCost: 0, managementCost: 0 },
-        '기획 숏폼': { partnerCost: 0, managementCost: 0 },
-        '본편 숏폼': { partnerCost: 0, managementCost: 0 },
-        '썸네일': { partnerCost: 0, managementCost: 0 },
-        'OAP': { partnerCost: 0, managementCost: 0 },
-      };
-      const costs = foundProject.workTypeCosts ? { ...defaultCosts, ...foundProject.workTypeCosts } : defaultCosts;
-      setWorkTypeCosts(costs);
-      setTotalAmount(foundProject.budget.totalAmount);
-      setTempWorkContent(foundProject.workContent || []);
+    try {
+      setLoadError(false);
+      const [foundProject, clientsData, partnersData, eps] = await Promise.all([
+        getProjectById(projectId),
+        fetchClients(),
+        getPartners(),
+        getProjectEpisodes(projectId),
+      ]);
+      setProject(foundProject);
+      if (foundProject) {
+        setPartnerIds(foundProject.partnerIds);
+        setManagerIds(foundProject.managerIds);
+        setSelectedClient(foundProject.client || '');
+        setSelectedCategory(foundProject.category || '');
+        const defaultCosts = {
+          '롱폼': { partnerCost: 0, managementCost: 0 },
+          '기획 숏폼': { partnerCost: 0, managementCost: 0 },
+          '본편 숏폼': { partnerCost: 0, managementCost: 0 },
+          '썸네일': { partnerCost: 0, managementCost: 0 },
+          'OAP': { partnerCost: 0, managementCost: 0 },
+        };
+        const costs = foundProject.workTypeCosts ? { ...defaultCosts, ...foundProject.workTypeCosts } : defaultCosts;
+        setWorkTypeCosts(costs);
+        setTotalAmount(foundProject.budget.totalAmount);
+        setTempWorkContent(foundProject.workContent || []);
+      }
+      setClients(clientsData);
+      setAllPartners(partnersData);
+      setEpisodes(eps);
+    } catch (e) {
+      // 네트워크/권한 실패를 '존재하지 않음'으로 오인시키지 않도록 에러 상태 분리
+      console.error('프로젝트 상세 로드 실패', e);
+      setLoadError(true);
+    } finally {
+      setIsLoadingProject(false);
     }
-    setClients(clientsData);
-    setAllPartners(partnersData);
-    setEpisodes(eps);
-    setIsLoadingProject(false);
   }, [projectId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // realtime: 이 프로젝트 행만 구독 (전체 projects 변경에 반응하던 폭주 차단)
-  useSupabaseRealtime(['projects'], loadData, { filter: { column: 'id', value: projectId } });
-  useSupabaseRealtime(['episodes'], loadData, { filter: { column: 'project_id', value: projectId } });
-  useSupabaseRealtime(['partners', 'clients'], loadData);
+  // realtime: 폴링 1회만 등록(filter는 폴링에서 무시됨 — 3회 등록은 포커스당 loadData 3중 호출이라 단일화).
+  useSupabaseRealtime(['projects', 'episodes', 'partners', 'clients'], loadData);
 
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -384,13 +396,19 @@ export default function ProjectDetailPage() {
     if (!deleteEpisodeId) return;
     const episodeToDelete = episodes.find(ep => ep.id === deleteEpisodeId);
     if (episodeToDelete) {
+      // 휴지통 백업을 먼저 — 백업 실패 시 삭제하지 않아 영구 유실 방지
+      const backedUp = await addToTrash('episode', episodeToDelete, projectId);
+      if (!backedUp) {
+        showToastMessage('휴지통 백업에 실패해 삭제를 취소했습니다. 다시 시도해주세요.');
+        setDeleteEpisodeId(null);
+        return;
+      }
       const deleted = await deleteEpisode(deleteEpisodeId);
       if (!deleted) {
         showToastMessage('회차 삭제에 실패했습니다. 다시 시도해주세요.');
         setDeleteEpisodeId(null);
         return;
       }
-      await addToTrash('episode', episodeToDelete, projectId);
       setEpisodes(episodes.filter(ep => ep.id !== deleteEpisodeId));
     }
     setDeleteEpisodeId(null);
@@ -699,28 +717,28 @@ export default function ProjectDetailPage() {
   }, [handleAddEpisode]);
 
   if (isLoadingProject) {
+    return <LoadingState />;
+  }
+
+  if (loadError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-      </div>
+      <EmptyState
+        icon={FileX}
+        title="프로젝트를 불러오지 못했습니다"
+        description="일시적인 오류로 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+        action={{ label: '다시 시도', onClick: () => { setIsLoadingProject(true); loadData(); } }}
+      />
     );
   }
 
   if (!project) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">프로젝트를 찾을 수 없습니다</h2>
-          <p className="text-gray-500 mb-6">요청하신 프로젝트가 존재하지 않습니다.</p>
-          <Link
-            href="/projects"
-            className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-          >
-            <ArrowLeft size={16} className="mr-2" />
-            프로젝트 목록으로 돌아가기
-          </Link>
-        </div>
-      </div>
+      <EmptyState
+        icon={FileX}
+        title="프로젝트를 찾을 수 없습니다"
+        description="요청하신 프로젝트가 존재하지 않습니다."
+        action={{ label: '프로젝트 목록으로 돌아가기', onClick: () => router.push('/projects') }}
+      />
     );
   }
 
@@ -793,40 +811,17 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* 탭 네비게이션 — 매니지먼트 스타일 */}
-      <div data-tour="tour-detail-tabs" className="inline-flex gap-1 p-1 bg-white border border-divider rounded-xl">
-        {([
-          { key: 'in-progress' as const, label: '진행 중인 회차', mobileLabel: '진행 중', count: activeEpisodes.length },
-          { key: 'episodes' as const, label: '회차 관리', mobileLabel: '전체', count: episodes.length },
-          { key: 'overview' as const, label: '프로젝트 개요', mobileLabel: '개요', count: undefined },
-        ]).map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => switchTab(tab.key)}
-            className="relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[13px] sm:text-[14px] font-semibold flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
-          >
-            {activeTab === tab.key && (
-              <motion.div
-                layoutId="project-tab-pill"
-                className="absolute inset-0 bg-orange-500 rounded-lg shadow-sm shadow-orange-500/20"
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              />
-            )}
-            <span className={`relative z-10 transition-colors duration-200 sm:hidden ${activeTab === tab.key ? 'text-white' : 'text-[#78716c]'}`}>
-              {tab.mobileLabel}
-            </span>
-            <span className={`relative z-10 transition-colors duration-200 hidden sm:inline ${activeTab === tab.key ? 'text-white' : 'text-[#78716c]'}`}>
-              {tab.label}
-            </span>
-            {tab.count !== undefined && (
-              <span className={`relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors duration-200 ${
-                activeTab === tab.key ? 'bg-white/22 text-white' : 'bg-gray-100 text-[#78716c]'
-              }`}>
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <TabBar<'in-progress' | 'episodes' | 'overview'>
+        data-tour="tour-detail-tabs"
+        fullWidthMobile={false}
+        items={[
+          { key: 'in-progress', label: '진행 중인 회차', count: activeEpisodes.length },
+          { key: 'episodes', label: '회차 관리', count: episodes.length },
+          { key: 'overview', label: '프로젝트 개요' },
+        ]}
+        active={activeTab}
+        onChange={switchTab}
+      />
 
       {/* 탭 컨텐츠 */}
       <div style={{ overflowX: 'clip' }}>
@@ -847,7 +842,7 @@ export default function ProjectDetailPage() {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* 기본 정보 */}
-        <div className="lg:col-span-3 bg-white rounded-xl border border-divider p-4 sm:p-6 space-y-5 sm:space-y-6">
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-divider p-4 sm:p-6 space-y-5 sm:space-y-6">
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-900">기본 정보</h2>
@@ -1120,7 +1115,7 @@ export default function ProjectDetailPage() {
 
         {/* 비용 정보 */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-xl border border-divider p-6">
+          <div className="bg-white rounded-2xl border border-divider p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-900 flex items-center">
                 <DollarSign size={18} className="mr-2" />
@@ -1293,10 +1288,10 @@ export default function ProjectDetailPage() {
       {/* 진행 중인 회차 탭 */}
       {activeTab === 'in-progress' && (
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(420px,480px)_1fr] gap-4 lg:h-[calc(100vh-220px)] lg:min-h-[620px]">
-      <div data-tour="tour-detail-inprogress" className="bg-white rounded-xl border border-divider lg:overflow-y-auto">
+      <div data-tour="tour-detail-inprogress" className="bg-white rounded-2xl border border-divider lg:overflow-y-auto">
         <div className="px-4 sm:px-6 py-4 border-b border-divider flex items-center justify-between gap-2">
           <div>
-            <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-semibold text-[#1c1917] flex items-center gap-2">
               진행 중인 회차
               <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-xs font-semibold">
                 {activeEpisodes.length}개
@@ -1337,18 +1332,20 @@ export default function ProjectDetailPage() {
             </button>
             <button
               onClick={handleAddEpisode}
-              className="px-3 sm:px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-xs sm:text-sm"
+              className="px-3 sm:px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-xs sm:text-sm inline-flex items-center gap-1.5"
             >
-              + 회차 추가
+              <Plus size={15} />회차 추가
             </button>
           </div>
         </div>
 
         {activeEpisodes.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-lg font-medium">진행 중인 회차가 없습니다</p>
-            <p className="text-sm mt-2">회차 관리 탭에서 회차를 추가해주세요</p>
-          </div>
+          <EmptyState
+            icon={Film}
+            title="진행 중인 회차가 없습니다"
+            description="회차 관리 탭에서 회차를 추가해주세요"
+            size="compact"
+          />
         ) : (
           <div className="p-4 space-y-2">
             {activeEpisodesSorted.map((episode) => (
@@ -1381,9 +1378,13 @@ export default function ProjectDetailPage() {
             onBack={() => setSelectedEpisodeId(null)}
           />
         ) : (
-          <div className="bg-white rounded-xl border border-divider p-12 text-center text-gray-400 h-full flex flex-col items-center justify-center">
-            <p className="text-sm font-medium">회차를 선택하면 상세 정보가 여기에 표시됩니다</p>
-            <p className="text-xs mt-2">좌측 회차 카드를 클릭하세요</p>
+          <div className="bg-white rounded-2xl border border-divider h-full flex flex-col items-center justify-center">
+            <EmptyState
+              icon={FileText}
+              title="회차를 선택하면 상세 정보가 여기에 표시됩니다"
+              description="좌측 회차 카드를 클릭하세요"
+              size="compact"
+            />
           </div>
         )}
       </aside>
@@ -1393,9 +1394,9 @@ export default function ProjectDetailPage() {
       {/* 회차 탭 */}
       {activeTab === 'episodes' && (
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(420px,480px)_1fr] gap-4 lg:h-[calc(100vh-220px)] lg:min-h-[620px]">
-      <div className="bg-white rounded-xl border border-divider lg:overflow-y-auto">
+      <div className="bg-white rounded-2xl border border-divider lg:overflow-y-auto">
         <div className="px-4 sm:px-6 py-4 border-b border-divider flex items-center justify-between gap-2">
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 flex-shrink-0">
+          <h2 className="text-sm sm:text-base font-semibold text-[#1c1917] flex items-center gap-2 flex-shrink-0">
             회차 관리
             <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-xs font-semibold">
               {episodes.length}개
@@ -1436,18 +1437,20 @@ export default function ProjectDetailPage() {
           <button
             onClick={handleAddEpisode}
             data-tour="tour-detail-add-episode"
-            className="px-3 sm:px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-xs sm:text-sm"
+            className="px-3 sm:px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-xs sm:text-sm inline-flex items-center gap-1.5"
           >
-            + 회차 추가
+            <Plus size={15} />회차 추가
           </button>
           </div>
         </div>
 
         {episodes.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p>등록된 회차가 없습니다.</p>
-            <p className="text-sm mt-1">회차를 추가하여 프로젝트를 관리하세요.</p>
-          </div>
+          <EmptyState
+            icon={Film}
+            title="등록된 회차가 없습니다"
+            description="회차를 추가하여 프로젝트를 관리하세요."
+            size="compact"
+          />
         ) : (
           <div className="p-4 space-y-2">
             {episodesSorted.map((episode) => (
@@ -1480,9 +1483,13 @@ export default function ProjectDetailPage() {
             onBack={() => setSelectedEpisodeId(null)}
           />
         ) : (
-          <div className="bg-white rounded-xl border border-divider p-12 text-center text-gray-400 h-full flex flex-col items-center justify-center">
-            <p className="text-sm font-medium">회차를 선택하면 상세 정보가 여기에 표시됩니다</p>
-            <p className="text-xs mt-2">좌측 회차 카드를 클릭하세요</p>
+          <div className="bg-white rounded-2xl border border-divider h-full flex flex-col items-center justify-center">
+            <EmptyState
+              icon={FileText}
+              title="회차를 선택하면 상세 정보가 여기에 표시됩니다"
+              description="좌측 회차 카드를 클릭하세요"
+              size="compact"
+            />
           </div>
         )}
       </aside>
@@ -1491,6 +1498,39 @@ export default function ProjectDetailPage() {
       </motion.div>
       </AnimatePresence>
       </div>
+
+      {/* 모바일 회차 상세 모달 (lg 미만: 숨겨진 aside 대체) */}
+      {selectedEpisodeId && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/40"
+          onClick={() => setSelectedEpisodeId(null)}
+        >
+          <div
+            className="absolute inset-x-0 bottom-0 top-10 bg-[#fafafa] rounded-t-2xl shadow-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-divider bg-white flex-shrink-0">
+              <span className="text-sm font-semibold text-[#1c1917]">회차 상세</span>
+              <button
+                onClick={() => setSelectedEpisodeId(null)}
+                className="p-1.5 -mr-1.5 rounded-lg hover:bg-[#f5f5f4] text-[#78716c] transition-colors"
+                aria-label="닫기"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain p-3">
+              <EpisodeDetailPanel
+                key={selectedEpisodeId}
+                projectId={projectId}
+                episodeId={selectedEpisodeId}
+                embedded
+                onBack={() => setSelectedEpisodeId(null)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 삭제 확인 모달 */}
       {isDeleteModalOpen && (
@@ -1501,19 +1541,19 @@ export default function ProjectDetailPage() {
           />
           <div className="flex min-h-full items-center justify-center p-4">
             <div
-              className="relative bg-gray-50 rounded-lg shadow-xl max-w-md w-full p-6"
+              className="relative bg-[#fafaf9] rounded-lg shadow-xl max-w-md w-full p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold text-gray-900 mb-2">프로젝트 삭제</h3>
-              <p className="text-gray-600 mb-6">
-                <span className="font-semibold text-gray-900">"{project.title}"</span> 프로젝트를 삭제하시겠습니까?
+              <h3 className="text-lg font-bold text-[#1c1917] mb-2">프로젝트 삭제</h3>
+              <p className="text-[#57534e] mb-6">
+                <span className="font-semibold text-[#1c1917]">"{project.title}"</span> 프로젝트를 삭제하시겠습니까?
                 <br />
                 <span className="text-sm text-orange-600">휴지통으로 이동되며, 30일 이내에 복구할 수 있습니다.</span>
               </p>
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-[#44403c] hover:bg-[#f5f5f4] rounded-lg transition-colors"
                 >
                   취소
                 </button>
@@ -1556,10 +1596,10 @@ export default function ProjectDetailPage() {
                 </div>
 
                 {/* 탭 네비게이션 */}
-                <div className="flex gap-2 border-b border-divider bg-gray-50 px-2 rounded-t-lg">
+                <div className="flex gap-2 border-b border-divider bg-gray-50 px-2 rounded-t-lg overflow-x-auto no-scrollbar">
                   <button
                     onClick={() => setActiveEditTab('basic')}
-                    className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative rounded-t-lg ${
+                    className={`flex flex-shrink-0 items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative rounded-t-lg whitespace-nowrap ${
                       activeEditTab === 'basic'
                         ? 'text-orange-600 bg-gray-50 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -1573,7 +1613,7 @@ export default function ProjectDetailPage() {
                   </button>
                   <button
                     onClick={() => setActiveEditTab('workers')}
-                    className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative rounded-t-lg ${
+                    className={`flex flex-shrink-0 items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative rounded-t-lg whitespace-nowrap ${
                       activeEditTab === 'workers'
                         ? 'text-orange-600 bg-gray-50 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -1587,7 +1627,7 @@ export default function ProjectDetailPage() {
                   </button>
                   <button
                     onClick={() => setActiveEditTab('budget')}
-                    className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative rounded-t-lg ${
+                    className={`flex flex-shrink-0 items-center gap-2 px-5 py-3 text-sm font-medium transition-all relative rounded-t-lg whitespace-nowrap ${
                       activeEditTab === 'budget'
                         ? 'text-orange-600 bg-gray-50 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -1658,14 +1698,21 @@ export default function ProjectDetailPage() {
                               </div>
                               {isStatusDropdownOpen && (
                                 <div className="absolute z-50 w-full mt-2 bg-white border-2 border-divider rounded-xl shadow-xl overflow-hidden animate-modal-content">
-                                  {[
-                                    { value: 'planning', label: '시작 전', icon: Clock, emoji: '🎯', color: 'orange', desc: '프로젝트 기획 단계' },
-                                    { value: 'in_progress', label: '진행 중', icon: TrendingUp, emoji: '⚡', color: 'green', desc: '현재 작업 진행 중' },
-                                    { value: 'completed', label: '완료', icon: CheckCircle2, emoji: '✅', color: 'gray', desc: '프로젝트 완료됨' },
-                                    { value: 'on_hold', label: '보류', icon: Pause, emoji: '⏸️', color: 'yellow', desc: '일시적으로 중단' }
-                                  ].map((status) => {
+                                  {([
+                                    { value: 'planning', label: '시작 전', icon: Clock, color: 'orange' as const, desc: '프로젝트 기획 단계' },
+                                    { value: 'in_progress', label: '진행 중', icon: TrendingUp, color: 'green' as const, desc: '현재 작업 진행 중' },
+                                    { value: 'completed', label: '완료', icon: CheckCircle2, color: 'gray' as const, desc: '프로젝트 완료됨' },
+                                    { value: 'on_hold', label: '보류', icon: Pause, color: 'yellow' as const, desc: '일시적으로 중단' }
+                                  ]).map((status) => {
                                     const Icon = status.icon;
                                     const isSelected = (tempEditedProject.status || project?.status) === status.value;
+                                    // 동적 Tailwind 클래스는 purge되어 색이 안 나옴 — color별 정적 매핑.
+                                    const colorCls = {
+                                      orange: { hover: 'hover:bg-orange-50', selBg: 'bg-orange-50', icon: 'text-orange-600' },
+                                      green: { hover: 'hover:bg-green-50', selBg: 'bg-green-50', icon: 'text-green-600' },
+                                      gray: { hover: 'hover:bg-gray-50', selBg: 'bg-gray-50', icon: 'text-gray-600' },
+                                      yellow: { hover: 'hover:bg-yellow-50', selBg: 'bg-yellow-50', icon: 'text-yellow-600' },
+                                    }[status.color];
                                     return (
                                       <button
                                         key={status.value}
@@ -1674,11 +1721,11 @@ export default function ProjectDetailPage() {
                                           setTempEditedProject({ ...tempEditedProject, status: status.value as Project['status'] });
                                           setIsStatusDropdownOpen(false);
                                         }}
-                                        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-${status.color}-50 transition-colors border-l-4 ${
-                                          isSelected ? `bg-${status.color}-50 border-${status.color}-500` : 'border-transparent'
+                                        className={`w-full px-4 py-3 flex items-center gap-3 ${colorCls.hover} transition-colors ${
+                                          isSelected ? colorCls.selBg : ''
                                         }`}
                                       >
-                                        <Icon size={18} className={`text-${status.color}-600 flex-shrink-0`} />
+                                        <Icon size={18} className={`${colorCls.icon} flex-shrink-0`} />
                                         <div className="flex-1 text-left">
                                           <div className="flex items-center gap-2">
                                             <span className="text-sm font-semibold text-gray-900">{status.label}</span>
@@ -1722,7 +1769,7 @@ export default function ProjectDetailPage() {
                                       setTempSelectedClient('');
                                       setIsClientDropdownOpen(false);
                                     }}
-                                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors border-l-4 border-transparent text-left"
+                                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
                                   >
                                     <UserCircle size={18} className="text-gray-400 flex-shrink-0" />
                                     <span className="text-sm font-medium text-gray-400 italic">클라이언트 선택 안 함</span>
@@ -1737,8 +1784,8 @@ export default function ProjectDetailPage() {
                                           setTempSelectedClient(client.name);
                                           setIsClientDropdownOpen(false);
                                         }}
-                                        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 transition-colors border-l-4 ${
-                                          isSelected ? 'bg-orange-50 border-orange-500' : 'border-transparent'
+                                        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 transition-colors ${
+                                          isSelected ? 'bg-orange-50' : ''
                                         }`}
                                       >
                                         <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -1813,8 +1860,8 @@ export default function ProjectDetailPage() {
                                       setTempSelectedCategory('');
                                       setIsCategoryDropdownOpen(false);
                                     }}
-                                    className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors border-l-4 ${
-                                      tempSelectedCategory === '' ? 'bg-gray-50 border-gray-400' : 'border-transparent'
+                                    className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                                      tempSelectedCategory === '' ? 'bg-gray-50' : ''
                                     }`}
                                   >
                                     <X size={16} className="text-gray-400 flex-shrink-0" />
@@ -1836,8 +1883,8 @@ export default function ProjectDetailPage() {
                                           setTempSelectedCategory(category.value);
                                           setIsCategoryDropdownOpen(false);
                                         }}
-                                        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 transition-colors border-l-4 ${
-                                          isSelected ? 'bg-orange-50 border-orange-500' : 'border-transparent'
+                                        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 transition-colors ${
+                                          isSelected ? 'bg-orange-50' : ''
                                         }`}
                                       >
                                         <Palette size={16} className={`flex-shrink-0 ${isSelected ? 'text-orange-600' : 'text-gray-400'}`} />
@@ -1898,8 +1945,8 @@ export default function ProjectDetailPage() {
                                             setTempChannels([...tempChannels, channel.value]);
                                           }
                                         }}
-                                        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-purple-50 transition-colors border-l-4 ${
-                                          isSelected ? 'bg-purple-50 border-purple-500' : 'border-transparent'
+                                        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-purple-50 transition-colors ${
+                                          isSelected ? 'bg-purple-50' : ''
                                         }`}
                                       >
                                         <Icon size={16} className={`flex-shrink-0 ${isSelected ? 'text-purple-600' : 'text-gray-400'}`} />
@@ -1962,8 +2009,8 @@ export default function ProjectDetailPage() {
                                           setTempWorkContent([...tempWorkContent, work.value]);
                                         }
                                       }}
-                                      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-green-50 transition-colors border-l-4 ${
-                                        isSelected ? 'bg-green-50 border-green-500' : 'border-transparent'
+                                      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-green-50 transition-colors ${
+                                        isSelected ? 'bg-green-50' : ''
                                       }`}
                                     >
                                       <Icon size={16} className={`flex-shrink-0 ${isSelected ? 'text-green-600' : 'text-gray-400'}`} />
@@ -2005,7 +2052,7 @@ export default function ProjectDetailPage() {
                             {tempManagerIds.map((managerId) => {
                               const manager = allPartners.find(p => p.id === managerId);
                               return manager ? (
-                                <div key={managerId} className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-orange-25 border border-orange-100 rounded-lg group hover:shadow-md transition-all">
+                                <div key={managerId} className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-100 rounded-lg group hover:shadow-md transition-all">
                                   <div className="flex-shrink-0 w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
                                     {manager.name.charAt(0)}
                                   </div>
@@ -2048,7 +2095,7 @@ export default function ProjectDetailPage() {
                                     setTempManagerIds([...tempManagerIds, manager.id]);
                                     setIsManagerDropdownOpen(false);
                                   }}
-                                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 transition-colors border-l-4 border-transparent text-left"
+                                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-50 transition-colors text-left"
                                 >
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
                                     {manager.name.charAt(0)}
@@ -2081,7 +2128,7 @@ export default function ProjectDetailPage() {
                             {tempPartnerIds.map((partnerId) => {
                               const partner = allPartners.find(p => p.id === partnerId);
                               return partner ? (
-                                <div key={partnerId} className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-green-25 border border-green-100 rounded-lg group hover:shadow-md transition-all">
+                                <div key={partnerId} className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-green-100 border border-green-100 rounded-lg group hover:shadow-md transition-all">
                                   <div className="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                                     <User size={20} className="text-orange-500" />
                                   </div>
@@ -2124,7 +2171,7 @@ export default function ProjectDetailPage() {
                                     setTempPartnerIds([...tempPartnerIds, partner.id]);
                                     setIsPartnerDropdownOpen(false);
                                   }}
-                                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-green-50 transition-colors border-l-4 border-transparent text-left"
+                                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-green-50 transition-colors text-left"
                                 >
                                   <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                                     <User size={16} className="text-orange-500" />
@@ -2450,19 +2497,19 @@ export default function ProjectDetailPage() {
           />
           <div className="flex min-h-full items-center justify-center p-4">
             <div
-              className="relative bg-gray-50 rounded-lg shadow-xl max-w-md w-full p-6"
+              className="relative bg-[#fafaf9] rounded-lg shadow-xl max-w-md w-full p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold text-gray-900 mb-2">회차 삭제</h3>
-              <p className="text-gray-600 mb-6">
-                <span className="font-semibold text-gray-900">"{episodes.find(ep => ep.id === deleteEpisodeId)?.title}"</span>을(를) 삭제하시겠습니까?
+              <h3 className="text-lg font-bold text-[#1c1917] mb-2">회차 삭제</h3>
+              <p className="text-[#57534e] mb-6">
+                <span className="font-semibold text-[#1c1917]">"{(() => { const ep = episodes.find(ep => ep.id === deleteEpisodeId); return ep?.title?.trim() || (ep ? `${ep.episodeNumber}회차` : ''); })()}"</span>을(를) 삭제하시겠습니까?
                 <br />
                 <span className="text-sm text-orange-600">휴지통으로 이동되며, 30일 이내에 복구할 수 있습니다.</span>
               </p>
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setDeleteEpisodeId(null)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-[#44403c] hover:bg-[#f5f5f4] rounded-lg transition-colors"
                 >
                   취소
                 </button>

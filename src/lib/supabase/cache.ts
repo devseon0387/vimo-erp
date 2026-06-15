@@ -5,6 +5,9 @@
 type Entry<T> = { data?: T; at: number; pending?: Promise<T> };
 const store = new Map<string, Entry<unknown>>();
 
+// 무효화 세대 카운터 — fetch 진행 중 invalidate* 가 호출되면 그 fetch 결과는 stale 로 간주.
+let epoch = 0;
+
 const DEFAULT_TTL_MS = 30_000;
 
 export async function cachedFetch<T>(
@@ -23,9 +26,14 @@ export async function cachedFetch<T>(
     return cur.data;
   }
 
+  const startEpoch = epoch;
   const pending = fetcher()
     .then((data) => {
-      store.set(key, { data, at: Date.now() });
+      // fetch 도중 무효화(invalidate*)가 있었으면 stale 이므로 캐시에 쓰지 않고 호출자에게만 반환.
+      // (이게 없으면 realtime invalidate 직후 끝나는 in-flight fetch가 옛 데이터를 재캐시해 갱신이 묻힘)
+      if (epoch === startEpoch) {
+        store.set(key, { data, at: Date.now() });
+      }
       return data;
     })
     .catch((err) => {
@@ -40,11 +48,13 @@ export async function cachedFetch<T>(
 
 /** 단일 키 무효화 */
 export function invalidate(key: string): void {
+  epoch++;
   store.delete(key);
 }
 
 /** prefix로 시작하는 모든 키 무효화 (예: 'episodes:' → 'episodes:all' + 'episodes:project:xxx' 동시) */
 export function invalidatePrefix(prefix: string): void {
+  epoch++;
   for (const k of Array.from(store.keys())) {
     if (k.startsWith(prefix)) store.delete(k);
   }
@@ -52,6 +62,7 @@ export function invalidatePrefix(prefix: string): void {
 
 /** 전체 캐시 비우기 (로그아웃 등) */
 export function invalidateAll(): void {
+  epoch++;
   store.clear();
 }
 
