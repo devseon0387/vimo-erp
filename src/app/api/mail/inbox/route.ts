@@ -10,6 +10,7 @@ import { NextResponse } from 'next/server';
 import { currentUser, hasErpAccess, isProfileAdmin } from '@/lib/authz';
 import { getInboundEmails, isInboundConfigured, type InboundEmail } from '@/lib/mail/inbound';
 import { getMailDirectory, getMyMailBoxes } from '@/lib/supabase/db/mail-addresses';
+import { getReadUids } from '@/lib/supabase/db/mail-read-status';
 
 export const runtime = 'nodejs';
 
@@ -67,12 +68,21 @@ export async function GET() {
           }),
         );
 
+    // 읽음 상태 — 보이는 메일 한정으로 이 유저가 읽은 uid 목록(서버 SoT). 실패해도 목록은 정상 반환.
+    let readUids: string[] = [];
+    try {
+      readUids = await getReadUids(user.id, visible.map((e) => e.uid));
+    } catch (e) {
+      console.error('[mail/inbox] 읽음 상태 조회 실패', e);
+    }
+
     return NextResponse.json({
       configured: true,
       isAdmin: admin,
       myBoxes,
       sharedBoxes: admin ? allSharedBoxes : undefined,
       emails: visible,
+      readUids,
     });
   } catch (e) {
     console.error('[mail/inbox] 수신 메일 조회 실패', e);

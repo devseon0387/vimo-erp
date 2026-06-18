@@ -230,6 +230,17 @@ export const mailAddressMembers = pgTable("mail_address_members", {
 	uniqueIndex("ux_mail_address_members_pair").using("btree", table.addressId.asc().nullsLast(), table.userId.asc().nullsLast()),
 ]);
 
+// 메일 읽음 상태 — 사용자별(per-user) 읽음 표시. mail_uid = 받은 메일 고유키(inbound.ts uid).
+// FK 없음(sent_emails 선례). 같은 (user_id, mail_uid)는 유니크 — 멱등 upsert(onConflictDoNothing).
+export const mailReadStatus = pgTable("mail_read_status", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	userId: uuid("user_id").notNull(),
+	mailUid: text("mail_uid").notNull(),
+	readAt: timestamp("read_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+}, (table) => [
+	uniqueIndex("ux_mail_read_status_user_uid").using("btree", table.userId.asc().nullsLast(), table.mailUid.asc().nullsLast()),
+]);
+
 export const auditLog = pgTable("audit_log", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	tableName: text("table_name").notNull(),

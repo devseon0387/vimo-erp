@@ -36,6 +36,7 @@ export interface InboxData {
   myBoxes: MyBox[];
   sharedBoxes?: MailBox[];
   emails: InboxEmail[];
+  readUids?: string[];
 }
 
 const TTL = 15_000;
@@ -73,13 +74,17 @@ export async function fetchInbox(force = false): Promise<InboxData | null> {
       const res = await fetch('/api/mail/inbox');
       if (!res.ok) return cache;
       const data = (await res.json()) as InboxData;
+      const readUids = Array.isArray(data.readUids) ? data.readUids : [];
       cache = {
         configured: Boolean(data.configured),
         isAdmin: Boolean(data.isAdmin),
         myBoxes: Array.isArray(data.myBoxes) ? data.myBoxes : [],
         sharedBoxes: Array.isArray(data.sharedBoxes) ? data.sharedBoxes : undefined,
         emails: Array.isArray(data.emails) ? data.emails : [],
+        readUids,
       };
+      // 서버 읽음상태(SoT)를 로컬 집합에 병합 — 기기 간 동기화. 낙관적 표시는 보존(합집합).
+      hydrateSeen(readUids);
       cachedAt = Date.now();
       emit();
       return cache;
@@ -92,25 +97,55 @@ export async function fetchInbox(force = false): Promise<InboxData | null> {
   return inflight;
 }
 
-// ─── 읽음 상태 (이 브라우저 기준, localStorage) ───
+// ─── 읽음 상태 (서버 DB가 SoT, localStorage는 즉시표시 캐시) ───
+// 이전: localStorage 전용(브라우저 한정). 변경: /api/mail/read 로 영속화 → 기기 간 동기화.
+// 흐름: 모듈 로드 시 localStorage 시드(즉시 페인트) → fetchInbox 가 서버 readUids 를 병합
+//       → markSeen 은 낙관적으로 집합 갱신 + 서버 POST(fire-and-forget).
 const SEEN_KEY = 'vimo-mail-seen';
-const SEEN_MAX = 500;
+const SEEN_MAX = 1000;
 
-export function getSeenSet(): Set<string> {
+const seenSet: Set<string> = (() => {
+  if (typeof window === 'undefined') return new Set<string>();
   try {
     const raw = localStorage.getItem(SEEN_KEY);
     if (raw) return new Set(JSON.parse(raw) as string[]);
   } catch { /* ignore */ }
-  return new Set();
+  return new Set<string>();
+})();
+
+function persistSeen(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SEEN_KEY, JSON.stringify([...seenSet].slice(-SEEN_MAX)));
+  } catch { /* ignore */ }
 }
 
+/** 서버 readUids 를 로컬 집합에 합집합으로 병합(낙관적 표시 보존). 새로 추가된 게 있으면 캐시 저장. */
+function hydrateSeen(uids: string[]): void {
+  let changed = false;
+  for (const u of uids) {
+    if (!seenSet.has(u)) { seenSet.add(u); changed = true; }
+  }
+  if (changed) persistSeen();
+}
+
+/** 읽음 집합(라이브). 소비자는 .has(uid) 로 사용. emit 후 재렌더 시 최신 상태를 읽는다. */
+export function getSeenSet(): Set<string> {
+  return seenSet;
+}
+
+/** 메일 열람 시 호출. 낙관적으로 읽음 표시 + 서버에 영속화(실패해도 화면은 즉시 반영). */
 export function markSeen(uid: string): void {
-  try {
-    const set = getSeenSet();
-    if (set.has(uid)) return;
-    set.add(uid);
-    const arr = [...set];
-    localStorage.setItem(SEEN_KEY, JSON.stringify(arr.slice(-SEEN_MAX)));
-    emit();
-  } catch { /* ignore */ }
+  if (!uid || seenSet.has(uid)) return;
+  seenSet.add(uid);
+  persistSeen();
+  emit();
+  // 서버 영속화 — 실패는 무시(다음 fetch 때 재동기화되거나 로컬 캐시로 유지).
+  if (typeof window !== 'undefined') {
+    void fetch('/api/mail/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uids: [uid] }),
+    }).catch(() => { /* ignore */ });
+  }
 }
