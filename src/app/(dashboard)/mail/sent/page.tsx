@@ -1,22 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import DOMPurify from 'dompurify';
-import { Send, Mail, X, AlertCircle } from 'lucide-react';
+import { Send, Mail, X, AlertCircle, RefreshCw } from 'lucide-react';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
-
-interface SentEmail {
-  id: string;
-  senderEmail: string;
-  to: string[];
-  cc?: string[];
-  bcc?: string[];
-  subject: string;
-  content: string;
-  status: string;
-  createdAt: string;
-}
+import type { SentEmail } from '@/types';
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '';
@@ -28,28 +17,53 @@ function formatDate(dateStr: string) {
 }
 
 export default function SentMailPage() {
-  // 메일 발송 기록 라우트(/api/mail/sent) 미구현 — 빈 상태 + 배너 안내로 고정
-  const [emails] = useState<SentEmail[]>([]);
-  const [loading] = useState(false);
+  const [emails, setEmails] = useState<SentEmail[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [selected, setSelected] = useState<SentEmail | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await fetch('/api/mail/sent');
+      const d = await res.json();
+      if (!res.ok) {
+        setError(true);
+        return;
+      }
+      setEmails(Array.isArray(d.emails) ? d.emails : []);
+      setIsAdmin(Boolean(d.isAdmin));
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <div className="space-y-5 sm:space-y-6">
       {/* 헤더 */}
-      <div>
-        <h1 className="text-page">보낸 메일함</h1>
-        <p className="text-ink-500 mt-1 text-sm">발송한 메일 내역을 확인합니다</p>
-      </div>
-
-      {/* 백엔드 미연결 배너 */}
-      <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
-        <AlertCircle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-[13px] font-semibold text-amber-900">메일 백엔드 연결 준비 중</p>
-          <p className="text-[12px] text-amber-800 mt-0.5">
-            발송 기록 조회 API가 아직 구현되지 않아 보낸 메일함을 일시 비활성화했습니다. 후속 릴리스에서 복원됩니다.
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-page">보낸 메일함</h1>
+          <p className="text-ink-500 mt-1 text-sm">
+            {isAdmin ? '전사 발송 메일 내역을 확인합니다' : '발송한 메일 내역을 확인합니다'}
           </p>
         </div>
+        <button
+          onClick={load}
+          disabled={loading}
+          className="w-9 h-9 rounded-lg border border-divider bg-white text-ink-500 hover:bg-ink-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+          aria-label="새로고침"
+        >
+          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       {/* 메일 목록 카드 */}
@@ -57,13 +71,26 @@ export default function SentMailPage() {
         <div className="flex items-center gap-2 px-6 py-4 border-b border-ink-100">
           <Send size={16} className="text-orange-500" />
           <h2 className="text-section">보낸 메일</h2>
-          {!loading && emails.length > 0 && (
+          {!loading && !error && emails.length > 0 && (
             <span className="text-[11px] font-semibold text-ink-400">{emails.length}건</span>
           )}
         </div>
 
         {loading ? (
           <LoadingState size="compact" label="메일을 불러오는 중..." />
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center text-center px-6 py-12">
+            <AlertCircle size={28} className="text-ink-400" />
+            <p className="mt-3 text-[13px] font-semibold text-ink-700">메일을 불러오지 못했습니다</p>
+            <p className="mt-1 text-[12px] text-ink-400">잠시 후 다시 시도해주세요.</p>
+            <button
+              onClick={load}
+              className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-orange-500 text-white text-[12px] font-bold hover:bg-orange-600 transition-colors"
+            >
+              <RefreshCw size={13} />
+              다시 시도
+            </button>
+          </div>
         ) : emails.length === 0 ? (
           <EmptyState
             icon={Mail}
@@ -97,9 +124,16 @@ export default function SentMailPage() {
                     <p className="text-[13px] font-medium text-ink-700 mt-0.5 truncate">
                       {email.subject}
                     </p>
-                    <p className="text-[12px] text-ink-400 mt-0.5 truncate">
-                      {email.content.replace(/<[^>]*>/g, '').slice(0, 100) || '(본문 없음)'}
-                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                      {isAdmin && (
+                        <span className="flex-shrink-0 px-1.5 py-px rounded bg-ink-100 text-ink-500 text-[10px] font-bold">
+                          {email.senderEmail}
+                        </span>
+                      )}
+                      <span className="text-[12px] text-ink-400 truncate">
+                        {email.content.replace(/<[^>]*>/g, '').slice(0, 100) || '(본문 없음)'}
+                      </span>
+                    </div>
                   </div>
                 </button>
               </li>

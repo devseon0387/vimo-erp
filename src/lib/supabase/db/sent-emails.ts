@@ -10,7 +10,7 @@
  *   ※ 버킷 B: 모든 export는 async 함수만. 매퍼/Row 타입은 내부 non-export helper로 강등
  *     (기존 export 매퍼 2종·SentEmailRow는 외부 미사용이라 호출부 영향 0).
  */
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, or, inArray, type SQL } from 'drizzle-orm';
 import { db } from '@/db';
 import { sentEmails } from '@/db/schema';
 import { currentUser } from '@/lib/authz';
@@ -34,11 +34,30 @@ function fromRow(r: Row): SentEmail {
 
 // ─── CRUD ────────────────────────────────────────────────────
 
-export async function getSentEmails(): Promise<SentEmail[]> {
+/**
+ * 발송 메일 목록(최신순).
+ *  - filter 없음 = 전체(관리자용).
+ *  - filter 있음 = 본인 발송분(senderId) OR 담당 주소에서 나간 메일(senderEmail) — 직원용.
+ *    볼 수 있는 범위가 전혀 없으면 빈 배열.
+ */
+export async function getSentEmails(
+  filter?: { senderId?: string; senderEmails?: string[] },
+): Promise<SentEmail[]> {
   if (!(await currentUser())) return [];
+  let where: SQL | undefined;
+  if (filter) {
+    const conds: SQL[] = [];
+    if (filter.senderId) conds.push(eq(sentEmails.senderId, filter.senderId));
+    if (filter.senderEmails && filter.senderEmails.length > 0) {
+      conds.push(inArray(sentEmails.senderEmail, filter.senderEmails));
+    }
+    if (conds.length === 0) return [];
+    where = conds.length === 1 ? conds[0] : or(...conds);
+  }
   const rows = await db
     .select()
     .from(sentEmails)
+    .where(where)
     .orderBy(desc(sentEmails.createdAt))
     .limit(200);
   return rows.map(fromRow);
