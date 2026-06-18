@@ -93,6 +93,10 @@ export default function MailFolderPanel() {
   }, []);
 
   const { boxes, etc } = buildFolders(data, ver);
+  // 폴더 그룹화 — 받은/내 메일함 vs 공용함(+미분류). 멀티주소 모델을 한눈에.
+  const receivedBoxes = boxes.filter((b) => b.key === 'all' || b.key === 'mine');
+  const sharedBoxes = boxes.filter((b) => b.key !== 'all' && b.key !== 'mine' && b.key !== 'unmatched');
+  const unmatchedBoxes = boxes.filter((b) => b.key === 'unmatched');
   // 내 발신 주소 — 부여받은 개인 메일 주소(personal). 이름 태그(label) + 주소로 표시.
   const myPersonalBoxes = (data?.myBoxes ?? []).filter((b) => b.type === 'personal');
   const curBox = searchParams.get('box');
@@ -117,7 +121,7 @@ export default function MailFolderPanel() {
       <Link
         key={f.key}
         href={f.href}
-        className={`group flex items-center gap-2 px-2.5 py-[7px] rounded-[9px] text-[12.5px] font-semibold mb-px transition-colors ${
+        className={`group flex items-center gap-2 px-2 py-[7px] rounded-[9px] text-[12.5px] font-semibold mb-px transition-colors ${
           active
             ? 'bg-orange-50 text-orange-600'
             : f.amber
@@ -125,11 +129,21 @@ export default function MailFolderPanel() {
               : 'text-[#44403c] hover:bg-[#fafaf9]'
         }`}
       >
-        <f.icon size={14} className={active ? 'text-orange-500' : f.amber ? 'text-amber-500' : 'text-[#a8a29e]'} />
+        <span
+          className={`w-6 h-6 rounded-[7px] flex items-center justify-center flex-shrink-0 ${
+            active ? 'bg-white text-orange-500' : f.amber ? 'bg-amber-50 text-amber-500' : 'bg-[#f5f5f4] text-[#a8a29e]'
+          }`}
+        >
+          <f.icon size={13} />
+        </span>
         <span className="truncate">{f.label}</span>
         {f.sub && <span className="text-[10.5px] font-medium text-[#a8a29e] truncate">{f.sub}</span>}
         {typeof f.count === 'number' && f.count > 0 && (
-          <span className={`ml-auto text-[10.5px] font-bold ${active ? 'text-orange-600' : f.amber ? 'text-amber-600' : 'text-[#a8a29e]'}`}>
+          <span
+            className={`ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-extrabold ${
+              f.amber ? 'bg-amber-100 text-amber-700' : 'bg-orange-500 text-white'
+            }`}
+          >
             {f.count}
           </span>
         )}
@@ -169,8 +183,19 @@ export default function MailFolderPanel() {
           })}
         </div>
       )}
-      <div className="text-[10.5px] font-extrabold text-[#a8a29e] tracking-wide px-2 mb-1.5">메일함</div>
-      {boxes.map(renderItem)}
+      {receivedBoxes.length > 0 && (
+        <>
+          <div className="text-[10.5px] font-extrabold text-[#a8a29e] tracking-wide px-2 mb-1.5">메일함</div>
+          {receivedBoxes.map(renderItem)}
+        </>
+      )}
+      {(sharedBoxes.length > 0 || unmatchedBoxes.length > 0) && (
+        <>
+          <div className="text-[10.5px] font-extrabold text-[#a8a29e] tracking-wide px-2 mb-1.5 mt-3">공용함</div>
+          {sharedBoxes.map(renderItem)}
+          {unmatchedBoxes.map(renderItem)}
+        </>
+      )}
       <div className="h-px bg-[#f0ece9] my-2 mx-2" />
       {etc.map(renderItem)}
     </div>

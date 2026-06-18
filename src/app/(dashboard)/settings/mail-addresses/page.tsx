@@ -6,6 +6,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { refreshInbox } from '@/lib/mail/inbox-shared';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
+import { StatusBadge } from '@/components/StatusBadge';
 
 interface AddressRow {
   id: string;
@@ -241,11 +242,9 @@ export default function MailAddressesPage() {
                           {a.label ? ` · ${a.label}` : ''}
                         </p>
                       </div>
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold flex-shrink-0 ${
-                        a.type === 'personal' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
-                      }`}>
+                      <StatusBadge tone={a.type === 'personal' ? 'brand' : 'info'} className="flex-shrink-0">
                         {a.type === 'personal' ? '개인' : '공용'}
-                      </span>
+                      </StatusBadge>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -290,11 +289,9 @@ export default function MailAddressesPage() {
                         {a.address}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold ${
-                          a.type === 'personal' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
-                        }`}>
+                        <StatusBadge tone={a.type === 'personal' ? 'brand' : 'info'}>
                           {a.type === 'personal' ? '개인' : '공용'}
-                        </span>
+                        </StatusBadge>
                       </td>
                       <td className="px-4 py-3">
                         {(() => {
@@ -486,9 +483,7 @@ export default function MailAddressesPage() {
                       </p>
                     </div>
                     {personal ? (
-                      <span className="px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-[11px] font-semibold flex-shrink-0">
-                        부여됨
-                      </span>
+                      <StatusBadge tone="ok" dot className="flex-shrink-0">부여됨</StatusBadge>
                     ) : (
                       <button
                         onClick={() => prefillAssign(u)}
