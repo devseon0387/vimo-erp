@@ -56,6 +56,13 @@ export default auth((request) => {
     return okResponse;
   }
 
+  // planhigh 공개 API: planhigh.co.kr(정적 사이트)가 호출하는 공개/익명 엔드포인트.
+  // 라우트 내부에서 CORS + planhigh 전용 토큰(어드민 PATCH) / 레이트리밋(공개 POST)로 자체 보호.
+  // 로그인 게이트(307)를 우회해 크로스 오리진 접근 허용. (2026-06-18 Supabase 탈출)
+  if (pathname.startsWith('/api/planhigh')) {
+    return okResponse;
+  }
+
   // Auth.js 엔드포인트(session/signin/signout/callback/csrf)는 항상 통과 — 게이트 우회.
   if (pathname.startsWith('/api/auth')) {
     return okResponse;

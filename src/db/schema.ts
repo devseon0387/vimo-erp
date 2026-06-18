@@ -194,6 +194,16 @@ export const planhighSiteContent = pgTable("planhigh_site_content", {
 	check("single_row", sql`id = 1`),
 ]);
 
+// planhigh 전용 어드민 (ERP user_profiles 와 독립). Supabase GoTrue 대체.
+export const planhighAdmins = pgTable("planhigh_admins", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	email: text().notNull(),
+	passwordHash: text("password_hash").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+}, (table) => [
+	uniqueIndex("ux_planhigh_admins_email_lower").using("btree", sql`lower(email)`),
+]);
+
 export const sentEmails = pgTable("sent_emails", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	senderId: uuid("sender_id"),
