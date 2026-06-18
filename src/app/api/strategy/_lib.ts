@@ -1,19 +1,16 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { eq, asc, desc } from 'drizzle-orm';
+import { db } from '@/db';
+import { strategyGroups, strategyDocs } from '@/db/schema';
+import { currentUser } from '@/lib/authz';
 
 /** 인증 + 역할 확인. 실패 시 NextResponse 에러를 반환 */
 export async function requireAuth(): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await currentUser();
   if (!user) return { ok: false, response: NextResponse.json({ error: '인증 필요' }, { status: 401 }) };
 
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('role, approved')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || (profile.role !== 'admin' && profile.approved !== true)) {
+  // 기존 의미 유지: user_profiles.role/approved → Auth.js 세션 클레임(role/approved)으로 재현.
+  if (user.role !== 'admin' && user.approved !== true) {
     return { ok: false, response: NextResponse.json({ error: '권한 없음' }, { status: 403 }) };
   }
   return { ok: true };
@@ -44,136 +41,102 @@ export interface StrategyDoc {
   updatedAt: string;
 }
 
-function toGroup(row: Record<string, string>): StrategyGroup {
+function toGroup(row: typeof strategyGroups.$inferSelect): StrategyGroup {
   return {
     id: row.id,
     name: row.name,
     emoji: row.emoji,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }
 
-function toDoc(row: Record<string, unknown>): StrategyDoc {
+function toDoc(row: typeof strategyDocs.$inferSelect): StrategyDoc {
   return {
-    id: row.id as string,
-    groupId: row.group_id as string,
-    title: row.title as string,
-    emoji: row.emoji as string,
+    id: row.id,
+    groupId: row.groupId,
+    title: row.title,
+    emoji: row.emoji,
     blocks: (row.blocks as StrategyBlock[]) || [],
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }
 
 export async function dbGetGroups(): Promise<StrategyGroup[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('strategy_groups')
-    .select('*')
-    .order('created_at');
-  return (data || []).map(toGroup);
+  const rows = await db.select().from(strategyGroups).orderBy(asc(strategyGroups.createdAt));
+  return rows.map(toGroup);
 }
 
 export async function dbGetGroup(id: string): Promise<StrategyGroup | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('strategy_groups')
-    .select('*')
-    .eq('id', id)
-    .single();
-  return data ? toGroup(data) : null;
+  const rows = await db.select().from(strategyGroups).where(eq(strategyGroups.id, id)).limit(1);
+  return rows[0] ? toGroup(rows[0]) : null;
 }
 
 export async function dbCreateGroup(group: { id: string; name: string; emoji: string }): Promise<StrategyGroup> {
-  const supabase = await createClient();
   const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('strategy_groups')
-    .insert({ id: group.id, name: group.name, emoji: group.emoji, created_at: now, updated_at: now })
-    .select()
-    .single();
-  if (error || !data) throw new Error(error?.message ?? 'Group 생성 실패');
-  return toGroup(data);
+  const [row] = await db
+    .insert(strategyGroups)
+    .values({ id: group.id, name: group.name, emoji: group.emoji, createdAt: now, updatedAt: now })
+    .returning();
+  if (!row) throw new Error('Group 생성 실패');
+  return toGroup(row);
 }
 
 export async function dbUpdateGroup(id: string, updates: { name?: string; emoji?: string }): Promise<StrategyGroup> {
-  const supabase = await createClient();
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const patch: Partial<typeof strategyGroups.$inferInsert> = { updatedAt: new Date().toISOString() };
   if (updates.name  !== undefined) patch.name  = updates.name;
   if (updates.emoji !== undefined) patch.emoji = updates.emoji;
-  const { data, error } = await supabase
-    .from('strategy_groups')
-    .update(patch)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error || !data) throw new Error(error?.message ?? 'Group 수정 실패');
-  return toGroup(data);
+  const [row] = await db.update(strategyGroups).set(patch).where(eq(strategyGroups.id, id)).returning();
+  if (!row) throw new Error('Group 수정 실패');
+  return toGroup(row);
 }
 
 export async function dbDeleteGroup(id: string): Promise<void> {
-  const supabase = await createClient();
-  await supabase.from('strategy_groups').delete().eq('id', id);
+  // strategy_docs_group_id_fkey ON DELETE CASCADE → 하위 문서 자동 삭제
+  await db.delete(strategyGroups).where(eq(strategyGroups.id, id));
 }
 
 export async function dbGetDocs(groupId?: string): Promise<StrategyDoc[]> {
-  const supabase = await createClient();
-  const query = supabase
-    .from('strategy_docs')
-    .select('*')
-    .order('updated_at', { ascending: false });
-  const { data } = groupId ? await query.eq('group_id', groupId) : await query;
-  return (data || []).map(toDoc);
+  const rows = groupId
+    ? await db.select().from(strategyDocs).where(eq(strategyDocs.groupId, groupId)).orderBy(desc(strategyDocs.updatedAt))
+    : await db.select().from(strategyDocs).orderBy(desc(strategyDocs.updatedAt));
+  return rows.map(toDoc);
 }
 
 export async function dbGetDoc(id: string): Promise<StrategyDoc | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('strategy_docs')
-    .select('*')
-    .eq('id', id)
-    .single();
-  return data ? toDoc(data) : null;
+  const rows = await db.select().from(strategyDocs).where(eq(strategyDocs.id, id)).limit(1);
+  return rows[0] ? toDoc(rows[0]) : null;
 }
 
 export async function dbCreateDoc(doc: StrategyDoc): Promise<StrategyDoc> {
-  const supabase = await createClient();
   const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('strategy_docs')
-    .insert({
+  const [row] = await db
+    .insert(strategyDocs)
+    .values({
       id: doc.id,
-      group_id: doc.groupId,
+      groupId: doc.groupId,
       title: doc.title,
       emoji: doc.emoji,
       blocks: doc.blocks,
-      created_at: now,
-      updated_at: now,
+      createdAt: now,
+      updatedAt: now,
     })
-    .select()
-    .single();
-  if (error || !data) throw new Error(error?.message ?? 'Doc 생성 실패');
-  return toDoc(data);
+    .returning();
+  if (!row) throw new Error('Doc 생성 실패');
+  return toDoc(row);
 }
 
 export async function dbUpdateDoc(id: string, updates: Partial<StrategyDoc>): Promise<StrategyDoc> {
-  const supabase = await createClient();
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (updates.title !== undefined) patch.title = updates.title;
-  if (updates.emoji !== undefined) patch.emoji = updates.emoji;
+  const patch: Partial<typeof strategyDocs.$inferInsert> = { updatedAt: new Date().toISOString() };
+  if (updates.title  !== undefined) patch.title  = updates.title;
+  if (updates.emoji  !== undefined) patch.emoji  = updates.emoji;
   if (updates.blocks !== undefined) patch.blocks = updates.blocks;
-  const { data, error } = await supabase
-    .from('strategy_docs')
-    .update(patch)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error || !data) throw new Error(error?.message ?? 'Doc 수정 실패');
-  return toDoc(data);
+  const [row] = await db.update(strategyDocs).set(patch).where(eq(strategyDocs.id, id)).returning();
+  if (!row) throw new Error('Doc 수정 실패');
+  return toDoc(row);
 }
 
 export async function dbDeleteDoc(id: string): Promise<void> {
-  const supabase = await createClient();
-  await supabase.from('strategy_docs').delete().eq('id', id);
+  await db.delete(strategyDocs).where(eq(strategyDocs.id, id));
 }
