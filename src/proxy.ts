@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import authConfig from '@/auth.config';
 
 // Auth.js v5 미들웨어 — JWT 세션을 Edge에서 검증(DB 없음). authConfig는 Edge-안전.
-// Phase 4: Supabase @supabase/ssr 세션 갱신 → Auth.js JWT 클레임 게이트로 교체.
+// (구) Supabase 세션 갱신은 Auth.js JWT 클레임 게이트로 완전 교체됨 — Supabase 의존 제거 완료.
 const { auth } = NextAuth(authConfig);
 
 export default auth((request) => {
