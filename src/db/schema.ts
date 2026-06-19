@@ -53,6 +53,13 @@ export const clients = pgTable("clients", {
 	address: text(),
 	status: text().default('active').notNull(),
 	notes: text(),
+	// 세금계산서(홈택스) 발행 도우미용 사업자정보
+	businessNumber: text("business_number"),
+	corpName: text("corp_name"),
+	ceoName: text("ceo_name"),
+	bizType: text("biz_type"),
+	bizItem: text("biz_item"),
+	taxEmail: text("tax_email"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 });
@@ -90,6 +97,7 @@ export const episodes = pgTable("episodes", {
 	completedAt: timestamp("completed_at", { withTimezone: true, mode: 'string' }),
 	paymentDueDate: text("payment_due_date"),
 	paymentStatus: text("payment_status").default('pending'),
+	paymentDate: text("payment_date"),
 	invoiceDate: text("invoice_date"),
 	invoiceStatus: text("invoice_status").default('pending'),
 	clientId: uuid("client_id"),

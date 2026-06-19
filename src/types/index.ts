@@ -118,6 +118,7 @@ export interface Episode {
   workBudgets?: Record<WorkContentType, WorkTypeBudget>; // 작업 타입별 비용 정보
   paymentDueDate?: string; // 입금 예정일
   paymentStatus?: 'pending' | 'completed'; // 입금 상태 (pending: 입금 전, completed: 입금 완료)
+  paymentDate?: string; // 실제 입금일
   invoiceDate?: string; // 세금계산서 발행일
   invoiceStatus?: 'pending' | 'completed'; // 발행 상태 (pending: 미발행, completed: 발행 완료)
   completedAt?: string;
@@ -164,6 +165,13 @@ export interface Client {
   createdAt: string;
   updatedAt: string;
   notes?: string; // 메모
+  // 세금계산서(홈택스) 발행 도우미용 사업자정보
+  businessNumber?: string; // 사업자등록번호
+  corpName?: string; // 상호(법인명)
+  ceoName?: string; // 대표자
+  bizType?: string; // 업태
+  bizItem?: string; // 종목
+  taxEmail?: string; // 세금계산서 수신 이메일
 }
 
 // 포트폴리오 항목 타입

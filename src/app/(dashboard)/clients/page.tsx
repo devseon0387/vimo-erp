@@ -54,7 +54,7 @@ export default function ClientsPage() {
   const [clientToDelete, setClientToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isClientSuccess, setIsClientSuccess] = useState(false);
   const [newClient, setNewClient] = useState<Partial<Client>>({
-    name: '', contactPerson: '', email: '', phone: '', company: '', address: '', notes: '', status: 'active',
+    name: '', contactPerson: '', email: '', phone: '', company: '', address: '', notes: '', status: 'active', businessNumber: '', corpName: '', ceoName: '', bizType: '', bizItem: '', taxEmail: '',
   });
 
   const loadData = useCallback(() => {
@@ -196,6 +196,12 @@ export default function ClientsPage() {
       phone: newClient.phone,
       company: newClient.company,
       address: newClient.address,
+      businessNumber: newClient.businessNumber,
+      corpName: newClient.corpName,
+      ceoName: newClient.ceoName,
+      bizType: newClient.bizType,
+      bizItem: newClient.bizItem,
+      taxEmail: newClient.taxEmail,
       status: newClient.status || 'active',
       notes: newClient.notes,
     });
@@ -206,7 +212,7 @@ export default function ClientsPage() {
       setTimeout(() => {
         setIsAddModalOpen(false);
         setIsClientSuccess(false);
-        setNewClient({ name: '', contactPerson: '', email: '', phone: '', company: '', address: '', notes: '', status: 'active' });
+        setNewClient({ name: '', contactPerson: '', email: '', phone: '', company: '', address: '', notes: '', status: 'active', businessNumber: '', corpName: '', ceoName: '', bizType: '', bizItem: '', taxEmail: '' });
       }, 1200);
     } else {
       toast.error('클라이언트 추가에 실패했습니다. 다시 시도해주세요.');
@@ -216,7 +222,7 @@ export default function ClientsPage() {
   const handleCloseAddModal = () => {
     setIsAddModalOpen(false);
     setIsClientSuccess(false);
-    setNewClient({ name: '', contactPerson: '', email: '', phone: '', company: '', address: '', notes: '', status: 'active' });
+    setNewClient({ name: '', contactPerson: '', email: '', phone: '', company: '', address: '', notes: '', status: 'active', businessNumber: '', corpName: '', ceoName: '', bizType: '', bizItem: '', taxEmail: '' });
   };
 
   const handleEditClient = (client: Client) => {
@@ -233,6 +239,12 @@ export default function ClientsPage() {
       phone: editingClient.phone,
       company: editingClient.company,
       address: editingClient.address,
+      businessNumber: editingClient.businessNumber,
+      corpName: editingClient.corpName,
+      ceoName: editingClient.ceoName,
+      bizType: editingClient.bizType,
+      bizItem: editingClient.bizItem,
+      taxEmail: editingClient.taxEmail,
       notes: editingClient.notes,
       status: editingClient.status,
     });
@@ -465,6 +477,23 @@ export default function ClientsPage() {
                       <FloatingLabelTextarea label="메모" value={newClient.notes}
                         onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })} rows={3} />
                     </div>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-[#1c1917]">세금계산서 정보 <span className="text-[11px] font-normal text-[#a8a29e]">홈택스 발행용 · 선택</span></h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <FloatingLabelInput label="사업자등록번호" type="text" value={newClient.businessNumber}
+                          onChange={(e) => setNewClient({ ...newClient, businessNumber: e.target.value })} />
+                        <FloatingLabelInput label="상호 (법인명)" type="text" value={newClient.corpName}
+                          onChange={(e) => setNewClient({ ...newClient, corpName: e.target.value })} />
+                        <FloatingLabelInput label="대표자" type="text" value={newClient.ceoName}
+                          onChange={(e) => setNewClient({ ...newClient, ceoName: e.target.value })} />
+                        <FloatingLabelInput label="세금계산서 이메일" type="email" value={newClient.taxEmail}
+                          onChange={(e) => setNewClient({ ...newClient, taxEmail: e.target.value })} />
+                        <FloatingLabelInput label="업태" type="text" value={newClient.bizType}
+                          onChange={(e) => setNewClient({ ...newClient, bizType: e.target.value })} />
+                        <FloatingLabelInput label="종목" type="text" value={newClient.bizItem}
+                          onChange={(e) => setNewClient({ ...newClient, bizItem: e.target.value })} />
+                      </div>
+                    </div>
                   </div>
                   <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-divider rounded-b-xl">
                     <div className="flex gap-3">
@@ -525,6 +554,23 @@ export default function ClientsPage() {
                     onChange={(e) => setEditingClient({ ...editingClient, address: e.target.value })} />
                   <FloatingLabelTextarea label="메모" value={editingClient.notes || ''}
                     onChange={(e) => setEditingClient({ ...editingClient, notes: e.target.value })} rows={3} />
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-[#1c1917]">세금계산서 정보 <span className="text-[11px] font-normal text-[#a8a29e]">홈택스 발행용 · 선택</span></h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <FloatingLabelInput label="사업자등록번호" type="text" value={editingClient.businessNumber || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, businessNumber: e.target.value })} />
+                    <FloatingLabelInput label="상호 (법인명)" type="text" value={editingClient.corpName || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, corpName: e.target.value })} />
+                    <FloatingLabelInput label="대표자" type="text" value={editingClient.ceoName || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, ceoName: e.target.value })} />
+                    <FloatingLabelInput label="세금계산서 이메일" type="email" value={editingClient.taxEmail || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, taxEmail: e.target.value })} />
+                    <FloatingLabelInput label="업태" type="text" value={editingClient.bizType || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, bizType: e.target.value })} />
+                    <FloatingLabelInput label="종목" type="text" value={editingClient.bizItem || ''}
+                      onChange={(e) => setEditingClient({ ...editingClient, bizItem: e.target.value })} />
+                  </div>
                 </div>
               </div>
               <div className="sticky bottom-0 bg-white px-6 sm:px-8 py-6 border-t border-divider rounded-b-xl">

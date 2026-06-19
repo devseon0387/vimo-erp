@@ -56,6 +56,12 @@ function clientFromRow(row: ClientRow): Client {
     phone: row.phone ?? undefined,
     company: row.company ?? undefined,
     address: row.address ?? undefined,
+    businessNumber: row.businessNumber ?? undefined,
+    corpName: row.corpName ?? undefined,
+    ceoName: row.ceoName ?? undefined,
+    bizType: row.bizType ?? undefined,
+    bizItem: row.bizItem ?? undefined,
+    taxEmail: row.taxEmail ?? undefined,
     status: row.status as Client['status'],
     notes: row.notes ?? undefined,
     createdAt: row.createdAt ?? '',
@@ -73,6 +79,12 @@ function clientToInsert(
     phone: client.phone ?? null,
     company: client.company ?? null,
     address: client.address ?? null,
+    businessNumber: client.businessNumber ?? null,
+    corpName: client.corpName ?? null,
+    ceoName: client.ceoName ?? null,
+    bizType: client.bizType ?? null,
+    bizItem: client.bizItem ?? null,
+    taxEmail: client.taxEmail ?? null,
     status: client.status,
     notes: client.notes ?? null,
   };
@@ -88,6 +100,12 @@ function clientToUpdate(client: Partial<Client>): Partial<typeof clients.$inferI
   if (client.phone !== undefined) patch.phone = client.phone;
   if (client.company !== undefined) patch.company = client.company;
   if (client.address !== undefined) patch.address = client.address;
+  if (client.businessNumber !== undefined) patch.businessNumber = client.businessNumber;
+  if (client.corpName !== undefined) patch.corpName = client.corpName;
+  if (client.ceoName !== undefined) patch.ceoName = client.ceoName;
+  if (client.bizType !== undefined) patch.bizType = client.bizType;
+  if (client.bizItem !== undefined) patch.bizItem = client.bizItem;
+  if (client.taxEmail !== undefined) patch.taxEmail = client.taxEmail;
   if (client.status !== undefined) patch.status = client.status;
   if (client.notes !== undefined) patch.notes = client.notes;
   return patch;

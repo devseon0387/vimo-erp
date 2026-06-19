@@ -95,8 +95,7 @@ const SECTIONS: Section[] = [
     label: '재무·경영',
     items: [
       { type: 'heading', label: '재무' },
-      { type: 'link', href: '/finance/invoices',   label: '세금계산서',   icon: FileText,   badge: '준비중' },
-      { type: 'link', href: '/finance/payments',   label: '입금 관리',    icon: Receipt,    badge: '준비중' },
+      { type: 'link', href: '/finance/revenue',    label: '매출 관리',    icon: Receipt },
       { type: 'link', href: '/finance/expenses',   label: '지출 관리',    icon: CreditCard },
       { type: 'link', href: '/settlement', label: '월별 손익',   icon: Receipt, badge: '준비중', sub: [
         { href: '/settlement/history', label: '월별 내역', icon: Calendar },

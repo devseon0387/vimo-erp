@@ -52,6 +52,7 @@ function episodeFromRow(row: EpisodeRow): Episode & { projectId: string } {
     workBudgets: row.workBudgets as Episode['workBudgets'],
     paymentDueDate: row.paymentDueDate ?? undefined,
     paymentStatus: (row.paymentStatus as Episode['paymentStatus']) ?? 'pending',
+    paymentDate: row.paymentDate ?? undefined,
     invoiceDate: row.invoiceDate ?? undefined,
     invoiceStatus: (row.invoiceStatus as Episode['invoiceStatus']) ?? 'pending',
     completedAt: row.completedAt ?? undefined,
@@ -86,6 +87,7 @@ function episodeToInsert(
     workBudgets: episode.workBudgets ?? null,
     paymentDueDate: episode.paymentDueDate ?? null,
     paymentStatus: episode.paymentStatus ?? 'pending',
+    paymentDate: episode.paymentDate ?? null,
     invoiceDate: episode.invoiceDate ?? null,
     invoiceStatus: episode.invoiceStatus ?? 'pending',
     completedAt: episode.completedAt ?? null,
@@ -116,6 +118,7 @@ function episodeToUpdate(fields: Partial<Episode>): Partial<typeof episodes.$inf
   if (fields.workBudgets !== undefined) patch.workBudgets = fields.workBudgets ?? null;
   if (fields.paymentDueDate !== undefined) patch.paymentDueDate = fields.paymentDueDate ?? null;
   if (fields.paymentStatus !== undefined) patch.paymentStatus = fields.paymentStatus ?? 'pending';
+  if (fields.paymentDate !== undefined) patch.paymentDate = fields.paymentDate ?? null;
   if (fields.invoiceDate !== undefined) patch.invoiceDate = fields.invoiceDate ?? null;
   if (fields.invoiceStatus !== undefined) patch.invoiceStatus = fields.invoiceStatus ?? 'pending';
   if (fields.completedAt !== undefined) patch.completedAt = fields.completedAt ?? null;
@@ -208,6 +211,7 @@ export async function upsertEpisodes(
           workBudgets: excluded('work_budgets'),
           paymentDueDate: excluded('payment_due_date'),
           paymentStatus: excluded('payment_status'),
+          paymentDate: excluded('payment_date'),
           invoiceDate: excluded('invoice_date'),
           invoiceStatus: excluded('invoice_status'),
           completedAt: excluded('completed_at'),
