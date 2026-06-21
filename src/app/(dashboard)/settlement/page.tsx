@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
-import { getProjects, getPartners, getClients, getAllEpisodes } from '@/lib/supabase/db';
+import { getProjects, getPartners, getClients, getAllEpisodes } from '@/lib/supabase/db/cached';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { groupByClient, groupByPartner, calculateManagerTotal } from '@/lib/settlement';
 

@@ -5,7 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { Client, Project, Partner, Episode, WorkContentType } from '@/types';
 import { ArrowLeft, Mail, Phone, Building2, MapPin, User, Plus, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
-import { getClients, getClientById, getProjects, getPartners, getAllEpisodes, insertProject, insertClient, upsertEpisodes, updateClient } from '@/lib/supabase/db';
+import { getClientById, insertProject, insertClient, upsertEpisodes, updateClient } from '@/lib/supabase/db';
+import { getClients, getProjects, getPartners, getAllEpisodes } from '@/lib/supabase/db/cached';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { formatPhoneNumber } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -80,7 +82,10 @@ export default function ClientDetailPage() {
         contactPerson: data.client.contact,
         status: 'active',
       });
-      if (saved) clientName = saved.name;
+      if (saved) {
+        invalidateTable('clients');
+        clientName = saved.name;
+      }
     } else if (data.client?.id) {
       const found = allClients.find(c => c.id === data.client!.id);
       if (found) clientName = found.name;
@@ -102,6 +107,7 @@ export default function ClientDetailPage() {
     });
 
     if (saved) {
+      invalidateTable('projects');
       // 회차 생성
       if (data.episodes.shouldCreate && data.episodes.count) {
         const newEpisodes = Array.from({ length: data.episodes.count }, (_, i) => ({
@@ -120,6 +126,7 @@ export default function ClientDetailPage() {
           updatedAt: new Date().toISOString(),
         }));
         await upsertEpisodes(newEpisodes);
+        invalidateTable('episodes');
       }
 
       setClientProjects(prev => [saved, ...prev]);
@@ -161,6 +168,7 @@ export default function ClientDetailPage() {
                       const newStatus = client.status === 'active' ? 'inactive' : 'active';
                       const ok = await updateClient(client.id, { status: newStatus });
                       if (ok) {
+                        invalidateTable('clients');
                         setClient({ ...client, status: newStatus as 'active' | 'inactive' });
                       }
                     }}

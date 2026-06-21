@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Save, Sparkles, Check, CheckCircle, ChevronDown, ChevronUp, User, Search, ChevronRight } from 'lucide-react';
 import { Project, Partner, Episode } from '@/types';
-import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
+import { getProjects, getPartners, getAllEpisodes } from '@/lib/supabase/db/cached';
+import { updateEpisodeFields } from '@/lib/supabase/db';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { useToast } from '@/contexts/ToastContext';
 import DatePickerModal from '@/components/DatePickerModal';
@@ -286,6 +288,7 @@ export default function BatchSettlementPage() {
 
     setEdits({});
     setSelected(new Set());
+    invalidateTable('episodes');
     loadData();
     setSaving(false);
   };

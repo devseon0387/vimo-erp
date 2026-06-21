@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X, FileText, Users, Briefcase, FolderOpen } from 'lucide-react';
-import { getPartners, getClients as fetchClients, getProjects } from '@/lib/supabase/db';
+import { getPartners, getClients as fetchClients, getProjects } from '@/lib/supabase/db/cached';
 import { Partner, Client, Project } from '@/types';
 
 interface SearchResult {

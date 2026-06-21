@@ -15,7 +15,9 @@ import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
 import { StatusBadge, type StatusTone } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { getAllEpisodes, getProjects, getClients, updateEpisodeFields } from '@/lib/supabase/db';
+import { getAllEpisodes, getProjects, getClients } from '@/lib/supabase/db/cached';
+import { updateEpisodeFields } from '@/lib/supabase/db';
+import { invalidateTable } from '@/lib/supabase/cache';
 import type { Client, Episode, Project } from '@/types';
 
 const HOMETAX_URL = 'https://www.hometax.go.kr';
@@ -166,7 +168,7 @@ export default function RevenuePage() {
       // 이미 입금된 회차는 건드리지 않고 미입금 건만 처리(부분 입금 보존)
       const targets = b.episodes.filter((e) => e.paymentStatus !== 'completed');
       const r = await Promise.all(targets.map((ep) => updateEpisodeFields(ep.id, { paymentStatus: 'completed', paymentDate: date })));
-      if (r.every(Boolean)) { toast.success(`${b.clientName} ${b.month} 입금 완료 처리되었습니다.`); await load(); }
+      if (r.every(Boolean)) { toast.success(`${b.clientName} ${b.month} 입금 완료 처리되었습니다.`); invalidateTable('episodes'); await load(); }
       else toast.error('입금 완료 처리에 실패했습니다.');
     } finally { setBusyKey(null); setConfirmPay(null); }
   }, [toast, load]);
@@ -177,7 +179,7 @@ export default function RevenuePage() {
       // 이미 발행된 회차는 건드리지 않고 미발행 건만 처리(부분 발행 보존)
       const targets = b.episodes.filter((e) => e.invoiceStatus !== 'completed');
       const r = await Promise.all(targets.map((ep) => updateEpisodeFields(ep.id, { invoiceStatus: 'completed', invoiceDate: issueDate })));
-      if (r.every(Boolean)) { toast.success(`${b.clientName} ${b.month} 발행 완료 — 미수금으로 전환되었습니다.`); setIssuingKey(null); await load(); }
+      if (r.every(Boolean)) { toast.success(`${b.clientName} ${b.month} 발행 완료 — 미수금으로 전환되었습니다.`); setIssuingKey(null); invalidateTable('episodes'); await load(); }
       else toast.error('발행 완료 처리에 실패했습니다.');
     } finally { setBusyKey(null); }
   }, [issueDate, toast, load]);

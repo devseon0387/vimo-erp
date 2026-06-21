@@ -10,10 +10,12 @@ import DatePicker from '@/components/DatePicker';
 import { formatPhoneNumber } from '@/lib/utils';
 import { useToast } from '@/contexts/ToastContext';
 import {
-  getPartners, getPartnerById, updatePartner, deletePartner, getProjects, getAllEpisodes,
+  getPartnerById, updatePartner, deletePartner,
   getPartnerHistory, insertPartnerHistory, deletePartnerHistory,
   getPartnerIssues, insertPartnerIssue, deletePartnerIssue,
 } from '@/lib/supabase/db';
+import { getPartners, getProjects, getAllEpisodes } from '@/lib/supabase/db/cached';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import EmptyState from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
@@ -316,6 +318,7 @@ export default function PartnerDetailPage() {
     const newStatus = partner.status === 'active' ? 'inactive' : 'active';
     const ok = await updatePartner(partner.id, { status: newStatus });
     if (ok) {
+      invalidateTable('partners');
       setPartner(prev => prev ? { ...prev, status: newStatus as 'active' | 'inactive' } : prev);
       setDataChanged(true);
       toast.success(`${partner.name} 파트너가 ${newStatus === 'active' ? '활성' : '비활성'} 상태로 변경되었습니다.`);
@@ -339,6 +342,7 @@ export default function PartnerDetailPage() {
     await addToTrash('partner', partner);
     const deleted = await deletePartner(partner.id);
     if (deleted) {
+      invalidateTable('partners');
       toast.success(`${partner.name} 파트너가 휴지통으로 이동되었습니다.`);
       router.push('/partners');
       router.refresh();
@@ -350,6 +354,7 @@ export default function PartnerDetailPage() {
 
   const handleDeactivatePartner = async () => {
     await updatePartner(partner.id, { status: 'inactive' });
+    invalidateTable('partners');
     setPartner(prev => prev ? { ...prev, status: 'inactive' as const } : prev);
     setDataChanged(true);
     toast.warning(`${partner.name} 파트너가 비활성 상태로 변경되었습니다.`);
@@ -1054,6 +1059,7 @@ export default function PartnerDetailPage() {
           partner={partner}
           onClose={() => setIsEditModalOpen(false)}
           onSaved={(updates) => {
+            invalidateTable('partners');
             setPartner(prev => prev ? { ...prev, ...updates } : prev);
             setDataChanged(true);
           }}

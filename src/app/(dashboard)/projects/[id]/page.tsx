@@ -5,7 +5,9 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Project, Client, Episode, Partner, WorkContentType, WorkStep, WorkTypeBudget } from '@/types';
 import { ArrowLeft, Calendar, User, DollarSign, Tag, Edit, Trash2, TrendingUp, ChevronRight, X, UserCircle, FileText, Users, Video, Palette, Image, CheckCircle2, Clock, Pause, Target, ChevronDown, ClipboardCheck, Building2, Tv, Youtube, Monitor, Camera, Film, FileX, Plus } from 'lucide-react';
 import { addToTrash } from '@/lib/trash';
-import { getProjectById, updateProject, deleteProject, getClients as fetchClients, getProjectEpisodes, getPartners, upsertEpisode, updateEpisodeFields, deleteEpisode, deleteProjectEpisodes } from '@/lib/supabase/db';
+import { getProjectById, updateProject, deleteProject, getProjectEpisodes, upsertEpisode, updateEpisodeFields, deleteEpisode, deleteProjectEpisodes } from '@/lib/supabase/db';
+import { getClients as fetchClients, getPartners } from '@/lib/supabase/db/cached';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import Link from 'next/link';
 import { getComputedProjectStatus } from '@/lib/utils';
@@ -239,7 +241,9 @@ export default function ProjectDetailPage() {
     if (!ok) {
       setEpisodes(prev => prev.map(e => e.id === episodeId ? episode : e));
       showToastMessage('상태 변경에 실패했습니다. 다시 시도해주세요.');
+      return;
     }
+    invalidateTable('episodes');
   };
 
   const handleDelete = async () => {
@@ -249,6 +253,7 @@ export default function ProjectDetailPage() {
     const eps = await getProjectEpisodes(projectId);
     await Promise.all(eps.map(ep => addToTrash('episode', ep, projectId)));
     await deleteProjectEpisodes(projectId);
+    invalidateTable('episodes');
 
     // 프로젝트 휴지통 이전 후 삭제
     await addToTrash('project', project);
@@ -257,6 +262,7 @@ export default function ProjectDetailPage() {
       showToastMessage('프로젝트 삭제에 실패했습니다. 다시 시도해주세요.');
       return;
     }
+    invalidateTable('projects');
 
     router.push('/projects');
   };
@@ -283,7 +289,9 @@ export default function ProjectDetailPage() {
     if (!ok) {
       setPartnerIds(prevIds);
       showToastMessage('파트너 저장에 실패했습니다.');
+      return;
     }
+    invalidateTable('projects');
   };
 
   const handleCategorySelect = (category: string) => {
@@ -294,7 +302,8 @@ export default function ProjectDetailPage() {
 
   const updateProjectCategory = async (category: string) => {
     const ok = await updateProject(projectId, { category });
-    if (!ok) showToastMessage('카테고리 저장에 실패했습니다.');
+    if (!ok) { showToastMessage('카테고리 저장에 실패했습니다.'); return; }
+    invalidateTable('projects');
   };
 
   const handleClientSelect = (clientName: string) => {
@@ -306,6 +315,7 @@ export default function ProjectDetailPage() {
   const updateProjectClient = async (clientName: string) => {
     const ok = await updateProject(projectId, { client: clientName });
     if (ok) {
+      invalidateTable('projects');
       if (project) setProject({ ...project, client: clientName });
     } else {
       showToastMessage('클라이언트 저장에 실패했습니다.');
@@ -334,7 +344,9 @@ export default function ProjectDetailPage() {
     if (!ok) {
       setManagerIds(prevIds);
       showToastMessage('매니저 저장에 실패했습니다.');
+      return;
     }
+    invalidateTable('projects');
   };
 
   // 토스트 표시 함수
@@ -409,6 +421,7 @@ export default function ProjectDetailPage() {
         setDeleteEpisodeId(null);
         return;
       }
+      invalidateTable('episodes');
       setEpisodes(episodes.filter(ep => ep.id !== deleteEpisodeId));
     }
     setDeleteEpisodeId(null);
@@ -597,6 +610,7 @@ export default function ProjectDetailPage() {
     const success = await updateProject(projectId, updates);
     setIsSavingProject(false);
     if (success) {
+      invalidateTable('projects');
       setProject({
         ...project,
         ...updates,
@@ -703,6 +717,7 @@ export default function ProjectDetailPage() {
       showToastMessage('회차 추가에 실패했습니다. 다시 시도해주세요.');
       return;
     }
+    invalidateTable('episodes');
     setEpisodes(prev => [...prev, newEpisode]);
     router.push(`/projects/${projectId}/episodes/${newEpisode.id}`);
   }, [episodes, partnerIds, allPartners, managerIds, projectId, project, workTypeCosts, router]);
@@ -1314,7 +1329,7 @@ export default function ProjectDetailPage() {
                     const updated = { ...ep, episodeNumber: edit.episodeNumber, title: edit.title, assignee: edit.assignee, manager: edit.manager, startDate: edit.startDate, dueDate: edit.dueDate || undefined, updatedAt: new Date().toISOString() };
                     setEpisodes(prev => prev.map(e => e.id === edit.id ? updated : e));
                     await updateEpisodeFields(edit.id, { episodeNumber: edit.episodeNumber, title: edit.title, assignee: edit.assignee, manager: edit.manager, startDate: edit.startDate, dueDate: edit.dueDate || undefined });
-                  }));
+                  })).then(() => invalidateTable('episodes'));
                   setIsEpisodeEditMode(false);
                   showToastMessage('회차 정보가 저장되었습니다.');
                 } else {
@@ -1417,7 +1432,7 @@ export default function ProjectDetailPage() {
                   const updated = { ...ep, episodeNumber: edit.episodeNumber, title: edit.title, assignee: edit.assignee, manager: edit.manager, startDate: edit.startDate, dueDate: edit.dueDate || undefined, updatedAt: new Date().toISOString() };
                   setEpisodes(prev => prev.map(e => e.id === edit.id ? updated : e));
                   await updateEpisodeFields(edit.id, { episodeNumber: edit.episodeNumber, title: edit.title, assignee: edit.assignee, manager: edit.manager, startDate: edit.startDate, dueDate: edit.dueDate || undefined });
-                }));
+                })).then(() => invalidateTable('episodes'));
                 setIsEpisodeEditMode(false);
                 showToastMessage('회차 정보가 저장되었습니다.');
               } else {
@@ -2549,6 +2564,7 @@ export default function ProjectDetailPage() {
           onSave={async (updatedEpisode) => {
             const ok = await updateEpisodeFields(updatedEpisode.id, updatedEpisode);
             if (ok) {
+              invalidateTable('episodes');
               setEpisodes(prev =>
                 prev.map(e => e.id === updatedEpisode.id ? { ...updatedEpisode, projectId } : e)
               );

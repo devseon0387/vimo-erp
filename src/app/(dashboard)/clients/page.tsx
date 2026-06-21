@@ -10,7 +10,9 @@ import { Client, Project, Episode } from '@/types';
 import { addToTrash } from '@/lib/trash';
 import { formatPhoneNumber } from '@/lib/utils';
 import { FloatingLabelInput, FloatingLabelTextarea } from '@/components/FloatingLabelInput';
-import { getClients, insertClient, updateClient, deleteClient, getProjects, getAllEpisodes } from '@/lib/supabase/db';
+import { insertClient, updateClient, deleteClient } from '@/lib/supabase/db';
+import { getClients, getProjects, getAllEpisodes } from '@/lib/supabase/db/cached';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { useToast } from '@/contexts/ToastContext';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { getComputedProjectStatus } from '@/lib/utils';
@@ -207,6 +209,7 @@ export default function ClientsPage() {
       notes: newClient.notes,
     });
     if (saved) {
+      invalidateTable('clients');
       setClients((prev) => [saved, ...prev]);
       setSelectedId(saved.id);
       setIsClientSuccess(true);
@@ -250,6 +253,7 @@ export default function ClientsPage() {
       status: editingClient.status,
     });
     if (ok) {
+      invalidateTable('clients');
       setClients((prev) => prev.map((c) =>
         c.id === editingClient.id ? { ...c, ...editingClient, updatedAt: new Date().toISOString() } : c
       ));
@@ -273,6 +277,7 @@ export default function ClientsPage() {
       await addToTrash('client', client);
       const deleted = await deleteClient(clientToDelete.id);
       if (deleted) {
+        invalidateTable('clients');
         setClients((prev) => prev.filter((c) => c.id !== clientToDelete.id));
         if (selectedId === clientToDelete.id) setSelectedId(null);
       } else {
@@ -287,6 +292,7 @@ export default function ClientsPage() {
     if (!clientToDelete) return;
     const ok = await updateClient(clientToDelete.id, { status: 'inactive' });
     if (ok) {
+      invalidateTable('clients');
       setClients((prev) => prev.map((c) =>
         c.id === clientToDelete.id
           ? { ...c, status: 'inactive' as const, updatedAt: new Date().toISOString() }
@@ -302,6 +308,7 @@ export default function ClientsPage() {
   const handleNotesChange = async (clientId: string, notes: string) => {
     const ok = await updateClient(clientId, { notes });
     if (ok) {
+      invalidateTable('clients');
       setClients((prev) => prev.map((c) =>
         c.id === clientId ? { ...c, notes, updatedAt: new Date().toISOString() } : c
       ));

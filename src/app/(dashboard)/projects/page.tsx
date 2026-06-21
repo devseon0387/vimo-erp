@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { getProjects, insertProject, insertClient, getClients as fetchClients, getAllEpisodes, getPartners, upsertEpisodes } from '@/lib/supabase/db';
+import { getProjects, getClients as fetchClients, getAllEpisodes, getPartners } from '@/lib/supabase/db/cached';
+import { insertProject, insertClient, upsertEpisodes } from '@/lib/supabase/db';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { Calendar, User, X, ChevronDown, ArrowRight, Plus, Building2 } from 'lucide-react';
 import { calculateReserve, getComputedProjectStatus, compareProjects, ComputedProjectStatus } from '@/lib/utils';
@@ -189,6 +191,7 @@ export default function ProjectsPage() {
         });
         if (saved) {
           clientName = saved.name;
+          invalidateTable('clients');
           setClients(prev => [saved, ...prev]);
         }
       } else if (data.client?.id) {
@@ -234,8 +237,10 @@ export default function ProjectsPage() {
           updatedAt: new Date().toISOString(),
         }));
         await upsertEpisodes(newEpisodes);
+        invalidateTable('episodes');
         setEpisodes(prev => [...prev, ...newEpisodes]);
       }
+      invalidateTable('projects');
       setProjects(prev => [saved, ...prev]);
       globalToast.success('프로젝트가 생성되었습니다!');
       setIsAddModalOpen(false);
@@ -623,6 +628,7 @@ export default function ProjectsPage() {
                                           globalToast.error('저장에 실패했습니다. 다시 시도해주세요.');
                                           return;
                                         }
+                                        invalidateTable('episodes');
                                       }
                                       globalToast.success(`"${step.label || `작업 ${index + 1}`}"을(를) 완료로 표시했습니다.`);
                                     }}
@@ -655,6 +661,7 @@ export default function ProjectsPage() {
                                           globalToast.error('저장에 실패했습니다. 다시 시도해주세요.');
                                           return;
                                         }
+                                        invalidateTable('episodes');
                                       }
                                       globalToast.success(`"${step.label || `작업 ${index + 1}`}"을(를) 진행중으로 변경했습니다.`);
                                     }}

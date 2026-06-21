@@ -6,7 +6,7 @@ import { Inbox, Users, FolderOpen } from 'lucide-react';
 import { TabBar } from '@/components/TabBar';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
-import { getProjects, getAllEpisodes, getPartners } from '@/lib/supabase/db';
+import { getProjects, getAllEpisodes, getPartners } from '@/lib/supabase/db/cached';
 import type { Project, Episode, Partner } from '@/types';
 
 type Period = 'week' | 'month';

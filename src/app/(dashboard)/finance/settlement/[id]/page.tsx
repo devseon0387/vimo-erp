@@ -6,7 +6,9 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Copy, Check, Landmark, Receipt, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, CheckCircle, Clock, Coins, Download, Inbox } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Partner, Episode } from '@/types';
-import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
+import { getProjects, getPartners, getAllEpisodes } from '@/lib/supabase/db/cached';
+import { updateEpisodeFields } from '@/lib/supabase/db';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { useToast } from '@/contexts/ToastContext';
 import Link from 'next/link';
@@ -202,6 +204,7 @@ export default function SettlementDetailPage() {
       return;
     }
     setEditingItem(null);
+    invalidateTable('episodes');
     loadData();
   };
 
@@ -250,6 +253,7 @@ export default function SettlementDetailPage() {
     setSaving(false);
     if (failCount === 0) toast.success(`${okCount}건 정산 완료`);
     else toast.warning(`${okCount}건 성공, ${failCount}건 실패`);
+    invalidateTable('episodes');
     loadData();
   };
 
@@ -473,7 +477,7 @@ export default function SettlementDetailPage() {
                                     onClick={async (e) => {
                                       e.stopPropagation();
                                       const ok = await updateEpisodeFields(item.episodeId, { paymentStatus: 'completed' });
-                                      if (ok) { toast.success('정산 완료'); loadData(); } else { toast.error('저장 실패'); }
+                                      if (ok) { toast.success('정산 완료'); invalidateTable('episodes'); loadData(); } else { toast.error('저장 실패'); }
                                     }}
                                     className="flex-1 py-2 text-[11px] font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                                   >

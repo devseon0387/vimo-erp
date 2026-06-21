@@ -11,7 +11,9 @@ import { FloatingLabelInput } from '@/components/FloatingLabelInput';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/contexts/ToastContext';
-import { getPartners, insertPartner, updatePartner, deletePartner, getProjects, getAllEpisodes, getMyProfile } from '@/lib/supabase/db';
+import { insertPartner, updatePartner, deletePartner, getMyProfile } from '@/lib/supabase/db';
+import { getPartners, getProjects, getAllEpisodes } from '@/lib/supabase/db/cached';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { getPendingPartnerSignups, createPartnerInvite } from '@/lib/supabase/db/partner_signups';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import PartnerEditModal from './PartnerEditModal';
@@ -254,6 +256,7 @@ export default function PartnersPage() {
       status: newPartner.status || 'active',
     });
     if (saved) {
+      invalidateTable('partners');
       setPartners((prev) => [saved, ...prev]);
       setSelectedId(saved.id);
       setIsAddModalOpen(false);
@@ -286,6 +289,7 @@ export default function PartnersPage() {
       await addToTrash('partner', partner);
       const deleted = await deletePartner(partnerToDelete.id);
       if (deleted) {
+        invalidateTable('partners');
         setPartners((prev) => prev.filter((p) => p.id !== partnerToDelete.id));
         if (selectedId === partnerToDelete.id) setSelectedId(null);
         toast.success(`${partnerToDelete.name} 파트너가 휴지통으로 이동되었습니다.`);
@@ -300,6 +304,7 @@ export default function PartnersPage() {
   const handleDeactivatePartner = async () => {
     if (!partnerToDelete) return;
     await updatePartner(partnerToDelete.id, { status: 'inactive' });
+    invalidateTable('partners');
     setPartners((prev) => prev.map((p) =>
       p.id === partnerToDelete.id ? { ...p, status: 'inactive' as const } : p
     ));
@@ -592,6 +597,7 @@ export default function PartnersPage() {
           partner={partnerToEdit}
           onClose={handleCloseEdit}
           onSaved={(updates) => {
+            invalidateTable('partners');
             setPartners((prev) => prev.map((p) =>
               p.id === partnerToEdit.id ? { ...p, ...updates } : p
             ));

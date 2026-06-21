@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Receipt, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Project, Partner, Episode } from '@/types';
-import { getProjects, getPartners, getAllEpisodes } from '@/lib/supabase/db';
+import { getProjects, getPartners, getAllEpisodes } from '@/lib/supabase/db/cached';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { TabBar } from '@/components/TabBar';
 import { LoadingState } from '@/components/LoadingState';

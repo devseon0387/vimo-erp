@@ -4,9 +4,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   getProjects, getPartners, getClients, getAllEpisodes,
+} from '@/lib/supabase/db/cached';
+import {
   getMyChecklists, insertChecklist, updateChecklist, deleteChecklist,
   insertProject, insertClient, upsertEpisodes, updateEpisodeFields,
 } from '@/lib/supabase/db';
+import { invalidateTable } from '@/lib/supabase/cache';
 import type { ChecklistRow } from '@/lib/supabase/db/users.types';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { Calendar, Plus, Bell, Clock, X, Link2, Search, ChevronLeft, ChevronRight, User, FolderOpen, Building2, Film, SearchX, Check, ArrowRight, AlertTriangle } from 'lucide-react';
@@ -156,6 +159,7 @@ export default function ManagementMain() {
     let clientName = '';
     if (data.client?.isNew && data.client.name) {
       const saved = await insertClient({ name: data.client.name, contactPerson: data.client.contact, email: data.client.email, status: 'active' });
+      invalidateTable('clients');
       clientName = saved?.name || data.client.name;
       if (saved) setClients(prev => [saved, ...prev]);
     } else if (data.client?.id) {
@@ -178,6 +182,7 @@ export default function ManagementMain() {
     });
 
     if (!savedProject) { setIsWizardOpen(false); return; }
+    invalidateTable('projects');
     setProjects(prev => [savedProject, ...prev]);
 
     // 3. 회차 생성
@@ -198,6 +203,7 @@ export default function ManagementMain() {
         updatedAt: now,
       }));
       const ok = await upsertEpisodes(episodes);
+      invalidateTable('episodes');
       if (ok) setAllEpisodes(prev => [...prev, ...episodes]);
     }
 
@@ -806,6 +812,7 @@ export default function ManagementMain() {
                   const newWorkSteps = { ...workSteps, [workType]: updated };
                   setQuickViewEpisode({ ...ep, workSteps: newWorkSteps } as typeof ep);
                   await updateEpisodeFields(ep.id, { workSteps: newWorkSteps });
+                  invalidateTable('episodes');
                   loadData();
                 }}
               />
@@ -1289,6 +1296,7 @@ export default function ManagementMain() {
             const newWorkSteps = { ...workSteps, [workType]: updated };
             setQuickViewEpisode({ ...ep, workSteps: newWorkSteps } as typeof ep);
             await updateEpisodeFields(ep.id, { workSteps: newWorkSteps });
+            invalidateTable('episodes');
             loadData();
           };
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { signIn } from 'next-auth/react';
+import { invalidateAll } from '@/lib/supabase/cache';
 import { APP_VERSION_LABEL } from '@/config/version';
 
 export default function LoginPage() {
@@ -39,6 +40,8 @@ export default function LoginPage() {
         return;
       }
 
+      // 계정 전환 시 이전 세션의 클라 모듈 캐시 잔존 방지(다계정 데이터 누수 차단).
+      invalidateAll();
       if (rememberMe) localStorage.setItem('vm_stay_logged_in', '1');
       else localStorage.removeItem('vm_stay_logged_in');
       sessionStorage.setItem('vm_active_session', '1');

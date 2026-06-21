@@ -62,7 +62,9 @@ export const clients = pgTable("clients", {
 	taxEmail: text("tax_email"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-});
+}, (table) => [
+	index("idx_clients_created_at").using("btree", table.createdAt.desc().nullsLast().op("timestamptz_ops")),
+]);
 
 export const customRoles = pgTable("custom_roles", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -103,6 +105,11 @@ export const episodes = pgTable("episodes", {
 	clientId: uuid("client_id"),
 }, (table) => [
 	index("idx_episodes_project_id").using("btree", table.projectId.asc().nullsLast().op("text_ops")),
+	index("idx_episodes_created_at").using("btree", table.createdAt.desc().nullsLast().op("timestamptz_ops")),
+	index("idx_episodes_assignee").using("btree", table.assignee.asc().nullsLast().op("text_ops")),
+	index("idx_episodes_project_epnum").using("btree", table.projectId.asc().nullsLast().op("text_ops"), table.episodeNumber.desc().nullsLast().op("int4_ops")),
+	index("idx_episodes_payment_due_date").using("btree", table.paymentDueDate.asc().nullsLast().op("text_ops")),
+	index("idx_episodes_manager").using("btree", table.manager.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.clientId],
 			foreignColumns: [clients.id],
@@ -125,7 +132,9 @@ export const expenses = pgTable("expenses", {
 	nextRenewalDate: date("next_renewal_date"),
 	status: text().default('active').notNull(),
 	cancelReason: text("cancel_reason"),
-});
+}, (table) => [
+	index("idx_expenses_expense_date").using("btree", table.expenseDate.desc().nullsLast().op("date_ops")),
+]);
 
 export const blogPosts = pgTable("blog_posts", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -192,7 +201,10 @@ export const inquiries = pgTable("inquiries", {
 	notes: text(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-});
+}, (table) => [
+	index("idx_inquiries_created_at").using("btree", table.createdAt.desc().nullsLast().op("timestamptz_ops")),
+	index("idx_inquiries_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
+]);
 
 export const planhighSiteContent = pgTable("planhigh_site_content", {
 	id: integer().default(1).primaryKey().notNull(),

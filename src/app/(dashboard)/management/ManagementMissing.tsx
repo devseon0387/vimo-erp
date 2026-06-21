@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Save, Sparkles, Check, ChevronDown, User, Search, Wallet, Users, Calendar } from 'lucide-react';
 import { Project, Partner, Episode } from '@/types';
 import { TabBar } from '@/components/TabBar';
-import { getProjects, getPartners, getAllEpisodes, updateEpisodeFields } from '@/lib/supabase/db';
+import { getProjects, getPartners, getAllEpisodes } from '@/lib/supabase/db/cached';
+import { updateEpisodeFields } from '@/lib/supabase/db';
+import { invalidateTable } from '@/lib/supabase/cache';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { useToast } from '@/contexts/ToastContext';
 import DateTripleModal from '@/components/DateTripleModal';
@@ -307,6 +309,7 @@ export default function ManagementMissing({ onMissingCount }: { onMissingCount?:
     else toast.warning(`${ok}건 성공, ${fail}건 실패`);
 
     setEdits({});
+    invalidateTable('episodes');
     loadData();
     setSaving(false);
   };

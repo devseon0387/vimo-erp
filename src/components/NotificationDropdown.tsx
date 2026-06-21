@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Bell, CheckCircle, AlertCircle, Clock, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getAllEpisodes } from '@/lib/supabase/db';
+import { getAllEpisodes } from '@/lib/supabase/db/cached';
 
 const CHECKLIST_STORAGE_KEY = 'video-moment-checklist';
 
