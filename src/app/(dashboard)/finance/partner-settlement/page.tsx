@@ -119,7 +119,7 @@ export default function SettlementPage() {
           person: partner, type: 'partner', episodeCount,
           projectNames, totalAmount, paidAmount, unpaidAmount: totalAmount - paidAmount,
           nearestDueDate: sorted[0] ?? null,
-          detailHref: `/finance/partner-settlement/${partner.id}?year=${selectedDate.year}&month=${selectedDate.month}`,
+          detailHref: `/finance/settlement/${partner.id}?role=partner&year=${selectedDate.year}&month=${selectedDate.month}`,
         });
       }
     });
@@ -172,7 +172,7 @@ export default function SettlementPage() {
           person: manager, type: 'manager', episodeCount,
           projectNames, totalAmount, paidAmount, unpaidAmount: totalAmount - paidAmount,
           nearestDueDate: sorted[0] ?? null,
-          detailHref: `/finance/manager-settlement/${manager.id}?year=${selectedDate.year}&month=${selectedDate.month}`,
+          detailHref: `/finance/settlement/${manager.id}?role=manager&year=${selectedDate.year}&month=${selectedDate.month}`,
         });
       }
     });
