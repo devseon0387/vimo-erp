@@ -1,6 +1,6 @@
 'use client';
 
-import { InputHTMLAttributes, TextareaHTMLAttributes, useState } from 'react';
+import { InputHTMLAttributes, TextareaHTMLAttributes, useId, useState } from 'react';
 
 interface FloatingLabelInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -12,7 +12,9 @@ interface FloatingLabelTextareaProps extends TextareaHTMLAttributes<HTMLTextArea
   required?: boolean;
 }
 
-export function FloatingLabelInput({ label, required, className = '', ...props }: FloatingLabelInputProps) {
+export function FloatingLabelInput({ label, required, className = '', id, ...props }: FloatingLabelInputProps) {
+  const autoId = useId();
+  const inputId = id ?? autoId;
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = props.value !== undefined && props.value !== '';
 
@@ -21,6 +23,7 @@ export function FloatingLabelInput({ label, required, className = '', ...props }
   return (
     <div className="relative">
       <input
+        id={inputId}
         {...props}
         onFocus={(e) => {
           setIsFocused(true);
@@ -31,30 +34,33 @@ export function FloatingLabelInput({ label, required, className = '', ...props }
           props.onBlur?.(e);
         }}
         className={`
-          w-full px-4 pt-6 pb-2 border border-gray-300 rounded-lg
-          focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+          w-full px-4 pt-6 pb-2 border border-ink-300 rounded-lg
+          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
           transition-all duration-200
           ${className}
         `}
         placeholder=""
       />
       <label
+        htmlFor={inputId}
         className={`
           absolute left-4 transition-all duration-200 pointer-events-none
           ${isFloating
-            ? 'top-1.5 text-xs text-orange-600 font-medium'
-            : 'top-1/2 -translate-y-1/2 text-base text-gray-500'
+            ? 'top-1.5 text-xs text-brand-600 font-medium'
+            : 'top-1/2 -translate-y-1/2 text-base text-ink-500'
           }
         `}
       >
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-bad-500 ml-1">*</span>}
       </label>
     </div>
   );
 }
 
-export function FloatingLabelTextarea({ label, required, className = '', rows = 3, ...props }: FloatingLabelTextareaProps) {
+export function FloatingLabelTextarea({ label, required, className = '', rows = 3, id, ...props }: FloatingLabelTextareaProps) {
+  const autoId = useId();
+  const textareaId = id ?? autoId;
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = props.value !== undefined && props.value !== '';
 
@@ -63,6 +69,7 @@ export function FloatingLabelTextarea({ label, required, className = '', rows = 
   return (
     <div className="relative">
       <textarea
+        id={textareaId}
         {...props}
         rows={rows}
         onFocus={(e) => {
@@ -74,24 +81,25 @@ export function FloatingLabelTextarea({ label, required, className = '', rows = 
           props.onBlur?.(e);
         }}
         className={`
-          w-full px-4 pt-6 pb-2 border border-gray-300 rounded-lg
-          focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+          w-full px-4 pt-6 pb-2 border border-ink-300 rounded-lg
+          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
           transition-all duration-200 resize-none
           ${className}
         `}
         placeholder=""
       />
       <label
+        htmlFor={textareaId}
         className={`
           absolute left-4 transition-all duration-200 pointer-events-none
           ${isFloating
-            ? 'top-1.5 text-xs text-orange-600 font-medium'
-            : 'top-4 text-base text-gray-500'
+            ? 'top-1.5 text-xs text-brand-600 font-medium'
+            : 'top-4 text-base text-ink-500'
           }
         `}
       >
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-bad-500 ml-1">*</span>}
       </label>
     </div>
   );

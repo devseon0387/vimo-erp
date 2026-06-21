@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { XCircle } from 'lucide-react';
 
 export default function DebugPage() {
   const [localStorageData, setLocalStorageData] = useState<Record<string, any>>({});
@@ -44,7 +45,7 @@ export default function DebugPage() {
             <div className="bg-gray-100 p-4 rounded overflow-auto max-h-96">
               <pre className="text-xs">
                 {value === null
-                  ? '❌ 데이터 없음'
+                  ? <span className="inline-flex items-center gap-1 text-red-500"><XCircle size={14} /> 데이터 없음</span>
                   : JSON.stringify(value, null, 2)
                 }
               </pre>

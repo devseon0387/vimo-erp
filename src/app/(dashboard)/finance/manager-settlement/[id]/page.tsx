@@ -14,6 +14,7 @@ import DatePicker from '@/components/DatePicker';
 import { TabBar } from '@/components/TabBar';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { calcNetAmount, getNetLabel } from '@/lib/finance/net-amount';
 
 function getDday(dateStr: string) {
@@ -217,12 +218,9 @@ export default function ManagerSettlementDetailPage() {
 
   if (loading) return <LoadingState />;
   if (error) return (
-    <div className="flex flex-col items-center justify-center h-64 gap-4">
-      <p className="text-[#78716c]">데이터를 불러오는데 실패했습니다.</p>
-      <div className="flex items-center gap-2">
-        <button onClick={loadData} className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-sm font-medium">다시 시도</button>
-        <Link href="/finance/partner-settlement" className="px-4 py-2 text-sm text-[#78716c]">목록으로</Link>
-      </div>
+    <div className="flex flex-col items-center justify-center">
+      <ErrorState onRetry={loadData} />
+      <Link href="/finance/partner-settlement" className="px-4 py-2 text-sm text-[#78716c]">목록으로</Link>
     </div>
   );
   if (!manager) return <div className="flex flex-col items-center justify-center h-64 gap-3"><p className="text-[#78716c]">매니저를 찾을 수 없습니다.</p><Link href="/finance/partner-settlement" className="text-sm text-orange-500">← 목록으로</Link></div>;

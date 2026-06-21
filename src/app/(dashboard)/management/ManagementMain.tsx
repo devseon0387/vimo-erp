@@ -652,12 +652,12 @@ export default function ManagementMain() {
                   const { project, partner } = getEpisodeDetails(ep);
                   const days = Math.ceil((todayStart.getTime() - new Date(ep.dueDate!).getTime()) / (1000*60*60*24));
                   return (
-                    <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-red-200 bg-bad-50 cursor-pointer hover:border-red-300 transition-colors" onClick={() => setQuickViewEpisode(ep)}>
+                    <button type="button" key={ep.id} className="text-left w-full p-2.5 px-3.5 rounded-[10px] border border-red-200 bg-bad-50 cursor-pointer hover:border-red-300 transition-colors" onClick={() => setQuickViewEpisode(ep)}>
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0 flex-1"><div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)] flex-shrink-0">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold truncate">{ep.title || '제목 없음'}</span></div><div className="text-[11px] text-[var(--color-ink-400)] mt-0.5 truncate">{project?.title} · {partner?.name || '미정'}</div></div>
                         <span className="text-[11px] font-semibold text-bad-500 bg-bad-100 px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">{days}일 지남</span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -676,10 +676,10 @@ export default function ManagementMain() {
               ) : todayDeadlines.map(ep => {
                 const { project, partner } = getEpisodeDetails(ep);
                 return (
-                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
+                  <button type="button" key={ep.id} className="text-left w-full p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
                     <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div>
                     <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-ink-400)] mt-0.5"><span>{project?.title}</span><span className="text-[var(--color-ink-200)]">·</span><div className="w-[14px] h-[14px] bg-[var(--color-ink-200)] rounded-full flex items-center justify-center text-[9px] font-bold text-[var(--color-ink-500)]">{partner?.name?.charAt(0) || '?'}</div><span>{partner?.name || '미정'}</span></div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -697,10 +697,10 @@ export default function ManagementMain() {
               ) : tomorrowDeadlines.map(ep => {
                 const { project, partner } = getEpisodeDetails(ep);
                 return (
-                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
+                  <button type="button" key={ep.id} className="text-left w-full p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
                     <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span></div>
                     <div className="text-[11px] text-[var(--color-ink-400)] mt-0.5">{project?.title} · {partner?.name || '미정'}</div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -719,10 +719,10 @@ export default function ManagementMain() {
                 const { project, partner } = getEpisodeDetails(ep);
                 const dueDate = new Date(ep.dueDate!);
                 return (
-                  <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
+                  <button type="button" key={ep.id} className="text-left w-full p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => setQuickViewEpisode(ep)}>
                     <div className="flex items-baseline gap-1.5"><span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span><span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span><span className="text-[11px] text-[var(--color-ink-400)]">{dueDate.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</span></div>
                     <div className="text-[11px] text-[var(--color-ink-400)] mt-0.5">{project?.title} · {partner?.name || '미정'}</div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -739,10 +739,10 @@ export default function ManagementMain() {
                 {thisWeekCompleted.map(ep => {
                   const { project, partner } = getEpisodeDetails(ep);
                   return (
-                    <div key={ep.id} className="p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] opacity-50 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => setQuickViewEpisode(ep)}>
+                    <button type="button" key={ep.id} className="text-left w-full p-2.5 px-3.5 rounded-[10px] border border-[var(--color-ink-200)] opacity-50 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => setQuickViewEpisode(ep)}>
                       <div className="text-[13px] font-semibold">{ep.title || '제목 없음'}</div>
                       <div className="text-[11px] text-[var(--color-ink-400)] mt-0.5">{partner?.name || '미정'} · {ep.completedAt ? new Date(ep.completedAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) : ''} 완료</div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1198,13 +1198,13 @@ export default function ManagementMain() {
                         const project = projects.find(p => p.id === ep.projectId);
                         const partner = partners.find(p => p.id === ep.assignee);
                         return (
-                          <div key={ep.id} className="p-3 rounded-xl border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => { setSelectedCalendarDay(null); setQuickViewEpisode(ep); }}>
+                          <button type="button" key={ep.id} className="text-left w-full p-3 rounded-xl border border-[var(--color-ink-200)] cursor-pointer hover:border-[var(--color-ink-300)] transition-colors" onClick={() => { setSelectedCalendarDay(null); setQuickViewEpisode(ep); }}>
                             <div className="flex items-baseline gap-1.5">
                               <span className="text-[12px] font-bold text-[var(--color-ink-400)]">{ep.episodeNumber === 0 ? '미정' : `${ep.episodeNumber}편`}</span>
                               <span className="text-[13px] font-bold">{ep.title || '제목 없음'}</span>
                             </div>
                             <div className="text-[11px] text-[var(--color-ink-400)] mt-1">{project?.title} · {partner?.name || '미정'}</div>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>

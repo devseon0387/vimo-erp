@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Palette, ClipboardList, CheckCircle, AlertCircle } from 'lucide-react';
+import { ClipboardList, CheckCircle, AlertCircle } from 'lucide-react';
 import { FloatingLabelInput } from '@/components/FloatingLabelInput';
 import PushNotificationSetup from '@/components/PushNotificationSetup';
 import { getSessionUser } from '@/lib/auth/session-info';
@@ -110,17 +110,6 @@ export default function SettingsPage() {
 
       {/* 바로가기 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Link href="/settings/design/components">
-          <div className="bg-white border border-divider rounded-xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer h-full">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-brand-50 rounded-lg">
-                <Palette className="text-brand-500" size={18} />
-              </div>
-              <h2 className="text-[15px] font-semibold text-ink-900">디자인 시스템</h2>
-            </div>
-            <p className="text-sm text-ink-600">컴포넌트, 토스트, 모달 등 디자인 요소 보기</p>
-          </div>
-        </Link>
         <Link href="/settings/changelog">
           <div className="bg-white border border-divider rounded-xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer h-full">
             <div className="flex items-center gap-3 mb-2">

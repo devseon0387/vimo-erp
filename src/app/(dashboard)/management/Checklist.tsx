@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, FolderOpen, Film } from 'lucide-react';
+import { Clock, FolderOpen, Film, Check } from 'lucide-react';
 
 /** ManagementMain 내부 ChecklistItem 과 동일 shape (camelCase UI 타입) */
 export interface ChecklistItemView {
@@ -78,8 +78,8 @@ export default function Checklist({ oneTimeItems, checklistItems, onToggle, onAd
               <div key={item.id} className="flex items-center gap-2 p-1.5 opacity-40">
                 <button
                   onClick={() => onToggle(item.id)}
-                  className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white text-[10px]"
-                >✓</button>
+                  className="w-[18px] h-[18px] rounded-[5px] bg-ok-500 border-2 border-ok-500 flex-shrink-0 flex items-center justify-center text-white"
+                ><Check size={12} strokeWidth={3} /></button>
                 <span className="text-[12px] line-through text-[var(--color-ink-400)]">{item.text}</span>
               </div>
             ))}

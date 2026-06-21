@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getMyProfile, getAllUserProfiles, updateUserRole, getCustomRoles, addCustomRole, deleteCustomRole } from '@/lib/supabase/db';
 import { Shield, Users, Crown, Plus, X, Tag, Trash2, UserCheck, Pencil, Eye, EyeOff, Copy, Check, UserPlus, RefreshCw, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { useConfirm } from '@/contexts/ConfirmContext';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
 
@@ -57,6 +58,7 @@ function getRoleLabel(role: string, _customRoles: string[]) {
 export default function UsersSettingsPage() {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState<string>('');
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
@@ -231,7 +233,7 @@ export default function UsersSettingsPage() {
 
   const handleDeleteUser = async (userId: string, name: string | null) => {
     const label = name || '이 계정';
-    if (!confirm(`정말 "${label}"을(를) 삭제하시겠습니까?\n삭제하면 로그인도 불가능해집니다.`)) return;
+    if (!(await confirm({ title: `"${label}"을(를) 삭제할까요?`, description: '삭제하면 로그인도 불가능해집니다.', tone: 'danger', confirmLabel: '삭제' }))) return;
 
     setDeletingId(userId);
     try {

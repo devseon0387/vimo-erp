@@ -208,7 +208,7 @@ function BlockEl({
   );
   if (block.type === 'callout') return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: '#fff7f3', borderRadius: '10px', padding: '12px 16px', border: '1px solid #fde8d8', margin: '2px 0' }}>
-      <span style={{ fontSize: '16px', flexShrink: 0, lineHeight: 1.75 }}>💡</span>
+      <span style={{ flexShrink: 0, lineHeight: 1.75, display: 'inline-flex', alignItems: 'center' }}><Lightbulb size={16} color="#ea580c" /></span>
       <div {...shared} style={{ fontSize: '15px', color: '#374151', lineHeight: 1.75, flex: 1 }} />
     </div>
   );

@@ -9,6 +9,7 @@ import { TabBar } from '@/components/TabBar';
 import { StatusBadge } from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
 import { LoadingState } from '@/components/LoadingState';
+import { useConfirm } from '@/contexts/ConfirmContext';
 
 const CATEGORIES: ExpenseCategory[] = ['운영비', '장비', '교통', '식비', '숙박', '소프트웨어', '기타'];
 
@@ -72,6 +73,7 @@ const emptyForm: FormData = {
 };
 
 export default function ExpensesPage() {
+  const confirm = useConfirm();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -175,7 +177,7 @@ export default function ExpensesPage() {
     setModalMode(null); setSaving(false); await load();
   };
 
-  const handleDelete = async (id: string) => { if (!confirm('이 지출을 삭제하시겠습니까?')) return; await deleteExpense(id); await load(); };
+  const handleDelete = async (id: string) => { if (!(await confirm({ title: '이 지출을 삭제할까요?', tone: 'danger', confirmLabel: '삭제' }))) return; await deleteExpense(id); await load(); };
 
   const handleScheduleCancel = async () => {
     if (!cancelModal) return;
@@ -199,7 +201,7 @@ export default function ExpensesPage() {
 
   const handleReactivate = async (e: React.MouseEvent, expense: Expense) => {
     e.stopPropagation();
-    if (!confirm('구독을 다시 활성화하시겠습니까?')) return;
+    if (!(await confirm({ title: '구독을 다시 활성화할까요?', tone: 'brand', confirmLabel: '활성화' }))) return;
     await updateExpense(expense.id, {
       status: 'active',
       cancelReason: undefined,

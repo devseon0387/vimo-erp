@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMyProfile } from '@/lib/supabase/db';
+import { useConfirm } from '@/contexts/ConfirmContext';
 
 export default function AdminFixPage() {
   const router = useRouter();
+  const confirm = useConfirm();
   const [authed, setAuthed] = useState(false);
   const [result, setResult] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ export default function AdminFixPage() {
   }, [router]);
 
   const handleFix = async () => {
-    if (!confirm('모든 에피소드의 파트너/매니저 비용을 재계산합니다. 진행할까요?')) return;
+    if (!(await confirm({ title: '비용을 재계산할까요?', description: '모든 에피소드의 파트너/매니저 비용을 재계산합니다.', tone: 'brand', confirmLabel: '재계산' }))) return;
     setLoading(true);
     setResult('');
     try {

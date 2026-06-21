@@ -2,17 +2,17 @@ import React from 'react';
 
 /**
  * 공용 KPI 카드 — 라벨(+아이콘) + 큰 값 + 보조 텍스트. 정산/상세의 지표 카드를 통일.
- * 시각은 기존 상세뷰 Kpi와 동일(rounded-lg + ink-200 border + 17px 값).
+ * 색은 디자인 토큰(ink/ok/bad/warn/brand)만 사용.
  *   <KPICard label="이번 달 정산" value="₩320만" sub="완료 4건" tone="ok" />
  */
 export type KPITone = 'default' | 'ok' | 'bad' | 'warn' | 'brand';
 
 const TONE_COLOR: Record<KPITone, string> = {
-  default: '#1c1917',
-  ok: '#16a34a',
-  bad: '#ef4444',
-  warn: '#b45309',
-  brand: '#ea580c',
+  default: 'var(--color-ink-900)',
+  ok:      'var(--color-ok-600)',
+  bad:     'var(--color-bad-500)',
+  warn:    'var(--color-warn-700)',
+  brand:   'var(--color-brand-600)',
 };
 
 export function KPICard({
@@ -31,8 +31,8 @@ export function KPICard({
   className?: string;
 }) {
   return (
-    <div className={`rounded-lg border border-[#ede9e6] bg-white p-3 ${className}`}>
-      <div className="text-[10px] font-medium uppercase tracking-wider text-[#a8a29e] flex items-center gap-1">
+    <div className={`rounded-lg border border-divider bg-white p-3 ${className}`}>
+      <div className="text-[10px] font-medium uppercase tracking-wider text-ink-400 flex items-center gap-1">
         {icon}
         {label}
       </div>
@@ -40,7 +40,7 @@ export function KPICard({
         {value}
       </div>
       {sub != null && sub !== '' && (
-        <div className="text-[10.5px] mt-0.5 text-[#78716c]">{sub}</div>
+        <div className="text-[10.5px] mt-0.5 text-ink-500">{sub}</div>
       )}
     </div>
   );

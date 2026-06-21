@@ -9,6 +9,7 @@ import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { TabBar } from '@/components/TabBar';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import Link from 'next/link';
 
 interface SettlementRow {
@@ -192,12 +193,7 @@ export default function SettlementPage() {
   const unpaidCount = filtered.filter(r => r.unpaidAmount > 0).length;
 
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-[#78716c]">데이터를 불러오는데 실패했습니다.</p>
-        <button onClick={loadData} className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-sm font-medium">다시 시도</button>
-      </div>
-    );
+    return <ErrorState onRetry={loadData} />;
   }
 
   const tabs = [

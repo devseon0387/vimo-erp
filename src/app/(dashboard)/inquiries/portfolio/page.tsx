@@ -37,6 +37,7 @@ import {
   getPartners,
 } from '@/lib/supabase/db';
 import { useToast } from '@/contexts/ToastContext';
+import { useConfirm } from '@/contexts/ConfirmContext';
 
 type ViewMode = 'grid' | 'list';
 type FilterType = 'all' | 'published' | 'unpublished';
@@ -71,6 +72,7 @@ const getYouTubeThumbnail = (url: string): string | null => {
 
 export default function PortfolioPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,7 +189,7 @@ export default function PortfolioPage() {
   const handleRemoveCategory = async (cat: string) => {
     const itemsToUpdate = portfolioItems.filter(i => i.category === cat);
     if (itemsToUpdate.length > 0) {
-      if (!confirm(`"${cat}" 카테고리에 ${itemsToUpdate.length}개의 포트폴리오가 있습니다.\n삭제하면 "기타"로 변경됩니다. 계속할까요?`)) return;
+      if (!(await confirm({ title: `"${cat}" 카테고리를 삭제할까요?`, description: `${itemsToUpdate.length}개의 포트폴리오가 "기타"로 변경됩니다.`, tone: 'danger', confirmLabel: '삭제' }))) return;
       await Promise.all(itemsToUpdate.map(i => updatePortfolioItem(i.id, { category: '기타' })));
       setPortfolioItems(prev => prev.map(i => i.category === cat ? { ...i, category: '기타' } : i));
     }
@@ -288,7 +290,7 @@ export default function PortfolioPage() {
   const bulkDelete = async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (!confirm(`선택한 ${ids.length}건을 삭제하시겠어요?`)) return;
+    if (!(await confirm({ title: `선택한 ${ids.length}건을 삭제할까요?`, tone: 'danger', confirmLabel: '삭제' }))) return;
     await Promise.all(ids.map(id => deletePortfolioItem(id)));
     setPortfolioItems(prev => prev.filter(i => !ids.includes(i.id)));
     toast.success(`${ids.length}건 삭제 완료`);
@@ -451,7 +453,7 @@ export default function PortfolioPage() {
   };
 
   const handleDelete = async (itemId: string) => {
-    if (confirm('이 포트폴리오를 삭제하시겠습니까?')) {
+    if (await confirm({ title: '이 포트폴리오를 삭제할까요?', tone: 'danger', confirmLabel: '삭제' })) {
       const ok = await deletePortfolioItem(itemId);
       if (ok) {
         setPortfolioItems(items => items.filter(item => item.id !== itemId));

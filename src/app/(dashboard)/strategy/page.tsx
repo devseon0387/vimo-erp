@@ -6,7 +6,7 @@ import {
   Plus, FolderOpen, Trash2, ArrowRight,
   Folder, Target, Lightbulb, Rocket, BarChart2, Zap, Star,
   Gem, Globe, Bookmark, Briefcase, Brain, Shield,
-  TrendingUp, Flag, Layers, Users, Package, Coffee,
+  TrendingUp, Flag, Layers, Users, Package, Coffee, Pencil,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { strategyApi, type StrategyGroup } from '@/lib/strategy-api';
@@ -408,7 +408,7 @@ export default function StrategyPage() {
                     onMouseEnter={e => { e.currentTarget.style.background = '#f5f3f1'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.92)'; }}
                   >
-                    ✏️
+                    <Pencil size={14} color="#57534e" />
                   </button>
                   <AnimatePresence>
                     {pickerShown && (

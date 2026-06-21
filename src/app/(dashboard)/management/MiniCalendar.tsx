@@ -54,7 +54,7 @@ export default function MiniCalendar({
           >
             {d}
             {deadlineCount > 0 && !isToday && (
-              <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-orange-400" />
+              <div title={`마감 ${deadlineCount}건`} aria-label={`마감 ${deadlineCount}건`} className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-orange-400" />
             )}
           </button>
         ),
@@ -76,11 +76,11 @@ export default function MiniCalendar({
     <div className="bg-white rounded-2xl border border-ink-100 p-4">
       {/* 달력 헤더 */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prev} className="p-1 hover:bg-ink-100 rounded-lg transition-colors">
+        <button onClick={prev} aria-label="이전 달" className="p-2 hover:bg-ink-100 rounded-lg transition-colors">
           <ChevronLeft size={14} className="text-[var(--color-ink-400)]" />
         </button>
         <span className="text-[13px] font-bold">{calYear}년 {calMonth + 1}월</span>
-        <button onClick={next} className="p-1 hover:bg-ink-100 rounded-lg transition-colors">
+        <button onClick={next} aria-label="다음 달" className="p-2 hover:bg-ink-100 rounded-lg transition-colors">
           <ChevronRight size={14} className="text-[var(--color-ink-400)]" />
         </button>
       </div>

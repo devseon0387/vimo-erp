@@ -14,6 +14,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
 import { StatusBadge, type StatusTone } from '@/components/StatusBadge';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { getAllEpisodes, getProjects, getClients, updateEpisodeFields } from '@/lib/supabase/db';
 import type { Client, Episode, Project } from '@/types';
 
@@ -34,6 +35,9 @@ interface Bill {
   month: string;
   episodes: Ep[];
   projectTitles: string[];
+  epCount: number;
+  paidCount: number;
+  issuedCount: number;
   supply: number;
   vat: number;
   total: number;
@@ -50,6 +54,14 @@ const STAGE_META: Record<Stage, { tone: StatusTone; label: string; dot?: boolean
   paid: { tone: 'ok', label: '입금완료', dot: true },
 };
 
+const EMPTY_COPY: Record<Filter, { title: string; desc: string }> = {
+  all: { title: '매출 건이 없습니다', desc: '회차 금액이 있는 거래처가 여기에 모입니다.' },
+  unissued: { title: '미발행 건이 없습니다', desc: '발행할 세금계산서가 없습니다.' },
+  receivable: { title: '미수금이 없습니다', desc: '발행 완료된 미입금 건이 없습니다.' },
+  overdue: { title: '연체 건이 없습니다', desc: '입금 기한이 지난 미수금이 없습니다.' },
+  paid: { title: '입금완료 건이 없습니다', desc: '입금이 완료된 건이 여기에 표시됩니다.' },
+};
+
 export default function RevenuePage() {
   const toast = useToast();
   const [episodes, setEpisodes] = useState<Ep[]>([]);
@@ -58,10 +70,10 @@ export default function RevenuePage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [confirmPay, setConfirmPay] = useState<Bill | null>(null);
   // 발행 도우미
   const [issuingKey, setIssuingKey] = useState<string | null>(null);
   const [issueDate, setIssueDate] = useState(todayStr);
-  const [approvalNo, setApprovalNo] = useState('');
   const [showBizNo, setShowBizNo] = useState(false);
 
   const load = useCallback(async () => {
@@ -89,7 +101,7 @@ export default function RevenuePage() {
       const key = `${clientName}__${month}`;
       let b = map.get(key);
       if (!b) {
-        b = { key, clientName, client, month, episodes: [], projectTitles: [], supply: 0, vat: 0, total: 0, stage: 'paid', overdueDays: 0 };
+        b = { key, clientName, client, month, episodes: [], projectTitles: [], epCount: 0, paidCount: 0, issuedCount: 0, supply: 0, vat: 0, total: 0, stage: 'paid', overdueDays: 0 };
         map.set(key, b);
       }
       b.episodes.push(ep);
@@ -100,8 +112,10 @@ export default function RevenuePage() {
     const out: Bill[] = [];
     for (const b of map.values()) {
       const eps = b.episodes;
-      const allPaid = eps.every((e) => e.paymentStatus === 'completed');
-      const allIssued = eps.every((e) => e.invoiceStatus === 'completed');
+      const paidCount = eps.filter((e) => e.paymentStatus === 'completed').length;
+      const issuedCount = eps.filter((e) => e.invoiceStatus === 'completed').length;
+      const allPaid = paidCount === eps.length;
+      const allIssued = issuedCount === eps.length;
       const dues = (eps.filter((e) => e.paymentStatus !== 'completed').map((e) => e.paymentDueDate).filter(Boolean) as string[]).sort();
       const dueDate = dues[0];
       const overdueDays = dueDate ? Math.max(0, daysSince(dueDate, today)) : 0;
@@ -109,7 +123,7 @@ export default function RevenuePage() {
       const stage: Stage = allPaid ? 'paid' : !allIssued ? 'unissued' : overdueDays > 0 ? 'overdue' : 'receivable';
       b.vat = Math.round(b.supply * 0.1);
       b.total = b.supply + b.vat;
-      out.push({ ...b, dueDate, paymentDate: paid, stage, overdueDays });
+      out.push({ ...b, epCount: eps.length, paidCount, issuedCount, dueDate, paymentDate: paid, stage, overdueDays });
     }
     const rank: Record<Stage, number> = { overdue: 0, receivable: 1, unissued: 2, paid: 3 };
     return out.sort((a, b) => (rank[a.stage] - rank[b.stage]) || (a.month < b.month ? 1 : -1) || a.clientName.localeCompare(b.clientName));
@@ -149,22 +163,26 @@ export default function RevenuePage() {
     setBusyKey(b.key);
     try {
       const date = todayStr();
-      const r = await Promise.all(b.episodes.map((ep) => updateEpisodeFields(ep.id, { paymentStatus: 'completed', paymentDate: date })));
+      // 이미 입금된 회차는 건드리지 않고 미입금 건만 처리(부분 입금 보존)
+      const targets = b.episodes.filter((e) => e.paymentStatus !== 'completed');
+      const r = await Promise.all(targets.map((ep) => updateEpisodeFields(ep.id, { paymentStatus: 'completed', paymentDate: date })));
       if (r.every(Boolean)) { toast.success(`${b.clientName} ${b.month} 입금 완료 처리되었습니다.`); await load(); }
       else toast.error('입금 완료 처리에 실패했습니다.');
-    } finally { setBusyKey(null); }
+    } finally { setBusyKey(null); setConfirmPay(null); }
   }, [toast, load]);
 
   const markIssued = useCallback(async (b: Bill) => {
     setBusyKey(b.key);
     try {
-      const r = await Promise.all(b.episodes.map((ep) => updateEpisodeFields(ep.id, { invoiceStatus: 'completed', invoiceDate: issueDate })));
-      if (r.every(Boolean)) { toast.success(`${b.clientName} ${b.month} 발행 완료 — 미수금으로 전환되었습니다.`); setIssuingKey(null); setApprovalNo(''); await load(); }
+      // 이미 발행된 회차는 건드리지 않고 미발행 건만 처리(부분 발행 보존)
+      const targets = b.episodes.filter((e) => e.invoiceStatus !== 'completed');
+      const r = await Promise.all(targets.map((ep) => updateEpisodeFields(ep.id, { invoiceStatus: 'completed', invoiceDate: issueDate })));
+      if (r.every(Boolean)) { toast.success(`${b.clientName} ${b.month} 발행 완료 — 미수금으로 전환되었습니다.`); setIssuingKey(null); await load(); }
       else toast.error('발행 완료 처리에 실패했습니다.');
     } finally { setBusyKey(null); }
   }, [issueDate, toast, load]);
 
-  const openIssue = (b: Bill) => { setIssuingKey(b.key); setIssueDate(todayStr()); setApprovalNo(''); setShowBizNo(false); };
+  const openIssue = (b: Bill) => { setIssuingKey(b.key); setIssueDate(todayStr()); setShowBizNo(false); };
 
   const FILTERS: { key: Filter; label: string; danger?: boolean }[] = [
     { key: 'all', label: '전체' },
@@ -174,14 +192,19 @@ export default function RevenuePage() {
     { key: 'paid', label: '입금완료' },
   ];
 
-  const stageCard = (icon: React.ReactNode, label: string, sum: number, count: number, sub?: React.ReactNode, tone?: 'amber' | 'ok') => (
-    <div className="flex-1 bg-white rounded-2xl border border-ink-100 px-4 py-3.5 shadow-sm">
+  const stageCard = (icon: React.ReactNode, label: string, sum: number, count: number, filterKey: Filter, sub?: React.ReactNode, tone?: 'amber' | 'ok') => (
+    <button
+      type="button"
+      onClick={() => setFilter(filterKey)}
+      aria-pressed={filter === filterKey}
+      className={`flex-1 text-left bg-white rounded-2xl border px-4 py-3.5 shadow-sm transition-colors hover:border-ink-300 ${filter === filterKey ? 'border-orange-300 ring-1 ring-orange-200' : 'border-ink-100'}`}
+    >
       <p className="text-[11px] font-bold text-ink-500 flex items-center gap-1.5">{icon} {label}</p>
       <p className={`text-[21px] font-extrabold mt-1.5 tracking-tight ${tone === 'amber' ? 'text-amber-600' : tone === 'ok' ? 'text-ok-600' : 'text-ink-900'}`}>
         {loading ? '—' : won(sum)}<span className="text-[12px] text-ink-400 font-bold"> 원 · {count}건</span>
       </p>
       {sub}
-    </div>
+    </button>
   );
 
   return (
@@ -194,23 +217,23 @@ export default function RevenuePage() {
         <button onClick={load} disabled={loading} className="w-9 h-9 rounded-lg border border-divider bg-white text-ink-500 hover:bg-ink-50 flex items-center justify-center disabled:opacity-50" aria-label="새로고침">
           <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
         </button>
-        <a href={HOMETAX_URL} target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 h-9 px-4 rounded-lg bg-orange-500 text-white text-[12.5px] font-bold hover:bg-orange-600">
-          <ExternalLink size={15} /> 홈택스 바로가기
+        <a href={HOMETAX_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 h-9 px-3 sm:px-4 rounded-lg bg-orange-500 text-white text-[12.5px] font-bold hover:bg-orange-600" aria-label="홈택스 바로가기">
+          <ExternalLink size={15} /> <span className="hidden sm:inline">홈택스 바로가기</span>
         </a>
       </div>
 
       {/* 퍼널 */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
-        {stageCard(<Receipt size={14} className="text-ink-400" />, '미발행 (곧 청구)', kpi.unissuedSum, kpi.counts.unissued)}
+        {stageCard(<Receipt size={14} className="text-ink-400" />, '미발행 (곧 청구)', kpi.unissuedSum, kpi.counts.unissued, 'unissued')}
         <div className="hidden sm:flex items-center px-2.5 text-ink-300"><ArrowRight size={18} /></div>
-        {stageCard(<Coins size={14} className="text-amber-500" />, '미수금 (발행완료·미입금)', kpi.receivableSum, kpi.counts.receivable,
+        {stageCard(<Coins size={14} className="text-amber-500" />, '미수금 (발행완료·미입금)', kpi.receivableSum, kpi.counts.receivable, 'receivable',
           kpi.counts.overdue > 0 ? (
             <span className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-extrabold text-red-600 bg-red-50 px-2 py-1 rounded-md">
               <AlertTriangle size={12} /> 연체 {kpi.counts.overdue}건 · {won(kpi.overdueSum)}원
             </span>
           ) : undefined, 'amber')}
         <div className="hidden sm:flex items-center px-2.5 text-ink-300"><ArrowRight size={18} /></div>
-        {stageCard(<Check size={14} className="text-ok-600" />, '입금완료', kpi.paidSum, kpi.counts.paid, undefined, 'ok')}
+        {stageCard(<Check size={14} className="text-ok-600" />, '입금완료', kpi.paidSum, kpi.counts.paid, 'paid', undefined, 'ok')}
       </div>
 
       {/* 필터 */}
@@ -232,7 +255,7 @@ export default function RevenuePage() {
         {loading ? (
           <LoadingState size="compact" />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Coins} size="compact" title="해당하는 건이 없습니다" description="회차 금액이 있는 거래처가 여기에 모입니다." />
+          <EmptyState icon={Coins} size="compact" title={EMPTY_COPY[filter].title} description={EMPTY_COPY[filter].desc} />
         ) : (
           <ul>
             {filtered.map((b) => {
@@ -245,7 +268,15 @@ export default function RevenuePage() {
                   <div className="w-9 h-9 rounded-[10px] bg-ink-100 text-ink-400 flex items-center justify-center flex-shrink-0"><Building2 size={16} /></div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13.5px] font-bold text-ink-900 truncate">{b.clientName}</div>
-                    <div className="text-[11.5px] text-ink-400 truncate mt-0.5">{itemLabel(b)} · {b.month}</div>
+                    <div className="text-[11.5px] text-ink-400 mt-0.5 flex items-center gap-1.5 min-w-0">
+                      <span className="truncate">{itemLabel(b)} · {b.month}</span>
+                      {b.epCount > 1 && b.stage === 'unissued' && b.issuedCount > 0 && (
+                        <span className="flex-shrink-0 text-amber-600 font-semibold">발행 {b.issuedCount}/{b.epCount}</span>
+                      )}
+                      {b.epCount > 1 && (b.stage === 'receivable' || b.stage === 'overdue') && b.paidCount > 0 && (
+                        <span className="flex-shrink-0 text-amber-600 font-semibold">입금 {b.paidCount}/{b.epCount}</span>
+                      )}
+                    </div>
                   </div>
                   <div className="hidden sm:flex items-center w-[112px] justify-center flex-shrink-0">
                     <StatusBadge tone={meta.tone} dot={meta.dot}>{meta.label}{b.stage === 'overdue' ? ` D+${b.overdueDays}` : ''}</StatusBadge>
@@ -262,7 +293,7 @@ export default function RevenuePage() {
                     ) : b.stage === 'paid' ? (
                       <StatusBadge tone="ok" dot>완료</StatusBadge>
                     ) : (
-                      <button onClick={() => markPaid(b)} disabled={busyKey === b.key} className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-orange-500 text-white text-[12px] font-bold hover:bg-orange-600 disabled:bg-ink-300 disabled:cursor-not-allowed">
+                      <button onClick={() => setConfirmPay(b)} disabled={busyKey === b.key} className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-orange-500 text-white text-[12px] font-bold hover:bg-orange-600 disabled:bg-ink-300 disabled:cursor-not-allowed">
                         <Check size={13} /> {busyKey === b.key ? '처리…' : '입금 완료'}
                       </button>
                     )}
@@ -347,8 +378,7 @@ export default function RevenuePage() {
             <div className="px-5 py-4 bg-ink-50 border-t border-ink-100">
               <div className="text-[11px] font-extrabold text-ink-500 mb-2">발행 완료 기록 → 미수금으로 전환</div>
               <div className="flex items-center gap-2">
-                <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="h-9 px-2.5 rounded-lg border border-divider bg-white text-[12.5px] font-semibold outline-none focus:border-orange-400" />
-                <input value={approvalNo} onChange={(e) => setApprovalNo(e.target.value)} placeholder="국세청 승인번호 (선택)" className="flex-1 min-w-0 h-9 px-3 rounded-lg border border-divider bg-white text-[12.5px] outline-none focus:border-orange-400 placeholder:text-ink-400" />
+                <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} aria-label="작성일자" className="flex-1 min-w-0 h-9 px-2.5 rounded-lg border border-divider bg-white text-[12.5px] font-semibold outline-none focus:border-orange-400" />
                 <button onClick={() => markIssued(issuing)} disabled={busyKey === issuing.key} className="flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-orange-500 text-white text-[12.5px] font-bold hover:bg-orange-600 disabled:bg-ink-300 flex-shrink-0">
                   <Check size={14} /> {busyKey === issuing.key ? '처리…' : '발행 완료'}
                 </button>
@@ -357,6 +387,20 @@ export default function RevenuePage() {
           </div>
         </div>
       )}
+
+      {/* 입금 완료 확인 — 거래처 전체 회차 prod 일괄 쓰기 방지(오클릭 가드) */}
+      <ConfirmDialog
+        isOpen={!!confirmPay}
+        onClose={() => setConfirmPay(null)}
+        onConfirm={() => { if (confirmPay) markPaid(confirmPay); }}
+        title={confirmPay ? `${confirmPay.clientName} · ${confirmPay.month} 입금 완료 처리할까요?` : ''}
+        description={confirmPay
+          ? `미입금 ${confirmPay.epCount - confirmPay.paidCount}건을 입금완료로 기록합니다. 되돌리려면 각 회차에서 직접 변경해야 합니다.`
+          : ''}
+        tone="brand"
+        confirmLabel="입금 완료"
+        busy={busyKey === confirmPay?.key}
+      />
     </div>
   );
 }

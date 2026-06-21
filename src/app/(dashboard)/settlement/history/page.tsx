@@ -391,41 +391,82 @@ export default function SettlementHistoryPage() {
                 size="compact"
               />
             ) : (
-              <div className="overflow-x-auto">
-                <div className="min-w-[380px]">
-                  <div className="px-5 py-2.5 bg-[#fafaf9] grid grid-cols-[1fr_72px_84px_60px] gap-3 text-[10px] font-bold text-[#a8a29e] border-b border-divider">
-                    <span>프로젝트</span>
-                    <span className="text-right">총 매출</span>
-                    <span className="text-right">매니징 비용</span>
-                    <span className="text-right">마진율</span>
-                  </div>
-                  <div className="divide-y divide-gray-50">
-                    {filteredProjects.filter(p => p.budget.managementFee > 0).map(project => {
-                      const sc = statusConfig[project.status] ?? statusConfig.planning;
-                      return (
-                        <div key={project.id} className="px-5 py-3.5 hover:bg-[#fafaf9] transition-colors grid grid-cols-[1fr_72px_84px_60px] gap-3 items-center">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sc.dot}`} />
-                            <div className="min-w-0">
-                              <p className="text-[13px] font-medium text-[#1c1917] truncate">{project.title}</p>
-                              <p className="text-[11px] text-[#a8a29e] mt-0.5">{project.client}</p>
-                            </div>
-                          </div>
-                          <p className="text-[13px] text-[#57534e] text-right">{(project.budget.totalAmount / 10000).toFixed(0)}만</p>
-                          <p className="text-[13px] font-semibold text-orange-500 text-right">{(project.budget.managementFee / 10000).toFixed(0)}만원</p>
-                          <p className="text-[13px] font-semibold text-emerald-600 text-right">{project.budget.marginRate}%</p>
+              <>
+                {/* 모바일 카드 리스트 */}
+                <div className="sm:hidden divide-y divide-gray-50">
+                  {filteredProjects.filter(p => p.budget.managementFee > 0).map(project => {
+                    const sc = statusConfig[project.status] ?? statusConfig.planning;
+                    return (
+                      <div key={project.id} className="px-4 py-3 hover:bg-[#fafaf9] transition-colors">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sc.dot}`} />
+                          <p className="text-[13px] font-semibold text-ink-900 truncate flex-1">{project.title}</p>
+                          <span className="text-[11px] text-ink-400 flex-shrink-0">{sc.label}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                  <div className="px-5 py-4 bg-[#fafaf9]/50 grid grid-cols-[1fr_72px_84px_60px] gap-3 items-center">
-                    <span className="text-[13px] font-semibold text-[#78716c]">총 매니징 비용</span>
-                    <span className="text-[13px] text-[#a8a29e] text-right">{(md.clientTotal / 10000).toFixed(0)}만</span>
-                    <span className="text-[14px] font-extrabold text-orange-500 text-right">{(md.managerTotal / 10000).toFixed(0)}만원</span>
-                    <span></span>
+                        {project.client && (
+                          <p className="text-[11px] text-ink-400 mt-0.5 ml-3.5 truncate">{project.client}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2 ml-3.5">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-ink-400 mb-0.5">총 매출</p>
+                            <p className="text-[13px] font-semibold text-ink-600 tabular-nums">{(project.budget.totalAmount / 10000).toFixed(0)}만원</p>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-ink-400 mb-0.5">매니징 비용</p>
+                            <p className="text-[13px] font-semibold text-brand-500 tabular-nums">{(project.budget.managementFee / 10000).toFixed(0)}만원</p>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-ink-400 mb-0.5">마진율</p>
+                            <p className="text-[13px] font-semibold text-emerald-600 tabular-nums">{project.budget.marginRate}%</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* 합계 카드 */}
+                  <div className="px-4 py-3.5 bg-[#fafaf9]/50 flex items-center justify-between">
+                    <span className="text-[13px] font-semibold text-ink-500">총 매니징 비용</span>
+                    <span className="text-[15px] font-extrabold text-brand-500 tabular-nums">{(md.managerTotal / 10000).toFixed(0)}만원</span>
                   </div>
                 </div>
-              </div>
+
+                {/* 데스크탑 그리드 */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <div className="min-w-[380px]">
+                    <div className="px-5 py-2.5 bg-[#fafaf9] grid grid-cols-[1fr_72px_84px_60px] gap-3 text-[10px] font-bold text-[#a8a29e] border-b border-divider">
+                      <span>프로젝트</span>
+                      <span className="text-right">총 매출</span>
+                      <span className="text-right">매니징 비용</span>
+                      <span className="text-right">마진율</span>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {filteredProjects.filter(p => p.budget.managementFee > 0).map(project => {
+                        const sc = statusConfig[project.status] ?? statusConfig.planning;
+                        return (
+                          <div key={project.id} className="px-5 py-3.5 hover:bg-[#fafaf9] transition-colors grid grid-cols-[1fr_72px_84px_60px] gap-3 items-center">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sc.dot}`} />
+                              <div className="min-w-0">
+                                <p className="text-[13px] font-medium text-[#1c1917] truncate">{project.title}</p>
+                                <p className="text-[11px] text-[#a8a29e] mt-0.5">{project.client}</p>
+                              </div>
+                            </div>
+                            <p className="text-[13px] text-[#57534e] text-right">{(project.budget.totalAmount / 10000).toFixed(0)}만</p>
+                            <p className="text-[13px] font-semibold text-orange-500 text-right">{(project.budget.managementFee / 10000).toFixed(0)}만원</p>
+                            <p className="text-[13px] font-semibold text-emerald-600 text-right">{project.budget.marginRate}%</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="px-5 py-4 bg-[#fafaf9]/50 grid grid-cols-[1fr_72px_84px_60px] gap-3 items-center">
+                      <span className="text-[13px] font-semibold text-[#78716c]">총 매니징 비용</span>
+                      <span className="text-[13px] text-[#a8a29e] text-right">{(md.clientTotal / 10000).toFixed(0)}만</span>
+                      <span className="text-[14px] font-extrabold text-orange-500 text-right">{(md.managerTotal / 10000).toFixed(0)}만원</span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>

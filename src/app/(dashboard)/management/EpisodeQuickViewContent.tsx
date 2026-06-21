@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { X, Calendar, ListChecks } from 'lucide-react';
+import { X, Calendar, ListChecks, Check } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import type { Episode, Project, Partner, WorkContentType, WorkStep } from '@/types';
 
@@ -141,7 +141,7 @@ export default function EpisodeQuickViewContent({ ep, projects, partners, onClos
                                 step.status === 'completed' ? 'bg-ok-500 border-ok-500 text-white text-[10px]' : step.status === 'in_progress' ? 'border-yellow-400 bg-warn-50' : 'border-[var(--color-ink-300)] hover:border-brand-500'
                               }`}
                             >
-                              {step.status === 'completed' ? '✓' : step.status === 'in_progress' ? <div className="w-2 h-2 rounded-full bg-yellow-400" /> : ''}
+                              {step.status === 'completed' ? <Check size={12} strokeWidth={3} /> : step.status === 'in_progress' ? <div className="w-2 h-2 rounded-full bg-yellow-400" /> : ''}
                             </button>
                             <div className="flex-1 min-w-0">
                               <span className={`text-[12px] font-semibold ${step.status === 'completed' ? 'line-through text-[var(--color-ink-400)]' : ''}`}>{step.label}</span>

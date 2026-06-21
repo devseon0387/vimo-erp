@@ -72,6 +72,11 @@
   --color-bad-600: #dc2626;
   --color-bad-700: #b91c1c;
 
+  --color-info-50: #eff6ff;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+  --color-info-700: #1d4ed8;
+
   /* 시안8: 카드 모서리 밀집 — rounded-xl/2xl 전역 축소(rounded-lg=8px 유지) */
   --radius-xl: 0.625rem;   /* 12 → 10px */
   --radius-2xl: 0.75rem;   /* 16 → 12px */

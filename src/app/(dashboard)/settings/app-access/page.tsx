@@ -9,6 +9,7 @@ import { getMyProfile } from '@/lib/supabase/db';
 import { listUsersWithAccess, grantAppAccess, suspendAppAccess } from '@/lib/supabase/db/app_access';
 import type { UserWithAccess, AppCode } from '@/lib/supabase/db/app_access.types';
 import { useToast } from '@/contexts/ToastContext';
+import { useConfirm } from '@/contexts/ConfirmContext';
 import { SearchInput } from '@/components/SearchInput';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
@@ -28,6 +29,7 @@ const TONE_ACTIVE: Record<string, string> = {
 export default function AppAccessPage() {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserWithAccess[]>([]);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -73,13 +75,13 @@ export default function AppAccessPage() {
 
     // ERP 상호 배제 경고
     if (!isActive && app === 'vimo_erp' && user.access.partner_erp === 'active') {
-      if (!confirm('이 사용자는 파트너 ERP 권한이 활성화되어 있습니다.\n비모 ERP를 부여하면 DB가 거부합니다 (상호 배제).\n계속할까요?')) {
+      if (!(await confirm({ title: '비모 ERP를 부여할까요?', description: '이 사용자는 파트너 ERP 권한이 활성화되어 있어 DB가 거부합니다 (상호 배제).', tone: 'brand', confirmLabel: '계속' }))) {
         setBusyKey(null);
         return;
       }
     }
     if (!isActive && app === 'partner_erp' && user.access.vimo_erp === 'active') {
-      if (!confirm('이 사용자는 비모 ERP 권한이 활성화되어 있습니다.\n파트너 ERP를 부여하면 DB가 거부합니다 (상호 배제).\n계속할까요?')) {
+      if (!(await confirm({ title: '파트너 ERP를 부여할까요?', description: '이 사용자는 비모 ERP 권한이 활성화되어 있어 DB가 거부합니다 (상호 배제).', tone: 'brand', confirmLabel: '계속' }))) {
         setBusyKey(null);
         return;
       }

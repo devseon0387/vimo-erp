@@ -24,8 +24,8 @@ export default function EmptyState({
   title,
   description,
   action,
-  iconColor = 'text-[#a8a29e]',
-  iconBgColor = 'bg-[#f5f5f4]',
+  iconColor = 'text-ink-400',
+  iconBgColor = 'bg-ink-100',
   size = 'default',
 }: EmptyStateProps) {
   const compact = size === 'compact';
@@ -42,15 +42,15 @@ export default function EmptyState({
         <Icon size={compact ? 22 : 30} className={iconColor} />
       </div>
       <div className="text-center max-w-md">
-        <h3 className={`font-semibold text-[#1c1917] ${compact ? 'text-sm mb-1' : 'text-base mb-1.5'}`}>{title}</h3>
-        <p className={`text-[#78716c] ${compact ? 'text-xs' : 'text-[13px]'} ${action ? (compact ? 'mb-4' : 'mb-5') : ''}`}>
+        <h3 className={`font-semibold text-ink-900 ${compact ? 'text-sm mb-1' : 'text-base mb-1.5'}`}>{title}</h3>
+        <p className={`text-ink-500 ${compact ? 'text-xs' : 'text-[13px]'} ${action ? (compact ? 'mb-4' : 'mb-5') : ''}`}>
           {description}
         </p>
       </div>
       {action && (
         <button
           onClick={action.onClick}
-          className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+          className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors text-sm font-medium"
         >
           {action.label}
         </button>
@@ -59,7 +59,7 @@ export default function EmptyState({
   );
 }
 
-// 프리셋 빈 상태 컴포넌트들 (브랜드/상태 색은 의도적으로 유지)
+// 프리셋 빈 상태 컴포넌트들 (브랜드/상태 색은 의도적으로 유지 — 디자인 토큰 사용)
 export function EmptyProjects({ onAdd }: { onAdd?: () => void }) {
   return (
     <EmptyState
@@ -67,8 +67,8 @@ export function EmptyProjects({ onAdd }: { onAdd?: () => void }) {
       title="프로젝트가 없습니다"
       description="새 프로젝트를 추가하여 비디오 작업을 시작하세요. 프로젝트를 통해 클라이언트, 파트너, 회차를 관리할 수 있습니다."
       action={onAdd ? { label: '+ 프로젝트 추가하기', onClick: onAdd } : undefined}
-      iconColor="text-orange-500"
-      iconBgColor="bg-orange-50"
+      iconColor="text-brand-500"
+      iconBgColor="bg-brand-50"
     />
   );
 }
@@ -80,8 +80,8 @@ export function EmptyEpisodes({ onAdd }: { onAdd?: () => void }) {
       title="회차가 없습니다"
       description="프로젝트에 회차를 추가하여 작업을 시작하세요. 각 회차는 개별적으로 관리됩니다."
       action={onAdd ? { label: '+ 회차 추가하기', onClick: onAdd } : undefined}
-      iconColor="text-orange-500"
-      iconBgColor="bg-orange-50"
+      iconColor="text-brand-500"
+      iconBgColor="bg-brand-50"
     />
   );
 }
@@ -93,8 +93,8 @@ export function EmptyPartners({ onAdd }: { onAdd?: () => void }) {
       title="등록된 파트너가 없습니다"
       description="비디오 작업을 함께할 파트너를 추가하세요. 편집자, 촬영감독 등 다양한 전문가를 관리할 수 있습니다."
       action={onAdd ? { label: '+ 파트너 추가하기', onClick: onAdd } : undefined}
-      iconColor="text-green-500"
-      iconBgColor="bg-green-50"
+      iconColor="text-ok-500"
+      iconBgColor="bg-ok-50"
     />
   );
 }
@@ -106,8 +106,8 @@ export function EmptyClients({ onAdd }: { onAdd?: () => void }) {
       title="등록된 클라이언트가 없습니다"
       description="프로젝트를 의뢰하는 클라이언트를 추가하세요. 클라이언트별로 프로젝트를 관리할 수 있습니다."
       action={onAdd ? { label: '+ 클라이언트 추가하기', onClick: onAdd } : undefined}
-      iconColor="text-orange-500"
-      iconBgColor="bg-orange-50"
+      iconColor="text-brand-500"
+      iconBgColor="bg-brand-50"
     />
   );
 }
@@ -138,8 +138,8 @@ export function EmptyReviews() {
       icon={CheckCircle}
       title="검수 대기 중인 작업이 없습니다"
       description="모든 작업이 완료되었거나 아직 검수 단계에 도달하지 않았습니다."
-      iconColor="text-green-500"
-      iconBgColor="bg-green-50"
+      iconColor="text-ok-500"
+      iconBgColor="bg-ok-50"
     />
   );
 }
@@ -150,8 +150,8 @@ export function EmptyDeadlines() {
       icon={Calendar}
       title="다가오는 마감일이 없습니다"
       description="7일 이내에 마감되는 작업이 없습니다. 여유롭게 작업을 진행하세요."
-      iconColor="text-orange-500"
-      iconBgColor="bg-orange-50"
+      iconColor="text-brand-500"
+      iconBgColor="bg-brand-50"
     />
   );
 }

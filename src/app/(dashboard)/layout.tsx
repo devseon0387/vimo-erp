@@ -97,12 +97,12 @@ const SECTIONS: Section[] = [
       { type: 'heading', label: '재무' },
       { type: 'link', href: '/finance/revenue',    label: '매출 관리',    icon: Receipt },
       { type: 'link', href: '/finance/expenses',   label: '지출 관리',    icon: CreditCard },
-      { type: 'link', href: '/settlement', label: '월별 손익',   icon: Receipt, badge: '준비중', sub: [
+      { type: 'link', href: '/settlement', label: '월별 손익',   icon: Receipt, sub: [
         { href: '/settlement/history', label: '월별 내역', icon: Calendar },
       ] },
       { type: 'heading', label: '경영' },
       { type: 'link', href: '/contracts',    label: '계약',       icon: FileText, badge: '준비중' },
-      { type: 'link', href: '/operations',   label: '운영',       icon: Layers,   badge: '준비중' },
+      { type: 'link', href: '/operations',   label: '운영',       icon: Layers },
     ],
   },
   {
@@ -374,6 +374,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button
                   onClick={() => setActiveSection(isSel ? null : sec.key)}
                   data-rail-tip={sec.label}
+                  aria-label={sec.label}
                   style={{
                     position:       'relative',
                     width:          '36px',
@@ -413,6 +414,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 href={item.href}
                 data-rail-tip={item.label}
+                aria-label={item.label}
                 style={{
                   position:       'relative',
                   width:          '36px',
@@ -439,6 +441,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button
             onClick={handleLogout}
             data-rail-tip="로그아웃"
+            aria-label="로그아웃"
             style={{
               position:       'relative',
               width:          '36px',
@@ -705,6 +708,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* 모바일 햄버거 */}
         <button
           className="vm-hamburger"
+          aria-label="메뉴 열기"
           onClick={() => {
             // 현재 페이지가 속한 섹션 자동 선택
             const currentSec = visibleSections.find(s => s.items.filter(isLink).some(i => pathname === i.href || pathname.startsWith(i.href + '/')));
@@ -835,6 +839,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {/* 닫기 */}
                 <button
                   onClick={() => setMobileMenu(false)}
+                  aria-label="메뉴 닫기"
                   style={{ width: '40px', height: '40px', borderRadius: '10px', border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginBottom: '8px' }}
                 >
                   <X size={18} />
@@ -848,6 +853,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <button
                       key={sec.key}
                       onClick={() => setMobileSection(isSel ? null : sec.key)}
+                      aria-label={sec.label}
                       style={{
                         width: '40px', height: '40px', borderRadius: '10px', border: 'none',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
@@ -870,6 +876,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileMenu(false)}
+                        aria-label={item.label}
                         style={{
                           width: '40px', height: '40px', borderRadius: '10px', textDecoration: 'none',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -882,6 +889,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   })}
                   <button
                     onClick={handleLogout}
+                    aria-label="로그아웃"
                     style={{
                       width: '40px', height: '40px', borderRadius: '10px', border: 'none',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',

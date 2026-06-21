@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Phone, User, Trash2, Edit, TrendingUp, Folder, Film, DollarSign, Calendar, Activity, ChevronDown, Clock, ArrowRight, Plus, Users, CreditCard, MessageSquare, UserCircle, RefreshCw, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Phone, User, Trash2, Edit, TrendingUp, Folder, Film, DollarSign, Calendar, Activity, ChevronDown, Clock, ArrowRight, Plus, Users, CreditCard, MessageSquare, UserCircle, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 import { Partner, Project, Episode } from '@/types';
 import { addToTrash } from '@/lib/trash';
@@ -16,6 +16,7 @@ import {
 } from '@/lib/supabase/db';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import EmptyState from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { StatusBadge } from '@/components/StatusBadge';
 import PartnerEditModal from '../PartnerEditModal';
 
@@ -249,18 +250,7 @@ export default function PartnerDetailPage() {
 
   // #5 에러: 재시도 UI
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <p className="text-[#78716c]">{error}</p>
-        <button
-          onClick={loadData}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-        >
-          <RefreshCw size={16} />
-          다시 시도
-        </button>
-      </div>
-    );
+    return <ErrorState description={error} onRetry={loadData} />;
   }
 
   if (!partner) {

@@ -51,7 +51,10 @@ export default function PartnerStatusStrip({ partners, allEpisodes, thisWeekStar
                 ? hasWork ? 'bg-purple-50' : 'bg-[var(--color-ink-50)]'
                 : hasWork ? 'bg-[var(--color-brand-50)]' : 'bg-[var(--color-ink-50)]'
             }`}>
-              <div className={`w-[20px] h-[20px] rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0 ${
+              <div
+                title={`${p.name} · ${isExec ? '임원 · ' : ''}${hasWork ? `이번 주 작업 ${total}건` : '이번 주 작업 없음'}`}
+                aria-label={`${p.name} · ${isExec ? '임원 · ' : ''}${hasWork ? `이번 주 작업 ${total}건` : '이번 주 작업 없음'}`}
+                className={`w-[20px] h-[20px] rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0 ${
                 isExec
                   ? hasWork ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-400'
                   : hasWork ? 'bg-brand-500 text-white' : 'bg-[var(--color-ink-200)] text-[var(--color-ink-400)]'
