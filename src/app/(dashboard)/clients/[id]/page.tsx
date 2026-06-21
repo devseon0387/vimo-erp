@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Client, Project, Partner, Episode, WorkContentType } from '@/types';
-import { ArrowLeft, Mail, Phone, Building2, MapPin, User, Plus, FolderOpen } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Building2, MapPin, User, Plus, FolderOpen, Coins, Receipt, AlertTriangle, Check } from 'lucide-react';
 import Link from 'next/link';
 import { getClientById, insertProject, insertClient, upsertEpisodes, updateClient } from '@/lib/supabase/db';
 import { getClients, getProjects, getPartners, getAllEpisodes } from '@/lib/supabase/db/cached';
@@ -14,8 +14,41 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TabBar } from '@/components/TabBar';
 import { LoadingState } from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
+import { KPICard } from '@/components/KPICard';
+import { StatusBadge as StatusChip, type StatusTone } from '@/components/StatusBadge';
 import dynamic from 'next/dynamic';
 const ProjectWizardModal = dynamic(() => import('@/components/ProjectWizardModal'), { ssr: false });
+
+// ── 재무 섹션 (매출 관리 /finance/revenue 와 동일한 계산 규칙) ──────────────
+const won = (n: number) => Math.round(n).toLocaleString('ko-KR');
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const revBillMonth = (e: Episode) => ((e.endDate || e.dueDate || e.startDate || '').slice(0, 7) || '월 미정');
+const daysSince = (from: string, to: string) =>
+  Math.floor((new Date(to).getTime() - new Date(from).getTime()) / 86400000);
+
+type FinStage = 'unissued' | 'receivable' | 'overdue' | 'paid';
+const STAGE_META: Record<FinStage, { tone: StatusTone; label: string; dot?: boolean }> = {
+  unissued: { tone: 'neutral', label: '미발행' },
+  receivable: { tone: 'warn', label: '미수금' },
+  overdue: { tone: 'danger', label: '연체' },
+  paid: { tone: 'ok', label: '입금완료', dot: true },
+};
+
+interface ClientBill {
+  key: string;
+  month: string;
+  projectTitles: string[];
+  epCount: number;
+  paidCount: number;
+  issuedCount: number;
+  supply: number;
+  vat: number;
+  total: number;
+  dueDate?: string;
+  paymentDate?: string;
+  stage: FinStage;
+  overdueDays: number;
+}
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -27,6 +60,7 @@ export default function ClientDetailPage() {
   const [allPartners, setAllPartners] = useState<Partner[]>([]);
   const [episodes, setEpisodes] = useState<(Episode & { projectId: string })[]>([]);
   const [allClients, setAllClients] = useState<Client[]>([]);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'in_progress' | 'completed' | 'planning'>('all');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
@@ -40,6 +74,7 @@ export default function ClientDetailPage() {
       getAllEpisodes(),
     ]);
     setAllClients(clients);
+    setAllProjects(projects);
     if (foundClient) {
       setClient(foundClient);
       setClientProjects(projects.filter(p => p.clientId === foundClient.id || p.client === foundClient.name));
@@ -52,6 +87,75 @@ export default function ClientDetailPage() {
 
   // realtime: 폴링 1회만 등록(filter는 폴링에서 무시됨 — 중복 등록 단일화로 포커스당 loadData 2회→1회).
   useSupabaseRealtime(['clients', 'projects', 'episodes'], loadData);
+
+  // ── 재무 계산 (revenue 와 동일 매칭/금액/단계) ──────────────────────────
+  // 매칭은 episode 기준: (ep.clientId === client.id) || ((ep.client || project.client) === client.name)
+  // ★ 전체 projects 로 맵 구성 — revenue 와 동일하게 proj.client 폴백을 정확히 해석(부분집합이면 매칭 어긋남)
+  const projectMap = useMemo(
+    () => new Map(allProjects.map((p) => [p.id, p])),
+    [allProjects]
+  );
+  // 이 거래처에 속한 회차만 추림 (revenue 의 거래처 매칭과 동일 판정)
+  const clientEpisodes = useMemo(() => {
+    if (!client) return [] as (Episode & { projectId: string })[];
+    return episodes.filter((ep) => {
+      if (ep.clientId === client.id) return true;
+      const proj = projectMap.get(ep.projectId);
+      const name = ep.client || proj?.client;
+      return name === client.name;
+    });
+  }, [episodes, projectMap, client]);
+
+  // 거래처×월 bill 묶기 (revenue 의 bills 와 동일한 단계/금액 산식)
+  const bills = useMemo<ClientBill[]>(() => {
+    const today = todayStr();
+    const map = new Map<string, ClientBill>();
+    for (const ep of clientEpisodes) {
+      const proj = projectMap.get(ep.projectId);
+      const month = revBillMonth(ep);
+      let b = map.get(month);
+      if (!b) {
+        b = { key: month, month, projectTitles: [], epCount: 0, paidCount: 0, issuedCount: 0, supply: 0, vat: 0, total: 0, stage: 'paid', overdueDays: 0 };
+        map.set(month, b);
+      }
+      const pt = proj?.title;
+      if (pt && !b.projectTitles.includes(pt)) b.projectTitles.push(pt);
+      b.supply += ep.budget?.totalAmount ?? 0;
+      b.epCount += 1;
+    }
+    const out: ClientBill[] = [];
+    for (const b of map.values()) {
+      const eps = clientEpisodes.filter((e) => revBillMonth(e) === b.month);
+      const paidCount = eps.filter((e) => e.paymentStatus === 'completed').length;
+      const issuedCount = eps.filter((e) => e.invoiceStatus === 'completed').length;
+      const allPaid = paidCount === eps.length;
+      const allIssued = issuedCount === eps.length;
+      const dues = (eps.filter((e) => e.paymentStatus !== 'completed').map((e) => e.paymentDueDate).filter(Boolean) as string[]).sort();
+      const dueDate = dues[0];
+      const overdueDays = dueDate ? Math.max(0, daysSince(dueDate, today)) : 0;
+      const paid = (eps.map((e) => e.paymentDate).filter(Boolean) as string[]).sort().slice(-1)[0];
+      const stage: FinStage = allPaid ? 'paid' : !allIssued ? 'unissued' : overdueDays > 0 ? 'overdue' : 'receivable';
+      const vat = Math.round(b.supply * 0.1);
+      out.push({ ...b, paidCount, issuedCount, vat, total: b.supply + vat, dueDate, paymentDate: paid, stage, overdueDays });
+    }
+    // 최신월 순(월 미정은 뒤)
+    return out.sort((a, b) => (a.month < b.month ? 1 : a.month > b.month ? -1 : 0));
+  }, [clientEpisodes, projectMap]);
+
+  // 재무 KPI (revenue 와 동일 분류·합계) — 총매출 = 전체 total 합, 미수금 = 발행완료·미입금(receivable), 연체, 입금완료
+  const finKpi = useMemo(() => {
+    const sum = (pred: (b: ClientBill) => boolean) => bills.filter(pred).reduce((s, b) => s + b.total, 0);
+    return {
+      totalSum: bills.reduce((s, b) => s + b.total, 0),
+      receivableSum: sum((b) => b.stage === 'receivable'),
+      overdueSum: sum((b) => b.stage === 'overdue'),
+      paidSum: sum((b) => b.stage === 'paid'),
+      overdueCount: bills.filter((b) => b.stage === 'overdue').length,
+    };
+  }, [bills]);
+
+  const billItemLabel = (b: ClientBill) =>
+    (b.projectTitles[0] ?? `${b.epCount}건`) + (b.projectTitles.length > 1 ? ` 외 ${b.projectTitles.length - 1}건` : '');
 
   if (!client) {
     return (
@@ -253,6 +357,107 @@ export default function ClientDetailPage() {
               <span className="text-sm text-[#78716c]">원</span>
             </p>
           </div>
+        </div>
+
+        {/* 재무 섹션 */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-ink-900 mb-4">재무</h2>
+
+          {/* 재무 KPI */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <KPICard
+              tone="default"
+              icon={<Coins size={12} className="text-ink-400" />}
+              label="총 매출"
+              value={`${won(finKpi.totalSum)}원`}
+              sub={`${bills.length}개월 · 부가세 포함`}
+            />
+            <KPICard
+              tone="warn"
+              icon={<Receipt size={12} className="text-warn-600" />}
+              label="미수금"
+              value={`${won(finKpi.receivableSum + finKpi.overdueSum)}원`}
+              sub={finKpi.overdueSum > 0 ? `발행완료·미입금 (그중 연체 ${won(finKpi.overdueSum)}원)` : '발행완료 · 미입금'}
+            />
+            <KPICard
+              tone="bad"
+              icon={<AlertTriangle size={12} className="text-bad-500" />}
+              label="연체"
+              value={`${won(finKpi.overdueSum)}원`}
+              sub={finKpi.overdueCount > 0 ? `${finKpi.overdueCount}건 입금 지연` : '연체 없음'}
+            />
+            <KPICard
+              tone="ok"
+              icon={<Check size={12} className="text-ok-600" />}
+              label="입금완료"
+              value={`${won(finKpi.paidSum)}원`}
+              sub="수금 완료"
+            />
+          </div>
+
+          {/* 월별 거래 이력 */}
+          {bills.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
+              <EmptyState
+                icon={Coins}
+                size="compact"
+                title="거래 이력이 없습니다"
+                description="금액이 입력된 회차가 생기면 월별 매출이 여기에 모입니다."
+              />
+            </div>
+          ) : (
+            <>
+              {/* 데스크탑 테이블 */}
+              <div className="hidden sm:block bg-white rounded-2xl border border-divider shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-divider text-[11px] font-semibold text-ink-400">
+                      <th className="px-5 py-3 font-semibold">월</th>
+                      <th className="px-5 py-3 font-semibold">프로젝트</th>
+                      <th className="px-5 py-3 font-semibold text-right">합계 금액</th>
+                      <th className="px-5 py-3 font-semibold text-center w-[120px]">상태</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bills.map((b) => {
+                      const meta = STAGE_META[b.stage];
+                      return (
+                        <tr key={b.key} className="border-b border-divider last:border-0 hover:bg-ink-50/60 transition-colors">
+                          <td className="px-5 py-3.5 text-[13px] font-bold text-ink-900 tabular-nums whitespace-nowrap">{b.month}</td>
+                          <td className="px-5 py-3.5 text-[12.5px] text-ink-600 truncate max-w-[280px]">{billItemLabel(b)}</td>
+                          <td className="px-5 py-3.5 text-[13.5px] font-extrabold text-ink-900 tabular-nums text-right whitespace-nowrap">{won(b.total)}원</td>
+                          <td className="px-5 py-3.5 text-center">
+                            <StatusChip tone={meta.tone} dot={meta.dot}>
+                              {meta.label}{b.stage === 'overdue' ? ` D+${b.overdueDays}` : ''}
+                            </StatusChip>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 모바일 카드 */}
+              <div className="sm:hidden space-y-2">
+                {bills.map((b) => {
+                  const meta = STAGE_META[b.stage];
+                  return (
+                    <div key={b.key} className="bg-white rounded-2xl border border-divider shadow-sm px-4 py-3.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] font-bold text-ink-900 tabular-nums">{b.month}</span>
+                        <StatusChip tone={meta.tone} dot={meta.dot}>
+                          {meta.label}{b.stage === 'overdue' ? ` D+${b.overdueDays}` : ''}
+                        </StatusChip>
+                      </div>
+                      <div className="text-[12px] text-ink-500 mt-1 truncate">{billItemLabel(b)}</div>
+                      <div className="text-[15px] font-extrabold text-ink-900 tabular-nums mt-1.5">{won(b.total)}원</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         {/* 프로젝트 섹션 */}
