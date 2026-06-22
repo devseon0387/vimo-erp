@@ -28,6 +28,7 @@ export default function ComposeMailPage() {
   const [ccInput, setCcInput] = useState('');
   const [subject, setSubject] = useState('');
   const contentRef = useRef('');
+  const [editorKey, setEditorKey] = useState(0); // 발송 후 에디터를 비우기 위해 remount 트리거
   const [sending, setSending] = useState(false);
   const [showCc, setShowCc] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -114,6 +115,7 @@ export default function ComposeMailPage() {
       setCc([]);
       setSubject('');
       contentRef.current = '';
+      setEditorKey(k => k + 1); // 본문 에디터도 함께 비움(remount)
     } catch {
       toast.error('이메일 발송 중 오류가 발생했습니다.');
     } finally {
@@ -260,7 +262,7 @@ export default function ComposeMailPage() {
             <label className="block text-[12px] font-semibold text-[#44403c] mb-1.5">
               본문 <span className="text-red-500">*</span>
             </label>
-            <RichTextEditor onChangeRef={onContentChangeRef} />
+            <RichTextEditor key={editorKey} onChangeRef={onContentChangeRef} />
           </div>
         </div>
 

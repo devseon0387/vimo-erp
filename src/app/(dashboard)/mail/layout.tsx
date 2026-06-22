@@ -12,10 +12,15 @@ export default function MailLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const isInbox = pathname === '/mail/inbox';
 
+  // 받은편지함만 풀하이트 스플릿 뷰가 필요해 고정 높이·overflow 셸을 씌운다.
+  // 작성/보낸함/전체함은 일반 폼·목록이므로 기본 페이지 플로우로 둔다 — 고정높이+overflow-hidden
+  // 셸을 씌우면 (특히 작성 화면처럼 세로로 긴 경우) 카드 하단(발송 버튼)이 잘리거나 어긋나 보인다.
+  if (!isInbox) return <>{children}</>;
+
   // 메일 폴더 메뉴는 대시보드 슬라이드 패널(MailFolderPanel)이 담당 → 여기선 본문만(별도 칸 제거)
   return (
     <div className="md:-m-6 lg:-m-8 -m-0 md:h-[calc(100vh-56px)] md:overflow-hidden">
-      <div className={`min-w-0 h-full md:overflow-y-auto ${isInbox ? '' : 'md:p-6 lg:p-8'}`}>
+      <div className="min-w-0 h-full md:overflow-y-auto">
         {children}
       </div>
     </div>
