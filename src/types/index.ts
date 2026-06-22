@@ -56,6 +56,7 @@ export interface Project {
   completedAt?: string;
   workTypeCosts?: { [key in WorkContentType]?: { partnerCost: number; managementCost: number } }; // 작업별 비용 정보
   totalAmount?: number; // 전체 금액
+  contractId?: string; // 계약 FK (contract_id) — 1:N (한 계약에 여러 프로젝트)
 }
 
 // 회차 상태
@@ -172,6 +173,37 @@ export interface Client {
   bizType?: string; // 업태
   bizItem?: string; // 종목
   taxEmail?: string; // 세금계산서 수신 이메일
+}
+
+// 계약 상태 (6단계): draft 작성중 → sent 발송 → signed 서명 → active 진행 → completed 완료 / cancelled 취소
+export type ContractStatus = 'draft' | 'sent' | 'signed' | 'active' | 'completed' | 'cancelled';
+
+// 계약 유형: single 단건 / annual 연간 / retainer 리테이너
+export type ContractType = 'single' | 'annual' | 'retainer';
+
+// 계약 타입 — 영업 퍼널(문의→계약→프로젝트). 계약:프로젝트 = 1:N.
+export interface Contract {
+  id: string;
+  clientId: string; // 거래처 FK (client_id)
+  inquiryId?: string; // 문의 FK (inquiry_id)
+  title: string; // 계약명
+  contractType: ContractType; // 계약 유형
+  supplyAmount: number; // 공급가액
+  vatAmount: number; // 부가세
+  totalAmount: number; // 합계 금액
+  partnerPayment: number; // 파트너 지급 비용
+  managementFee: number; // 매니징 비용
+  marginRate: number; // 마진율 (%)
+  startDate?: string; // 계약 시작일
+  endDate?: string; // 계약 종료일
+  status: ContractStatus; // 계약 상태
+  contractDate?: string; // 계약일
+  signedDate?: string; // 서명일
+  paymentTerms?: string; // 결제 조건
+  managerId?: string; // 담당 매니저
+  memo?: string; // 메모
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 포트폴리오 항목 타입

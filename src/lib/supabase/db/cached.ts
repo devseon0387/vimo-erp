@@ -19,6 +19,7 @@ import {
   getProjects as _getProjects,
   getPartners as _getPartners,
   getClients as _getClients,
+  getContracts as _getContracts,
   getAllEpisodes as _getAllEpisodes,
 } from '@/lib/supabase/db';
 
@@ -26,6 +27,7 @@ import {
 export const getProjects = () => cachedFetch('projects:all', _getProjects);
 export const getPartners = () => cachedFetch('partners:all', _getPartners);
 export const getClients = () => cachedFetch('clients:all', _getClients);
+export const getContracts = () => cachedFetch('contracts:all', _getContracts);
 
 // 자주 변경 → 짧은 TTL(10s). 자기변경 즉시 반영은 쓰기 후 invalidateTable('episodes')로 보장.
 export const getAllEpisodes = () => cachedFetch('episodes:all', _getAllEpisodes, 10_000);

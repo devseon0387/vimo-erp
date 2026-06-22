@@ -206,6 +206,50 @@ export const inquiries = pgTable("inquiries", {
 	index("idx_inquiries_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
 ]);
 
+// 계약 — 영업 퍼널(문의→계약→프로젝트). 계약:프로젝트 = 1:N (projects.contract_id 가 가리킴).
+// 상태 6단계: draft·sent·signed·active·completed·cancelled / 유형: single·annual·retainer.
+// numeric default 는 문자열 '0' (운영과 1:1). timestamptz mode:string.
+export const contracts = pgTable("contracts", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	clientId: uuid("client_id").notNull(),
+	inquiryId: uuid("inquiry_id"),
+	title: text().notNull(),
+	contractType: text("contract_type").default('single').notNull(),
+	supplyAmount: numeric("supply_amount").default('0'),
+	vatAmount: numeric("vat_amount").default('0'),
+	totalAmount: numeric("total_amount").default('0'),
+	partnerPayment: numeric("partner_payment").default('0'),
+	managementFee: numeric("management_fee").default('0'),
+	marginRate: numeric("margin_rate").default('0'),
+	startDate: date("start_date"),
+	endDate: date("end_date"),
+	status: text().default('draft').notNull(),
+	contractDate: date("contract_date").default(sql`CURRENT_DATE`),
+	signedDate: date("signed_date"),
+	paymentTerms: text("payment_terms"),
+	managerId: uuid("manager_id"),
+	memo: text(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_contracts_created_at").using("btree", table.createdAt.desc().nullsLast().op("timestamptz_ops")),
+	index("idx_contracts_client_id").using("btree", table.clientId.asc().nullsLast().op("uuid_ops")),
+	index("idx_contracts_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
+	index("idx_contracts_end_date").using("btree", table.endDate.asc().nullsLast().op("date_ops")),
+	foreignKey({
+			columns: [table.clientId],
+			foreignColumns: [clients.id],
+			name: "contracts_client_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.inquiryId],
+			foreignColumns: [inquiries.id],
+			name: "contracts_inquiry_id_fkey"
+		}),
+	check("contracts_status_check", sql`status = ANY (ARRAY['draft'::text, 'sent'::text, 'signed'::text, 'active'::text, 'completed'::text, 'cancelled'::text])`),
+	check("contracts_contract_type_check", sql`contract_type = ANY (ARRAY['single'::text, 'annual'::text, 'retainer'::text])`),
+]);
+
 export const planhighSiteContent = pgTable("planhigh_site_content", {
 	id: integer().default(1).primaryKey().notNull(),
 	content: jsonb().default({}).notNull(),
@@ -488,6 +532,7 @@ export const projects = pgTable("projects", {
 	category: text(),
 	clientId: uuid("client_id"),
 	channels: text().array(),
+	contractId: uuid("contract_id"),
 }, (table) => [
 	index("idx_projects_client_id").using("btree", table.clientId.asc().nullsLast().op("uuid_ops")),
 	index("idx_projects_client_name").using("btree", table.client.asc().nullsLast().op("text_ops")),
@@ -496,6 +541,11 @@ export const projects = pgTable("projects", {
 			columns: [table.clientId],
 			foreignColumns: [clients.id],
 			name: "projects_client_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.contractId],
+			foreignColumns: [contracts.id],
+			name: "projects_contract_id_fkey"
 		}),
 ]);
 

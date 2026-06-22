@@ -15,3 +15,4 @@ export * from './feedback';
 export * from './users';
 export * from './sent-emails';
 export * from './expenses';
+export * from './contracts';

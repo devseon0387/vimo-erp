@@ -74,6 +74,7 @@ const TABLE_PREFIX: Record<string, string> = {
   partner_history: 'partner_history:',
   partner_issues:  'partner_issues:',
   clients:         'clients:',
+  contracts:       'contracts:',
   user_profiles:   'profile:',
 };
 

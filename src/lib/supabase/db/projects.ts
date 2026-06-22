@@ -49,6 +49,7 @@ function projectFromRow(row: ProjectRow): Project {
     description: row.description ?? '',
     client: row.client ?? '',
     clientId: row.clientId ?? undefined,
+    contractId: row.contractId ?? undefined,
     partnerId: row.partnerId ?? partnerIds[0] ?? '',
     partnerIds,
     managerIds: row.managerIds ?? [],
@@ -82,6 +83,7 @@ function projectToInsert(
     description: project.description,
     client: project.client,
     clientId: project.clientId ?? null,
+    contractId: project.contractId ?? null,
     partnerId: partnerIds[0] ?? project.partnerId ?? null,
     partnerIds,
     managerIds: project.managerIds ?? [],
@@ -108,6 +110,7 @@ function projectToUpdate(project: Partial<Project>): Partial<typeof projects.$in
   if (project.description !== undefined) patch.description = project.description;
   if (project.client !== undefined) patch.client = project.client;
   if (project.clientId !== undefined) patch.clientId = project.clientId ?? null;
+  if (project.contractId !== undefined) patch.contractId = project.contractId ?? null;
   if (project.partnerIds !== undefined) {
     patch.partnerIds = project.partnerIds;
     patch.partnerId = project.partnerIds[0] ?? null;
