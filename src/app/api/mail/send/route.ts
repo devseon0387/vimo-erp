@@ -14,6 +14,18 @@ import { getMyMailBoxes } from '@/lib/supabase/db/mail-addresses';
 export const runtime = 'nodejs';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_RECIPIENTS = 50; // SES 메시지당 수신자 상한
+
+// 멱등 가드 — 같은 idempotencyKey 재요청(더블클릭 / 502·네트워크 끊김 후 재시도)을 짧은 윈도 내
+// 중복 발송으로 막는다. 단일 next-start 프로세스 메모리(재시작 시 비워짐, 허용). 발송 실패 시엔 키를
+// 해제해 정상 재시도를 보장한다.
+const SEND_DEDUP_MS = 120_000;
+const recentSends = new Map<string, number>();
+function seenRecently(key: string): boolean {
+  const now = Date.now();
+  for (const [k, t] of recentSends) if (now - t > SEND_DEDUP_MS) recentSends.delete(k);
+  return recentSends.has(key);
+}
 
 /** 사용자가 보낼 수 있는 주소 목록 — 부여된 개인 주소 + 담당 공용함 (+ 대표 폴백). */
 async function senderOptionsFor(user: { id: string; email?: string | null; name?: string | null }) {
@@ -62,7 +74,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { to?: unknown; cc?: unknown; bcc?: unknown; subject?: unknown; content?: unknown; from?: unknown };
+  let body: { to?: unknown; cc?: unknown; bcc?: unknown; subject?: unknown; content?: unknown; from?: unknown; idempotencyKey?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -86,6 +98,26 @@ export async function POST(req: Request) {
   }
   if (!content.replace(/<[^>]*>/g, '').trim()) {
     return NextResponse.json({ error: '본문을 입력해주세요.' }, { status: 400 });
+  }
+
+  // to/cc/bcc 소문자 dedup + 우선순위(to > cc > bcc) 교집합 제거 — 같은 사람 중복 수신/회신 혼선 방지
+  const seenAddr = new Set<string>();
+  const dedup = (list: string[]) => {
+    const out: string[] = [];
+    for (const e of list) {
+      const k = e.toLowerCase();
+      if (!seenAddr.has(k)) { seenAddr.add(k); out.push(e); }
+    }
+    return out;
+  };
+  const toD = dedup(to);
+  const ccD = dedup(cc);
+  const bccD = dedup(bcc);
+  if (toD.length + ccD.length + bccD.length > MAX_RECIPIENTS) {
+    return NextResponse.json(
+      { error: `수신자가 너무 많습니다(최대 ${MAX_RECIPIENTS}명). 받는 사람·참조를 줄여 나눠 보내주세요.` },
+      { status: 400 },
+    );
   }
 
   // 보내는 주소 — 사용자에게 허용된 주소(부여 개인 + 담당 공용 + 폴백)만 발신 가능.
@@ -113,9 +145,19 @@ export async function POST(req: Request) {
   const replyTo = senderEmail;
   const from = senderName && senderName !== senderEmail ? `${senderName} <${senderEmail}>` : senderEmail;
 
+  // 멱등 가드 — 같은 키 재요청이면 재발송 없이 성공으로 응답(중복 발송 방지)
+  const idemKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey : '';
+  if (idemKey && seenRecently(idemKey)) {
+    return NextResponse.json({ ok: true, deduped: true });
+  }
+  if (idemKey) recentSends.set(idemKey, Date.now());
+
+  let rejected: string[] = [];
   try {
-    await sendMail({ from, to, cc, bcc, replyTo, subject, html: content });
+    const res = await sendMail({ from, to: toD, cc: ccD, bcc: bccD, replyTo, subject, html: content });
+    rejected = res.rejected;
   } catch (e) {
+    if (idemKey) recentSends.delete(idemKey); // 실패 → 키 해제해 정상 재시도 허용
     console.error('[mail/send] SES 발송 실패', e);
     return NextResponse.json(
       { error: '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.' },
@@ -128,9 +170,9 @@ export async function POST(req: Request) {
     await insertSentEmail({
       senderId: user.id,
       senderEmail,
-      to,
-      cc: cc.length > 0 ? cc : undefined,
-      bcc: bcc.length > 0 ? bcc : undefined,
+      to: toD,
+      cc: ccD.length > 0 ? ccD : undefined,
+      bcc: bccD.length > 0 ? bccD : undefined,
       subject,
       content,
     });
@@ -138,5 +180,6 @@ export async function POST(req: Request) {
     console.error('[mail/send] 발송 이력 저장 실패', e);
   }
 
-  return NextResponse.json({ ok: true });
+  // 일부 수신자가 거부되면(나머지는 발송됨) 그 목록을 함께 알려 사용자가 인지하게 한다
+  return NextResponse.json({ ok: true, rejected: rejected.length > 0 ? rejected : undefined });
 }

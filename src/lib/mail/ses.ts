@@ -63,7 +63,10 @@ export function resolveSender(user: { email?: string | null; name?: string | nul
   return { senderEmail, senderName, replyTo };
 }
 
-/** 실제 발송. 실패 시 throw (라우트가 502 처리). */
+/**
+ * 실제 발송. 모든 수신자 거부 시 throw(라우트 502). 일부만 거부되면 resolve하며
+ * accepted/rejected를 반환 — 라우트가 부분 실패를 사용자에게 알릴 수 있게 한다.
+ */
 export async function sendMail(opts: {
   from: string; // "이름 <addr>" 또는 addr
   to: string[];
@@ -73,7 +76,7 @@ export async function sendMail(opts: {
   subject: string;
   html: string;
   text?: string; // plain-text 대체본 (도달률↑). 없으면 html 에서 자동 생성.
-}): Promise<void> {
+}): Promise<{ accepted: string[]; rejected: string[] }> {
   const text =
     opts.text ??
     opts.html
@@ -82,7 +85,7 @@ export async function sendMail(opts: {
       .replace(/&nbsp;/g, ' ')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
-  await transporter().sendMail({
+  const info = await transporter().sendMail({
     from: opts.from,
     to: opts.to.join(', '),
     cc: opts.cc && opts.cc.length > 0 ? opts.cc.join(', ') : undefined,
@@ -92,4 +95,9 @@ export async function sendMail(opts: {
     html: opts.html,
     text: text || undefined,
   });
+  const norm = (arr: unknown): string[] =>
+    Array.isArray(arr)
+      ? arr.map((a) => (typeof a === 'string' ? a : (a as { address?: string })?.address || '')).filter(Boolean)
+      : [];
+  return { accepted: norm(info.accepted), rejected: norm(info.rejected) };
 }

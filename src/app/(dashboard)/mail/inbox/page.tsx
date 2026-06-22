@@ -333,10 +333,20 @@ function InboxView() {
               <EmptyState
                 icon={Mail}
                 size="compact"
-                title={!isAdmin && myBoxes.length === 0 ? '부여된 메일 주소가 없습니다' : '메일이 없습니다'}
+                title={
+                  emails.length > 0
+                    ? '검색 결과가 없습니다'
+                    : !isAdmin && myBoxes.length === 0
+                    ? '부여된 메일 주소가 없습니다'
+                    : '메일이 없습니다'
+                }
                 description={
-                  !isAdmin && myBoxes.length === 0
+                  emails.length > 0
+                    ? '검색어 또는 폴더 조건에 맞는 메일이 없습니다.'
+                    : !isAdmin && myBoxes.length === 0
                     ? '아직 부여된 메일 주소가 없습니다. 관리자에게 문의하세요.'
+                    : !isAdmin
+                    ? '받은 메일이 여기에 표시됩니다. 안 보이는 메일이 있으면 받는 주소가 디렉토리에 등록·활성화돼 있는지 관리자에게 확인하세요.'
                     : '받은 메일이 여기에 표시됩니다.'
                 }
               />

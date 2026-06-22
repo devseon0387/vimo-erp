@@ -12,6 +12,14 @@ const RichTextEditor = dynamic(() => import('./_components/RichTextEditor'), {
   loading: () => <div className="min-h-[240px] rounded-xl border border-divider bg-gray-50 animate-pulse" />,
 });
 
+// 발송 멱등키 — 같은 메일의 재시도(더블클릭·네트워크 끊김)는 같은 키로 보내 서버가 중복 발송을 막고,
+// 성공 후 새 키로 교체한다.
+function newIdemKey(): string {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default function ComposeMailPage() {
   const toast = useToast();
 
@@ -28,6 +36,7 @@ export default function ComposeMailPage() {
   const [ccInput, setCcInput] = useState('');
   const [subject, setSubject] = useState('');
   const contentRef = useRef('');
+  const idemKeyRef = useRef('');
   const [editorKey, setEditorKey] = useState(0); // 발송 후 에디터를 비우기 위해 remount 트리거
   const [sending, setSending] = useState(false);
   const [showCc, setShowCc] = useState(false);
@@ -90,6 +99,8 @@ export default function ComposeMailPage() {
     const content = contentRef.current;
     if (!content.replace(/<[^>]*>/g, '').trim()) { toast.error('본문을 입력해주세요.'); return; }
 
+    if (!idemKeyRef.current) idemKeyRef.current = newIdemKey(); // 재시도 시 같은 키 유지
+
     setSending(true);
     try {
       const res = await fetch('/api/mail/send', {
@@ -101,23 +112,44 @@ export default function ComposeMailPage() {
           subject,
           content,
           from: fromEmail || undefined,
+          idempotencyKey: idemKeyRef.current,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
+        // 502 = 한 통도 안 나감(전원 거부/전송 오류) — 재시도 안내만, 발송 추측 금지
         toast.error(data.error || '이메일 발송에 실패했습니다.');
         return;
       }
 
-      toast.success('이메일이 발송되었습니다.');
+      // deduped = 직전 동일 요청이 처리 중/완료일 수 있음(확정 성공 아님) → 폼 유지, 안내만
+      if (data.deduped) {
+        toast.success('이미 처리된 요청입니다. 보낸 메일함을 확인해주세요.');
+        return;
+      }
+
+      const rejected: string[] = Array.isArray(data.rejected) ? data.rejected : [];
+      if (rejected.length > 0) {
+        // 일부 수신자 거부(나머지는 발송됨) — 거부된 주소만 남겨 바로 재시도 가능하게(폼 전체 비우지 않음)
+        setTo(rejected);
+        setCc([]);
+        idemKeyRef.current = newIdemKey(); // 재시도는 새 메일로 취급(멱등 차단 방지)
+        toast.error(`일부 수신자에게 발송하지 못했습니다(나머지는 발송됨): ${rejected.join(', ')}. 받는 사람을 확인 후 다시 보내세요.`);
+        return;
+      }
+
+      // 완전 성공 — 폼 초기화 + 멱등키 교체(다음 메일은 새 키)
       setTo([]);
       setCc([]);
       setSubject('');
       contentRef.current = '';
       setEditorKey(k => k + 1); // 본문 에디터도 함께 비움(remount)
+      idemKeyRef.current = newIdemKey();
+      toast.success('이메일이 발송되었습니다.');
     } catch {
-      toast.error('이메일 발송 중 오류가 발생했습니다.');
+      // 네트워크 모호 — 요청이 도달했을 수도 있어 '이미 발송됐을 수 있음' 안내가 적절
+      toast.error('이메일 발송 중 오류가 발생했습니다. 이미 발송됐을 수 있으니 보낸 메일함을 확인해주세요.');
     } finally {
       setSending(false);
     }
