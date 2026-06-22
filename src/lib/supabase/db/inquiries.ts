@@ -51,24 +51,39 @@ export async function getInquiries(): Promise<Inquiry[]> {
 
 export async function updateInquiryStatus(id: string, status: InquiryStatus): Promise<boolean> {
   if (!(await currentUser())) return false;
-  await db
-    .update(inquiries)
-    .set({ status, updatedAt: new Date().toISOString() })
-    .where(eq(inquiries.id, id));
-  return true;
+  try {
+    await db
+      .update(inquiries)
+      .set({ status, updatedAt: new Date().toISOString() })
+      .where(eq(inquiries.id, id));
+    return true;
+  } catch (e) {
+    console.error('[DB] updateInquiryStatus:', e instanceof Error ? e.message : e);
+    return false;
+  }
 }
 
 export async function updateInquiryNotes(id: string, notes: string): Promise<boolean> {
   if (!(await currentUser())) return false;
-  await db
-    .update(inquiries)
-    .set({ notes, updatedAt: new Date().toISOString() })
-    .where(eq(inquiries.id, id));
-  return true;
+  try {
+    await db
+      .update(inquiries)
+      .set({ notes, updatedAt: new Date().toISOString() })
+      .where(eq(inquiries.id, id));
+    return true;
+  } catch (e) {
+    console.error('[DB] updateInquiryNotes:', e instanceof Error ? e.message : e);
+    return false;
+  }
 }
 
 export async function deleteInquiry(id: string): Promise<boolean> {
   if (!(await currentUser())) return false;
-  await db.delete(inquiries).where(eq(inquiries.id, id));
-  return true;
+  try {
+    await db.delete(inquiries).where(eq(inquiries.id, id));
+    return true;
+  } catch (e) {
+    console.error('[DB] deleteInquiry:', e instanceof Error ? e.message : e);
+    return false;
+  }
 }

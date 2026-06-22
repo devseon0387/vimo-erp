@@ -136,6 +136,16 @@ export async function insertContract(
   const u = await currentUser();
   if (!u || !(await hasErpAccess(u.id))) return null;
   try {
+    // 멱등 가드: 같은 문의로 이미 만든 계약이 있으면 중복 생성하지 않고 기존 계약 반환.
+    // (멀티탭/멀티유저 동시 전환·상태갱신 실패 후 재시도로 인한 계약 중복 방지)
+    if (contract.inquiryId) {
+      const [existing] = await db
+        .select()
+        .from(contracts)
+        .where(eq(contracts.inquiryId, contract.inquiryId))
+        .limit(1);
+      if (existing) return contractFromRow(existing);
+    }
     const [row] = await db
       .insert(contracts)
       .values(contractToInsert(contract))

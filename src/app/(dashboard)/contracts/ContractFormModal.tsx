@@ -5,13 +5,27 @@
  *  - 분배 접이식(파트너지급·관리비·마진율) · 기간 · 결제조건 · 메모
  *  - 저장 = insert/update 후 onSaved(저장된 계약) 콜백. 캐시 무효화/재조회는 호출자 책임.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Building2, ChevronRight, Coins, Calendar, FileText } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { useToast } from '@/contexts/ToastContext';
-import { insertContract, updateContract } from '@/lib/supabase/db';
+import { insertContract, updateContract, insertClient } from '@/lib/supabase/db';
 import type { Client, Contract, ContractStatus, ContractType } from '@/types';
 import { todayStr } from './contract-meta';
+
+/** 문의 → 계약 전환 시 폼을 채우는 prefill. 신규 생성에만 적용(editing 우선). */
+export interface ContractPrefill {
+  inquiryId?: string;
+  title?: string;
+  memo?: string;
+  supply?: number;
+  /** 문의 예산 원문(자유 텍스트) — 추정 공급가 검증용으로 폼에 표시 */
+  budgetText?: string;
+  /** 기존 거래처 자동매칭 결과(있으면 그 거래처 선택) */
+  matchedClientId?: string;
+  /** 매칭 거래처가 없을 때 새 거래처로 등록할 초기값 */
+  clientDraft?: { name: string; contactPerson?: string; email?: string; phone?: string };
+}
 
 const TYPE_OPTS: { value: ContractType; label: string }[] = [
   { value: 'single', label: '단건' },
@@ -32,6 +46,12 @@ const grp = (n: number) => (n ? n.toLocaleString('ko-KR') : '');
 
 interface FormState {
   clientId: string;
+  // 거래처 입력 방식: existing=드롭다운 선택 / new=새 거래처 인라인 등록(신규 계약에만)
+  clientMode: 'existing' | 'new';
+  newClientName: string;
+  newClientContact: string;
+  newClientPhone: string;
+  newClientEmail: string;
   title: string;
   contractType: ContractType;
   status: ContractStatus;
@@ -49,7 +69,9 @@ interface FormState {
 
 function blankForm(): FormState {
   return {
-    clientId: '', title: '', contractType: 'single', status: 'draft',
+    clientId: '', clientMode: 'existing',
+    newClientName: '', newClientContact: '', newClientPhone: '', newClientEmail: '',
+    title: '', contractType: 'single', status: 'draft',
     supply: '', vat: '', partnerPayment: '', managementFee: '', marginRate: '',
     startDate: '', endDate: '', paymentTerms: '', manager: '', memo: '',
   };
@@ -57,6 +79,7 @@ function blankForm(): FormState {
 
 function fromContract(c: Contract): FormState {
   return {
+    ...blankForm(),
     clientId: c.clientId,
     title: c.title,
     contractType: c.contractType,
@@ -79,6 +102,7 @@ export function ContractFormModal({
   onClose,
   clients,
   editing,
+  prefill,
   onSaved,
 }: {
   isOpen: boolean;
@@ -86,6 +110,8 @@ export function ContractFormModal({
   clients: Client[];
   /** null = 신규, Contract = 편집 */
   editing: Contract | null;
+  /** 문의 전환 등으로 신규 폼을 채울 초기값(editing이 있으면 무시) */
+  prefill?: ContractPrefill | null;
   onSaved: (saved: Contract) => void;
 }) {
   const toast = useToast();
@@ -93,20 +119,40 @@ export function ContractFormModal({
   const [vatTouched, setVatTouched] = useState(false);
   const [showDist, setShowDist] = useState(false);
   const [saving, setSaving] = useState(false);
+  // 모달이 '열리는 순간' 1회만 시드(폴링으로 prefill/clients identity가 흔들려도 입력 보존).
+  const seeded = useRef(false);
 
-  // 모달 열릴 때마다 초기화(신규/편집)
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) { seeded.current = false; return; }
+    if (seeded.current) return; // 이미 이번 오픈에서 시드함 → prefill identity 변동 무시
+    seeded.current = true;
     if (editing) {
       setForm(fromContract(editing));
       setVatTouched(true); // 기존 값 보존(자동 덮어쓰기 방지)
       setShowDist(!!(editing.partnerPayment || editing.managementFee || editing.marginRate));
+    } else if (prefill) {
+      const supplyN = prefill.supply ?? 0;
+      setForm({
+        ...blankForm(),
+        clientId: prefill.matchedClientId ?? '',
+        clientMode: prefill.matchedClientId ? 'existing' : prefill.clientDraft ? 'new' : 'existing',
+        newClientName: prefill.clientDraft?.name ?? '',
+        newClientContact: prefill.clientDraft?.contactPerson ?? '',
+        newClientPhone: prefill.clientDraft?.phone ?? '',
+        newClientEmail: prefill.clientDraft?.email ?? '',
+        title: prefill.title ?? '',
+        memo: prefill.memo ?? '',
+        supply: supplyN ? grp(supplyN) : '',
+        vat: supplyN ? grp(Math.round(supplyN * 0.1)) : '',
+      });
+      setVatTouched(false); // 공급가 수정 시 VAT 자동 재계산 허용
+      setShowDist(false);
     } else {
       setForm(blankForm());
       setVatTouched(false);
       setShowDist(false);
     }
-  }, [isOpen, editing]);
+  }, [isOpen, editing, prefill]);
 
   const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -130,33 +176,52 @@ export function ContractFormModal({
     return pp + mf;
   }, [form.partnerPayment, form.managementFee]);
 
-  const canSave = form.clientId && form.title.trim() && supply > 0 && !saving;
+  // 신규 계약에서만 새 거래처 인라인 등록 가능(편집은 기존 거래처 고정)
+  const usingNewClient = !editing && form.clientMode === 'new';
+  const clientReady = usingNewClient ? !!form.newClientName.trim() : !!form.clientId;
+  const canSave = clientReady && form.title.trim() && supply > 0 && !saving;
 
   const handleSave = async () => {
-    if (!form.clientId) { toast.error('거래처를 선택해주세요.'); return; }
+    if (!clientReady) { toast.error('거래처를 선택하거나 새로 등록해주세요.'); return; }
     if (!form.title.trim()) { toast.error('계약명을 입력해주세요.'); return; }
     setSaving(true);
-    const payload = {
-      clientId: form.clientId,
-      inquiryId: editing?.inquiryId,
-      title: form.title.trim(),
-      contractType: form.contractType,
-      supplyAmount: supply,
-      vatAmount: vat,
-      totalAmount: total,
-      partnerPayment: num(form.partnerPayment),
-      managementFee: num(form.managementFee),
-      marginRate: parseFloat(form.marginRate) || 0,
-      startDate: form.startDate || undefined,
-      endDate: form.endDate || undefined,
-      status: form.status,
-      contractDate: editing?.contractDate ?? todayStr(),
-      signedDate: editing?.signedDate,
-      paymentTerms: form.paymentTerms.trim() || undefined,
-      managerId: form.manager.trim() || undefined,
-      memo: form.memo.trim() || undefined,
-    };
     try {
+      // 1) 새 거래처 모드면 먼저 거래처 생성 → 그 id를 계약 clientId로 사용
+      let clientId = form.clientId;
+      if (usingNewClient) {
+        const createdClient = await insertClient({
+          name: form.newClientName.trim(),
+          contactPerson: form.newClientContact.trim() || undefined,
+          email: form.newClientEmail.trim() || undefined,
+          phone: form.newClientPhone.trim() || undefined,
+          status: 'active',
+        });
+        if (!createdClient) { toast.error('거래처 등록에 실패했습니다.'); setSaving(false); return; }
+        clientId = createdClient.id;
+        // 계약 insert가 실패해 재시도하더라도 같은 거래처를 재생성하지 않도록 즉시 기존 모드로 고정
+        set({ clientId: createdClient.id, clientMode: 'existing' });
+        toast.success(`거래처 "${createdClient.name}"가 등록되었습니다.`);
+      }
+      const payload = {
+        clientId,
+        inquiryId: editing ? editing.inquiryId : prefill?.inquiryId,
+        title: form.title.trim(),
+        contractType: form.contractType,
+        supplyAmount: supply,
+        vatAmount: vat,
+        totalAmount: total,
+        partnerPayment: num(form.partnerPayment),
+        managementFee: num(form.managementFee),
+        marginRate: parseFloat(form.marginRate) || 0,
+        startDate: form.startDate || undefined,
+        endDate: form.endDate || undefined,
+        status: form.status,
+        contractDate: editing?.contractDate ?? todayStr(),
+        signedDate: editing?.signedDate,
+        paymentTerms: form.paymentTerms.trim() || undefined,
+        managerId: form.manager.trim() || undefined,
+        memo: form.memo.trim() || undefined,
+      };
       if (editing) {
         const ok = await updateContract(editing.id, payload);
         if (ok) {
@@ -181,7 +246,7 @@ export function ContractFormModal({
   const moneyCls = `${inputCls} text-right tabular-nums pr-9`;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={editing ? '계약 편집' : '새 계약'} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={editing ? '계약 편집' : prefill?.inquiryId ? '문의 → 계약 전환' : '새 계약'} size="xl">
       <div className="space-y-6">
         {/* 거래처 & 기본 */}
         <section>
@@ -189,18 +254,36 @@ export function ContractFormModal({
             <Building2 size={14} className="text-ink-400" /> 거래처 &amp; 기본 정보
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>거래처<span className="text-bad-500 ml-0.5">*</span></label>
-              <select value={form.clientId} onChange={(e) => set({ clientId: e.target.value })} className={inputCls}>
-                <option value="">거래처 선택</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>담당자</label>
-              <input value={form.manager} onChange={(e) => set({ manager: e.target.value })} placeholder="담당 매니저" className={inputCls} />
+            {/* 거래처 — 기존 선택 / 신규 인라인 등록 토글 */}
+            <div className="sm:col-span-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[12px] font-semibold text-ink-600">거래처<span className="text-bad-500 ml-0.5">*</span></label>
+                {!editing && (
+                  <button
+                    type="button"
+                    onClick={() => set({ clientMode: form.clientMode === 'new' ? 'existing' : 'new' })}
+                    className="text-[12px] font-semibold text-orange-600 hover:text-orange-700"
+                  >
+                    {form.clientMode === 'new' ? '기존 거래처 선택' : '+ 새 거래처 등록'}
+                  </button>
+                )}
+              </div>
+              {usingNewClient ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border border-dashed border-orange-200 bg-orange-50/40 p-3">
+                  <input value={form.newClientName} onChange={(e) => set({ newClientName: e.target.value })} placeholder="거래처명 (회사/개인) *" className={inputCls} />
+                  <input value={form.newClientContact} onChange={(e) => set({ newClientContact: e.target.value })} placeholder="담당자" className={inputCls} />
+                  <input value={form.newClientPhone} onChange={(e) => set({ newClientPhone: e.target.value })} placeholder="연락처" className={inputCls} />
+                  <input value={form.newClientEmail} onChange={(e) => set({ newClientEmail: e.target.value })} placeholder="이메일" className={inputCls} />
+                  <p className="sm:col-span-2 text-[11px] text-ink-400">계약 저장 시 새 거래처로 함께 등록됩니다.</p>
+                </div>
+              ) : (
+                <select value={form.clientId} onChange={(e) => set({ clientId: e.target.value })} className={inputCls}>
+                  <option value="">거래처 선택</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div className="sm:col-span-2">
               <label className={labelCls}>계약명<span className="text-bad-500 ml-0.5">*</span></label>
@@ -218,6 +301,10 @@ export function ContractFormModal({
                 {STATUS_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>담당자</label>
+              <input value={form.manager} onChange={(e) => set({ manager: e.target.value })} placeholder="담당 매니저" className={inputCls} />
+            </div>
           </div>
         </section>
 
@@ -234,6 +321,9 @@ export function ContractFormModal({
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 text-[13px]">원</span>
               </div>
               <p className="text-[11px] text-ink-400 mt-1.5">회차·프로젝트 budget과 동일 단위(공급가)로 통일됩니다</p>
+              {!editing && prefill?.budgetText && (
+                <p className="text-[11px] text-orange-600 mt-1">문의 예산 원문: &ldquo;{prefill.budgetText}&rdquo; — 자동 추정값이니 확인 후 수정하세요</p>
+              )}
             </div>
             <div>
               <label className={labelCls}>부가세</label>

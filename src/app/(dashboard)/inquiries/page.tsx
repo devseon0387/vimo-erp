@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare, Mail, Clock, CheckCircle, AlertTriangle,
-  User, Briefcase, Calendar, ArrowRight, XCircle, Inbox,
+  User, Briefcase, Calendar, ArrowRight, XCircle, Inbox, FileSignature,
 } from 'lucide-react';
 import { getInquiries, updateInquiryStatus } from '@/lib/supabase/db';
 import { Inquiry, InquiryStatus } from '@/types';
@@ -52,8 +52,10 @@ function PageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromQuery = (searchParams.get('tab') as Tab) || 'new';
+  // 계약 상세의 "출처 문의"(?selected=) 딥링크는 전체 관리 탭에서 받아 상세를 연다
+  const hasSelected = !!searchParams.get('selected');
   const [activeTab, setActiveTab] = useState<Tab>(
-    ['dashboard', 'new', 'all'].includes(tabFromQuery) ? tabFromQuery : 'new'
+    hasSelected ? 'all' : ['dashboard', 'new', 'all'].includes(tabFromQuery) ? tabFromQuery : 'new'
   );
 
   // 디폴트(신규) 탭은 URL에 ?tab=new 안 박는 게 깔끔
@@ -144,8 +146,10 @@ function InquiryDashboard({ onSwitchTab }: { onSwitchTab: (t: Tab) => void }) {
     const responseRate = inquiries.length > 0
       ? Math.round((inquiries.filter(i => i.status !== 'new').length / inquiries.length) * 100)
       : 0;
+    const converted = inquiries.filter(i => i.status === 'converted').length;
+    const conversionRate = inquiries.length > 0 ? Math.round((converted / inquiries.length) * 100) : 0;
 
-    return { todayIncoming, weekIncoming, unhandled, inProgress, rejectionRate, responseRate };
+    return { todayIncoming, weekIncoming, unhandled, inProgress, converted, conversionRate, rejectionRate, responseRate };
   }, [inquiries]);
 
   // 응답 권장 — 24h 이상 미처리된 new + 진행 중
@@ -189,7 +193,7 @@ function InquiryDashboard({ onSwitchTab }: { onSwitchTab: (t: Tab) => void }) {
   return (
     <div className="space-y-5">
       {/* KPI 카드 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KPICard
           label="오늘 인입"
           value={<>{stats.todayIncoming}<span className="text-[12px] font-medium text-[var(--color-ink-400)] ml-1">건</span></>}
@@ -210,6 +214,13 @@ function InquiryDashboard({ onSwitchTab }: { onSwitchTab: (t: Tab) => void }) {
           value={<>{stats.inProgress}<span className="text-[12px] font-medium text-[var(--color-ink-400)] ml-1">건</span></>}
           tone="brand"
           icon={<Clock size={11} className="text-orange-500" />}
+        />
+        <KPICard
+          label="수주"
+          value={<>{stats.converted}<span className="text-[12px] font-medium text-[var(--color-ink-400)] ml-1">건</span></>}
+          sub={`전환율 ${stats.conversionRate}%`}
+          tone="ok"
+          icon={<FileSignature size={11} className="text-green-500" />}
         />
         <KPICard
           label="이번 주 거절율"

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare,
@@ -19,16 +20,18 @@ import {
   DollarSign,
   Calendar,
   FileText,
+  FileSignature,
   Link2,
   AlertCircle,
 } from 'lucide-react';
-import { Inquiry, InquiryStatus, PortfolioItem } from '@/types';
+import { Client, Contract, Inquiry, InquiryStatus, PortfolioItem } from '@/types';
 import {
   getInquiries,
   updateInquiryStatus,
   updateInquiryNotes,
   deleteInquiry,
   getPortfolioItems,
+  getClients,
 } from '@/lib/supabase/db';
 import { useToast } from '@/contexts/ToastContext';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
@@ -37,6 +40,35 @@ import { StatusBadge, type StatusTone } from '@/components/StatusBadge';
 import EmptyState from '@/components/EmptyState';
 import { LoadingState } from '@/components/LoadingState';
 import { SearchInput } from '@/components/SearchInput';
+import { ContractFormModal, type ContractPrefill } from '../contracts/ContractFormModal';
+
+// 문의 budget(자유 텍스트) → 공급가 숫자 추정.
+// 억/천만/천/만 단위가 있을 때만 추정한다. 단위 없는 순수 숫자('3000','5000000')는
+// 1만배 오해석 위험이 커서 추정하지 않고 비워둔다(사용자가 직접 입력). 추정값은 폼에서 원문과 함께 검증됨.
+function parseBudgetToSupply(budget?: string): number | undefined {
+  if (!budget) return undefined;
+  const s = budget.replace(/[,\s]/g, '');
+  const UNITS: [RegExp, number][] = [
+    [/([0-9]+(?:\.[0-9]+)?)억/, 1e8],
+    [/([0-9]+(?:\.[0-9]+)?)천만/, 1e7],
+    [/([0-9]+(?:\.[0-9]+)?)천(?!만)/, 1e3],
+    [/([0-9]+(?:\.[0-9]+)?)만/, 1e4],
+  ];
+  let total = 0;
+  let matched = false;
+  let rest = s;
+  for (const [re, mul] of UNITS) {
+    const m = rest.match(re);
+    if (m) {
+      total += parseFloat(m[1]) * mul;
+      matched = true;
+      rest = rest.replace(m[0], '');
+    }
+  }
+  return matched && total > 0 ? Math.round(total) : undefined;
+}
+
+const digitsOnly = (s?: string) => (s || '').replace(/[^0-9]/g, '');
 
 type FilterStatus = 'all' | InquiryStatus;
 
@@ -44,7 +76,8 @@ const STATUS_CONFIG: Record<InquiryStatus, { label: string; tone: StatusTone; do
   new: { label: '새 문의', tone: 'info', dotColor: 'bg-blue-500' },
   contacted: { label: '연락 완료', tone: 'info', dotColor: 'bg-blue-500' },
   in_progress: { label: '진행 중', tone: 'brand', dotColor: 'bg-orange-500' },
-  completed: { label: '완료', tone: 'ok', dotColor: 'bg-green-500' },
+  converted: { label: '수주', tone: 'ok', dotColor: 'bg-green-500' },
+  completed: { label: '완료', tone: 'neutral', dotColor: 'bg-ink-400' },
   rejected: { label: '거절', tone: 'danger', dotColor: 'bg-red-500' },
 };
 
@@ -52,14 +85,18 @@ const STATUS_OPTIONS: { value: InquiryStatus; label: string }[] = [
   { value: 'new', label: '새 문의' },
   { value: 'contacted', label: '연락 완료' },
   { value: 'in_progress', label: '진행 중' },
+  { value: 'converted', label: '수주' },
   { value: 'completed', label: '완료' },
   { value: 'rejected', label: '거절' },
 ];
 
 export default function InquiryManageView() {
   const toast = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -69,6 +106,7 @@ export default function InquiryManageView() {
   // 상세 모달 상태
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isConvertOpen, setIsConvertOpen] = useState(false);
   const [editNotes, setEditNotes] = useState('');
   const [editStatus, setEditStatus] = useState<InquiryStatus>('new');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -81,9 +119,10 @@ export default function InquiryManageView() {
   const loadData = useCallback(async () => {
     try {
       setLoadError(false);
-      const [items, portfolio] = await Promise.all([getInquiries(), getPortfolioItems()]);
+      const [items, portfolio, cls] = await Promise.all([getInquiries(), getPortfolioItems(), getClients()]);
       setInquiries(items);
       setPortfolioItems(portfolio);
+      setClients(cls);
     } catch {
       setLoadError(true);
     } finally {
@@ -154,14 +193,71 @@ export default function InquiryManageView() {
     return true;
   });
 
-  const openDetail = (inquiry: Inquiry) => {
+  const openDetail = useCallback((inquiry: Inquiry) => {
     setSelectedInquiry(inquiry);
     setEditNotes(inquiry.notes || '');
     setEditStatus(inquiry.status);
     setShowDeleteConfirm(false);
     setIsStatusDropdownOpen(false);
+    setIsConvertOpen(false);
     setIsDetailModalOpen(true);
-  };
+  }, []);
+
+  // 계약 상세의 "출처 문의" 링크(/inquiries?selected=id) 수신 → 해당 문의 상세 자동 오픈
+  const selectedParam = searchParams.get('selected');
+  const handledDeepLink = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedParam || loading) return;
+    if (handledDeepLink.current === selectedParam) return;
+    handledDeepLink.current = selectedParam;
+    const target = inquiries.find((i) => i.id === selectedParam);
+    if (target) openDetail(target);
+    else toast.error('연결된 문의를 찾을 수 없습니다 (삭제되었을 수 있습니다).');
+    router.replace('/inquiries?tab=all', { scroll: false });
+  }, [selectedParam, loading, inquiries, openDetail, router, toast]);
+
+  // 문의 → 계약 전환 prefill: 거래처 자동매칭(연락처/이메일/이름) + budget 추정
+  const convertPrefill = useMemo<ContractPrefill | null>(() => {
+    if (!selectedInquiry) return null;
+    const iq = selectedInquiry;
+    const iqPhone = digitsOnly(iq.phone);
+    const iqEmail = (iq.email || '').trim().toLowerCase();
+    // 강한 식별자(연락처 > 이메일)만 자동매칭. 이름 단독 일치는 동명이인 오매칭 위험이 커서 제외
+    // (매칭 없으면 새 거래처 등록 모드로 열리고, 기존 거래처 선택도 드롭다운에서 가능).
+    const matched =
+      (iqPhone ? clients.find((c) => digitsOnly(c.phone) === iqPhone) : undefined) ||
+      (iqEmail ? clients.find((c) => (c.email || '').trim().toLowerCase() === iqEmail) : undefined);
+    return {
+      inquiryId: iq.id,
+      title: iq.projectType || '',
+      memo: iq.message,
+      supply: parseBudgetToSupply(iq.budget),
+      budgetText: iq.budget,
+      matchedClientId: matched?.id,
+      clientDraft: matched
+        ? undefined
+        : { name: iq.name, contactPerson: iq.name, email: iq.email, phone: iq.phone },
+    };
+  }, [selectedInquiry, clients]);
+
+  const handleConverted = useCallback(async (saved: Contract) => {
+    const sourceId = selectedInquiry?.id;
+    setIsConvertOpen(false);
+    setIsDetailModalOpen(false);
+    setSelectedInquiry(null);
+    let statusOk = true;
+    if (sourceId) {
+      statusOk = await updateInquiryStatus(sourceId, 'converted').catch(() => false);
+      if (statusOk) {
+        setInquiries((items) =>
+          items.map((i) => (i.id === sourceId ? { ...i, status: 'converted', updatedAt: new Date().toISOString() } : i))
+        );
+      }
+    }
+    if (statusOk) toast.success('계약으로 전환되었습니다.');
+    else toast.error('계약은 생성됐지만 문의 상태 갱신에 실패했습니다. 문의 상태를 수동으로 확인해주세요.');
+    router.push(`/contracts/${saved.id}`);
+  }, [selectedInquiry, toast, router]);
 
   const handleStatusChange = async (newStatus: InquiryStatus) => {
     if (!selectedInquiry) return;
@@ -256,6 +352,7 @@ export default function InquiryManageView() {
               { key: 'new', label: '새 문의' },
               { key: 'contacted', label: '연락 완료' },
               { key: 'in_progress', label: '진행 중' },
+              { key: 'converted', label: '수주' },
               { key: 'completed', label: '완료' },
               { key: 'rejected', label: '거절' },
             ]}
@@ -666,18 +763,40 @@ export default function InquiryManageView() {
                     </button>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="px-4 py-2 text-[#44403c] hover:bg-[var(--color-ink-100)] rounded-lg transition-colors text-sm"
-                >
-                  닫기
-                </button>
+                <div className="flex items-center gap-2">
+                  {selectedInquiry.status !== 'converted' && selectedInquiry.status !== 'rejected' && (
+                    <button
+                      type="button"
+                      onClick={() => { setIsDetailModalOpen(false); setIsConvertOpen(true); }}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-bold"
+                    >
+                      <FileSignature size={14} />
+                      계약으로 전환
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsDetailModalOpen(false)}
+                    className="px-4 py-2 text-[#44403c] hover:bg-[var(--color-ink-100)] rounded-lg transition-colors text-sm"
+                  >
+                    닫기
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* 문의 → 계약 전환 모달 (계약 폼 prefill) */}
+      <ContractFormModal
+        isOpen={isConvertOpen}
+        onClose={() => setIsConvertOpen(false)}
+        clients={clients}
+        editing={null}
+        prefill={convertPrefill}
+        onSaved={handleConverted}
+      />
 
       {/* 영상 재생 모달 */}
       <AnimatePresence>

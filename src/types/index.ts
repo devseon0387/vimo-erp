@@ -223,8 +223,8 @@ export interface PortfolioItem {
   updatedAt: string;
 }
 
-// 문의 상태
-export type InquiryStatus = 'new' | 'contacted' | 'in_progress' | 'completed' | 'rejected';
+// 문의 상태 — converted = 수주(계약으로 전환 완료, 영업 퍼널 종착)
+export type InquiryStatus = 'new' | 'contacted' | 'in_progress' | 'converted' | 'completed' | 'rejected';
 
 // 문의 타입
 export interface Inquiry {
