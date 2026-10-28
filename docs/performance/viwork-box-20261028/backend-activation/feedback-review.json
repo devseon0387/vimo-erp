@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-28T11:11:32.552002+00:00",
+  "project": "vibox",
+  "domain": "code",
+  "purpose": "release",
+  "selector": "legacy; V2 unavailable",
+  "rules": [
+    {
+      "id": "FB-20261013030654372-6CC47B",
+      "status": "N/A",
+      "evidence": "No Google project/API/OAuth settings were changed."
+    },
+    {
+      "id": "FB-20261013013323446-37AFA1",
+      "status": "PASS",
+      "evidence": "Fresh Main source/build/env/dependency hashes and unit state/config unchanged; public Main health200 before/after. Real user Main login was not run and is not claimed."
+    },
+    {
+      "id": "FB-20261011192023664-8F0BCB",
+      "status": "PASS",
+      "evidence": "Fresh inspect matched exact988-file Beta baseline. Candidate source/build matched reviewed manifest and successful378-test artifact before/after activation. Same2Caddy action identifiers mapped; otherconfigbytes preserved."
+    },
+    {
+      "id": "FB-20260905083709320-46A233",
+      "status": "N/A",
+      "evidence": "No HTML artifact or user preview was delivered; backend deployment only."
+    },
+    {
+      "id": "BASE-CODE-001",
+      "status": "PASS",
+      "evidence": "Only5frozenBoxsourcefiles(3runtime+2tests),compiled.next and2CaddyactionIDs applied. Frontuserhold preserved."
+    },
+    {
+      "id": "BASE-CODE-002",
+      "status": "PASS",
+      "evidence": "Existing378Linux tests+26operator mocks retained; current inspect/prepare/activate/post-snapshot/public checks passed. No unperformed live rollback or real-account/device test promoted."
+    },
+    {
+      "id": "BASE-GENERAL-001",
+      "status": "PASS",
+      "evidence": "All4active+3baseline legacy rules judged; V2 diagnostics unavailable."
+    }
+  ]
+}

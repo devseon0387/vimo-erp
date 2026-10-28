@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-10-28T11:13:21.277486+00:00",
+  "reviewer": "/root/performance_review",
+  "role": "independent read-only deployment receipt reviewer",
+  "status": "PASS",
+  "verdict": "PASS_BACKEND_ONLY_DEPLOYMENT_RECEIPT_AUDIT",
+  "openP1": 0,
+  "openP2": 0,
+  "scope": {
+    "project": "vibox",
+    "target": "CT112 /opt/vibox-beta vibox-beta.service:4201",
+    "release": "20261028-box-perf-r1",
+    "userInstruction": "준비한 프런트는 아직 건들지말고 백엔드만 진행해 봐",
+    "backendDeploymentAuthorized": true,
+    "frontendHold": true,
+    "frontendModificationAuthorized": false,
+    "candidateSourceFiles": 988,
+    "allowedSourceChanges": [
+      "__tests__/dashboard-loading-queries.test.ts",
+      "__tests__/team-box-access.test.ts",
+      "lib/dashboard/queries.ts",
+      "lib/team-boxes/access.ts",
+      "lib/vi-gateway/navigation.ts"
+    ],
+    "allowedCaddyActions": [
+      {
+        "exportedName": "logoutAction",
+        "filename": "app/login/actions.ts",
+        "new": "00fbdce235961cef5f8b5ceefcaba3a7100f929a1a",
+        "old": "008d91334b3b94136973f4d459b3dec68bfded4524"
+      },
+      {
+        "exportedName": "validateSignupAction",
+        "filename": "app/signup/actions.ts",
+        "new": "604daa9c83f5b682c99e4ec10019ab803197e45470",
+        "old": "60e17ba445fa4de6c48f586d60d6c5e980655575fb"
+      }
+    ],
+    "reviewerRemoteCalls": 0,
+    "reviewerTestExecutionsThisTurn": 0,
+    "reviewerProductOrFrontendChanges": 0,
+    "onlyFileWrittenByReviewer": "/Users/vimo/Desktop/Dev/video-moment/_docs/qa/viwork-box-performance-2026-10-28/backend-activation-20261028T110350Z/independent-review.json"
+  },
+  "operatorSha256": "24c760e9cc2d2870b6a5f4602b5754a639188d9a513af8a18ea6ce1feb075d44",
+  "intentSha256": "8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57",
+  "uploaderSha256": "5d686960ea3414b6c1caa7ca1124b9110a2488a8af582fb977a216b9c0c67279",
+  "priorIndependentOperatorReviewSha256": "d83d840dbf402a6cbe332efa524a2765fb480b6f655baab2e2177770bc7024bc",
+  "freshExecution": {
+    "connectionAt": "2026-10-28T11:04:37.274684+00:00",
+    "authenticated": true,
+    "originalBaselineBuild": "WPoM-LMBBr3AOiI00BlfI",
+    "deployedBuild": "-5ciigDEj7n9M4ZIwVSHg",
+    "inspectStatus": "BASELINE_AND_INPUTS_VERIFIED",
+    "prepareStatus": "PREPARED",
+    "activationStatus": "ACTIVE",
+    "activationCompletedAt": "2026-10-28T11:07:16.870280+00:00",
+    "allThreeCommandsExitCode": 0,
+    "allThreeCommandsStderrEmpty": true,
+    "originalReusedObservationWasRevalidatedByFreshInspectAndPrepare": true
+  },
+  "independentlyCheckedEqualities": {
+    "activationHashBoundByPostVerification": true,
+    "freshAfterEqualsActivationAfter": true,
+    "preparedBeforeEqualsPinnedIntentObservation": true,
+    "deployed988SourceDigestEqualsVerifiedLinuxManifest": true,
+    "sourceDigest": "1301950e58467d65c8b219d78afe9447e92596ae9d7d6fca7b49c69aa3c8b8a2",
+    "candidateBuildAndNextDigestMatchArtifactIntentAndPrepared": true,
+    "nextDigest": "6f2fcca91b45e79312e6e1ef9da2928cf0189f55b2390fe663a87031dc80f342",
+    "sourceReplacementEventsExactlyAllowedFive": true,
+    "mainSourceBuildEnvDependenciesAndNextDigestExactlyPreserved": true,
+    "betaEnvironmentFileBytesModesOwnersAndDependenciesExactlyPreserved": true,
+    "filesVerificationKeyExactlyPreserved": true,
+    "allUnitDefinitionsExactlyPreserved": true,
+    "mainCaddyCloudflaredProcessStatesExactlyPreserved": true,
+    "betaOnlyPidAndStartTimestampChangedAndActive": true,
+    "caddyMainEnvironmentAndAllMetadataExactlyPreserved": true,
+    "betaCaddyFragmentEqualsOnlyExpectedTwoActionReplacementHash": true,
+    "runtimeAuthenticationReadOnlyGatewayStreamAndBasePathBoundariesExactlyPreserved": true,
+    "publicBeforeAfterResponsesExactlyEqual": 3
+  },
+  "runtimeBoundaries": {
+    "directFilesWrite": 401,
+    "directGateway": 401,
+    "directHealth": 200,
+    "filesWrite": 403,
+    "publicInternalGet": 403,
+    "publicInternalHead": 403,
+    "publicInternalPost": 403,
+    "root": {
+      "cookiePaths": [],
+      "csp": true,
+      "locationPath": "/box/login",
+      "status": 307
+    },
+    "sso": {
+      "cookiePaths": [
+        "/box"
+      ],
+      "csp": false,
+      "locationPath": "/api/sso/authorize",
+      "status": 303
+    },
+    "streamLookup": 401,
+    "streamWebhook": 401,
+    "unprefixedHealth": 404
+  },
+  "mainPerformedVerificationAssertions": {
+    "receipt": "post-deploy-verification.json",
+    "previousStaticFilesPreserved": 213,
+    "rollbackBackupsVerified": true,
+    "caddyOnlyTwoExpectedActions": true,
+    "freeBytes": 65173590016,
+    "freeGiB": 60.7,
+    "note": "Main performed remote file-level old-static and rollback-backup checks; reviewer verified the provided receipt binding and did not repeat remote inspection."
+  },
+  "publicObservations": {
+    "beforeAt": "2026-10-28T11:06:26.812Z",
+    "afterAt": "2026-10-28T11:08:33.516Z",
+    "results": [
+      {
+        "url": "https://viwork.cloud/api/vi/health",
+        "status": 200,
+        "locationPath": null,
+        "deployment": "20261028-front-perf-r2",
+        "matchesBefore": true
+      },
+      {
+        "url": "https://box.viwork.cloud/",
+        "status": 307,
+        "locationPath": "/files/home",
+        "matchesBefore": true
+      },
+      {
+        "url": "https://vibox.cloud/api/health",
+        "status": 200,
+        "locationPath": null,
+        "matchesBefore": true
+      }
+    ],
+    "frontendHoldEvidence": "Provided public health response remained deployment20261028-front-perf-r2. No frontend operation was authorized or performed by this reviewer."
+  },
+  "existingTestsReused": {
+    "backendLinux": {
+      "tests": 378,
+      "files": 29,
+      "status": "PASS",
+      "notRerun": true
+    },
+    "operatorMocks": {
+      "tests": 26,
+      "status": "PASS",
+      "notRerun": true
+    },
+    "reason": "Existing evidence remains bound to unchanged product source, operator, intent and uploader. Test executions are not added again as new unique tests."
+  },
+  "evidenceSha256": {
+    "authorization-and-preflight.json": "0a21be59a3303cd0bb36e876af1485e154a1699f76ba4bb5527485298e45f09a",
+    "connection.json": "875c70a966b10af07a27f76c8acae13a0e69eb30ad188cf724675f1b6376c5a0",
+    "inspect-command.json": "a0f3788468a21ad649c4e1e164a4a3c685313af261476e45bb6b1a657a33b346",
+    "prepare-command.json": "7fc1c89a6fe6ef1cea0fb2c1288f321ee786f9aa7e858c0c7dfdcf939bb3ad9a",
+    "activate-command.json": "5ccb05da4925d5897a5665f865432ceb11e7118b4d2db9889e42393453246f9b",
+    "ct112-prepared.json": "d9202e4291b04a8ddd161dfa0e3e1b4ada970f941c4561fbc78dbc943b992eeb",
+    "ct112-prepare-state.json": "046135a1e4377d6bdcec4017e9de3bf42e9342de59c1441db6b4bef7b19529c5",
+    "preparation-download.json": "16286a9b04c779968a053d68488e35cae133fbd0a7c71fce53f8948fc34abae3",
+    "ct112-activation.json": "54e963d0e21d3dbee2732734e6b99a8eb491b95f981a101bc4674b1120053c3f",
+    "ct112-after.json": "614aba1fa4ed6337882ebd0a1f901e39f726094549532e1b0393ff561c84b436",
+    "post-deploy-verification.json": "20c0851017557379c49e911286cea0a02fa837840587fc8c0519d3b437e883c9",
+    "public-before.json": "3e932cc15936456dafd0afdfb7abe8fe99b5c6835670ca1e06c251fe84efcdc3",
+    "public-after.json": "49b6b5037cf4786d03be2d326c754253ca2f28d131d4442740208bdaa565579d"
+  },
+  "priorEvidenceSha256": {
+    "linux-backend/manifest.json": "dd254c78889450ef9ea0ea64b11d0ba5f328fb0cb19de9142c8c250577a5bd25",
+    "linux-backend/result/checks.json": "a0dcbd6c7ff68dd6bc430d159f73c722d70fa8cd58e36a3877da62b0ad157718",
+    "linux-backend/result/artifact.json": "822dd8dd02f5c5ba507a43ea21e02b9d0c1c1903abd72f4580439b9f6807d5c0",
+    "linux-backend/result/build-complete.json": "be3b3df1fc70f311453c97e0f8a31c9ccd6ec974eff708b0398ec0b54952859f"
+  },
+  "feedbackReview": {
+    "project": "vibox",
+    "domain": "code",
+    "purpose": "release",
+    "selector": "legacy effective; V2 diagnostics unavailable",
+    "preflightAndCompletionReviewExecuted": true,
+    "rules": {
+      "BASE-CODE-001": {
+        "status": "PASS",
+        "evidence": "Pinned backend-only authorization, allowed5source events,988source digest and expected2action Caddy hash; protected fields compared before/after."
+      },
+      "BASE-CODE-002": {
+        "status": "PASS",
+        "evidence": "Fresh inspect/prepare/activate exit0,ACTIVE/fresh-after equality, runtime boundaries preserved, existing378+26 evidence reused without rerun; operational rollback and real-account QA remain not run."
+      },
+      "BASE-GENERAL-001": {
+        "status": "PASS",
+        "evidence": "All four effective active feedback rules evaluated below with actual receipt scope and not-run limits."
+      },
+      "FB-20261013030654372-6CC47B": {
+        "status": "N/A",
+        "evidence": "No Google Cloud project, account, API or OAuth configuration change in this backend-only operation."
+      },
+      "FB-20261013013323446-37AFA1": {
+        "status": "PASS",
+        "scope": "Measured Main preservation only",
+        "evidence": "Main source/build/env/deps/next and service PID/start/config unchanged; public vibox.cloud/api/health stayed200. Real-account Main central login, login error-log and browser acceptance were not run and are not claimed."
+      },
+      "FB-20261011192023664-8F0BCB": {
+        "status": "PASS",
+        "scope": "Approved latest Beta baseline and backend deployment binding",
+        "evidence": "Fresh WPoM baseline matched pinned988source inventory; candidate manifest changed only approved5files; deployed build and source digest match; public Box redirect unchanged. Actual signed user navigation/browser QA not run."
+      },
+      "FB-20260905083709320-46A233": {
+        "status": "N/A",
+        "evidence": "No HTML deliverable or user preview window in this receipt review."
+      }
+    }
+  },
+  "notRun": [
+    "Real-account login,central-session reuse and full browser workflow QA",
+    "Production signed user navigation and performance measurement after this backend-only deployment",
+    "Galaxy/One UI and Safari physical-device QA",
+    "Operational rollback or real systemd/Caddy failure injection",
+    "New source tests or operator mocks in this receipt-review turn",
+    "Claude or Fable review"
+  ],
+  "limitations": [
+    "This is a receipt and hash-chain audit; reviewer performed no remote calls, uploads, service actions, application edits or frontend work.",
+    "Main-provided file-level static/backup verification assertions were not independently repeated remotely.",
+    "Frontend r3 remains held; earlier frontend candidate A/B gains must not be described as live results of this backend-only deployment.",
+    "No full real-account or device acceptance is inferred from anonymous health and boundary checks."
+  ]
+}

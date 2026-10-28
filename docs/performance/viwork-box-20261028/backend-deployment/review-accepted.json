@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-10-28T10:32:07.050972+00:00",
+  "reportedBy": "/root/performance_review",
+  "status": "PASS",
+  "readOnly": true,
+  "operatorSha256": "24c760e9cc2d2870b6a5f4602b5754a639188d9a513af8a18ea6ce1feb075d44",
+  "intentSha256": "8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57",
+  "reviewerTests": {
+    "passed": 26,
+    "failed": 0
+  },
+  "independentReproductions": [
+    "Foreign live build rejects before Beta stop; active remains true",
+    "Real expanded bytes schema prepares successfully while compressed size differs",
+    "Concurrent foreign Caddy remains unchanged; no reload; own Beta restores active with findings"
+  ],
+  "observationReuseConfirmed": true,
+  "currentSnapshotGuardConfirmed": true,
+  "remoteAccessByReviewer": false,
+  "sourceChangesByReviewer": false,
+  "operationalDeploymentVerified": false
+}

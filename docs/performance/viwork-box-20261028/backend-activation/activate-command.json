@@ -1,0 +1,10 @@
+{
+  "startedAt": "2026-10-28T11:07:06.017779+00:00",
+  "finishedAt": "2026-10-28T11:07:16.870280+00:00",
+  "action": "activate",
+  "exitCode": 0,
+  "stdout": "{\"action\": \"activate\", \"release\": \"20261028-box-perf-r1\", \"status\": \"ACTIVE\"}\n",
+  "stderr": "",
+  "scope": "Vibox Beta backend only",
+  "frontendModificationAuthorized": false
+}

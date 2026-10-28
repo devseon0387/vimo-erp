@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-28T11:11:32.551533+00:00",
+  "changes": [
+    {
+      "path": "/beta/buildId",
+      "before": "WPoM-LMBBr3AOiI00BlfI",
+      "after": "-5ciigDEj7n9M4ZIwVSHg"
+    },
+    {
+      "path": "/beta/nextDigest",
+      "before": "d6086fc7acad285e266d797475daca52cb76cbd23a24670806973735a139c5ea",
+      "after": "6f2fcca91b45e79312e6e1ef9da2928cf0189f55b2390fe663a87031dc80f342"
+    },
+    {
+      "path": "/beta/sourceDigest",
+      "before": "466cd87db7ef0777d078faa21d2347b9a2dd6934d7e9d277f89ed4dfff8e04f5",
+      "after": "1301950e58467d65c8b219d78afe9447e92596ae9d7d6fca7b49c69aa3c8b8a2"
+    },
+    {
+      "path": "/caddy//etc/caddy/vibox-beta.caddy",
+      "before": "1dcaba5c5d83410689b553f14dc5a7cb6c141f71a535f42030d6a4c7936db43f",
+      "after": "2b8c547d6ae7dc361d9f5b44beb16a336b9a70ef8449ecabc249d1082716623c"
+    },
+    {
+      "path": "/units/vibox-beta.service/state",
+      "before": "MainPID=4170636\nExecMainStartTimestampMonotonic=10583479784642\nActiveState=active",
+      "after": "MainPID=4178196\nExecMainStartTimestampMonotonic=10611287607069\nActiveState=active"
+    }
+  ]
+}

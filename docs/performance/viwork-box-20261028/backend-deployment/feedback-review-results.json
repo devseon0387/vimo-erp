@@ -1,0 +1,44 @@
+{
+  "effectiveSelector": "legacy",
+  "v2Diagnostics": "unavailable",
+  "domain": "code",
+  "taskKind": "release-ops",
+  "purpose": "release",
+  "rules": [
+    {
+      "id": "FB-20261013030654372-6CC47B",
+      "result": "N/A",
+      "evidence": "No Google account/project/API/OAuth settings were created or modified."
+    },
+    {
+      "id": "FB-20261013013323446-37AFA1",
+      "result": "N/A",
+      "evidence": "No deployment/service mutation executed. Recorded r2 Main active/source/build/env/dependencies remain read-only evidence, not current runtime/login approval. Operator mocks forbid Main stop and preserve Main drift."
+    },
+    {
+      "id": "FB-20261011192023664-8F0BCB",
+      "result": "N/A",
+      "evidence": "No domain migration executed. Build manifest uses captured latest Beta988 source, and candidate current988 source hashes match."
+    },
+    {
+      "id": "FB-20260905083709320-46A233",
+      "result": "N/A",
+      "evidence": "No HTML output or browser preview delivered."
+    },
+    {
+      "id": "BASE-CODE-001",
+      "result": "PASS",
+      "evidence": "Current work writes only deployment-box/; frozen candidate988 hashes still match the verified build manifest."
+    },
+    {
+      "id": "BASE-CODE-002",
+      "result": "PASS",
+      "evidence": "26 local filesystem/command-fake tests pass, including rollback, foreign changes, archive schema/path checks. Operational execution remains not run."
+    },
+    {
+      "id": "BASE-GENERAL-001",
+      "result": "PASS",
+      "evidence": "Every effective legacy rule mapped to actual scope and evidence; old observations explicitly reused, not promoted to fresh."
+    }
+  ]
+}

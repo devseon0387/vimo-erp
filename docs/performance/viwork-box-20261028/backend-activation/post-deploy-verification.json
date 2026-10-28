@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-28T11:08:34.810851+00:00",
+  "activationSha256": "54e963d0e21d3dbee2732734e6b99a8eb491b95f981a101bc4674b1120053c3f",
+  "logHashes": {
+    "caddy-validation.prepare.log": {
+      "bytes": 1509,
+      "sha256": "4e62236155b1a89d24c41a7701b72afd4de1130ac821dbf3dfe4e062ab9bd7c2"
+    }
+  },
+  "verification": {
+    "betaEnvDependenciesKeyUnitPreserved": true,
+    "caddyOnlyTwoExpectedActions": true,
+    "candidateSourceAndBuildMatch": true,
+    "freeBytes": 65173590016,
+    "mainPreserved": true,
+    "pass": true,
+    "previousStaticPreserved": 213,
+    "rollbackBackupsVerified": true
+  }
+}

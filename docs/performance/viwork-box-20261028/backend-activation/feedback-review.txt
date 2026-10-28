@@ -1,0 +1,22 @@
+feedback-review: project=vibox domain=code
+selector: effective=legacy v2-diagnostics=unavailable
+purpose: release — 정식 배포: 해당 채널의 필수 검사와 승인 조건을 충족한다.
+completion: 요청 작업 완료와 전체 검증 수준은 별개다. not-run만으로 후속 검사를 만들거나 PASS로 바꾸지 않는다.
+authority: current explicit user instruction > project AGENTS.md or project contract > active project feedback rule > active global feedback rule > candidate feedback as non-blocking context
+user-review-checks: 4
+- [ ] [FB-20261013030654372-6CC47B] 최종 설정 대상 프로젝트 소유 컨텍스트와 활성 Google 계정이 승인 개발 계정에 일치하는지 확인한다. 공개 증거에는 계정 문자열 대신 일치 여부와 비공개 정본 포인터만 남긴다.
+  rule: 비박스 Google Cloud 프로젝트 생성·API·OAuth 개발 설정은 사용자가 최종 지정한 개발 전용 Google 계정으로만 수행한다. 정확한 계정 정본은 private google-account-policy.json을 읽으며 업무용 계정이나 정정 전 오기를 사용하지 않는다.
+- [ ] [FB-20261013013323446-37AFA1] 실제 메인 서비스 상태, 중앙 인증 연결 응답, 로그인 오류 기록을 대조한다. 운영 복구와 실제 사용자 브라우저 확인이 미완료이면 이를 명시한다.
+  rule: box.viwork.cloud 베타와 별개로 기존 vibox.cloud 메인 서비스와 로그인 접근을 계속 유지한다.
+- [ ] [FB-20261011192023664-8F0BCB] 새 도메인의 실행 대상, 배포 소스 해시, 베타 화면과 서비스 간 이동을 확인하고 기존 도메인의 유지 상태를 검증한다.
+  rule: box.viwork.cloud 서비스는 사용자가 승인하며 다듬어 온 최신 베타 화면과 기능을 기준으로 이관한다.
+- [ ] [FB-20260905083709320-46A233] HTML 전달 시 Google Chrome을 지정한 열기 동작의 성공 여부를 확인한다. 이번 computer-fleet-overview.html은 open -a Google Chrome 지정 실행으로 종료 코드 0을 확인했다.
+  rule: 앞으로 HTML 결과물을 사용자에게 보여줄 때는 항상 Google Chrome에서 연다.
+baseline-review-checks: 3
+- [ ] [BASE-CODE-001] 요청 수용 기준과 실제 diff를 대조하고 범위 밖 변경을 확인한다.
+  evidence: 관련 파일·심볼·diff
+- [ ] [BASE-CODE-002] 영향받은 동작의 회귀·오류 경로·안전 경계와 테스트 결과를 확인한다.
+  evidence: 실행한 테스트와 남은 미검증 항목
+- [ ] [BASE-GENERAL-001] 관련 활성 피드백 규칙을 실제 결과물에 대조하고 각 판정 근거를 남긴다.
+  evidence: 규칙 ID별 PASS·FAIL·N/A와 근거
+review-contract: 각 항목을 실제 결과물로 검사해 PASS·FAIL·N/A와 근거를 남기며, 의도만으로 PASS 처리하지 않는다.

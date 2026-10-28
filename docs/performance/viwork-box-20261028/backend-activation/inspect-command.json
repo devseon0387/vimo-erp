@@ -1,0 +1,8 @@
+{
+  "startedAt": "2026-10-28T11:05:01.409912+00:00",
+  "finishedAt": "2026-10-28T11:05:06.176969+00:00",
+  "action": "inspect",
+  "exitCode": 0,
+  "stdout": "{\"action\": \"inspect\", \"release\": \"20261028-box-perf-r1\", \"status\": \"BASELINE_AND_INPUTS_VERIFIED\"}\n",
+  "stderr": ""
+}

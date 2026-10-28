@@ -1,0 +1,8 @@
+{
+  "startedAt": "2026-10-28T11:05:40.919698+00:00",
+  "finishedAt": "2026-10-28T11:05:51.328237+00:00",
+  "action": "prepare",
+  "exitCode": 0,
+  "stdout": "{\"action\": \"prepare\", \"release\": \"20261028-box-perf-r1\", \"status\": \"PREPARED\"}\n",
+  "stderr": ""
+}

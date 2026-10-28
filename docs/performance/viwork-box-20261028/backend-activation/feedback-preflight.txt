@@ -1,0 +1,15 @@
+feedback-preflight: project=vibox domain=code
+selector: effective=legacy v2-diagnostics=unavailable
+purpose: release — 정식 배포: 해당 채널의 필수 검사와 승인 조건을 충족한다.
+completion: 요청 작업 완료와 전체 검증 수준은 별개다. not-run만으로 후속 검사를 만들거나 PASS로 바꾸지 않는다.
+authority: current explicit user instruction > project AGENTS.md or project contract > active project feedback rule > active global feedback rule > candidate feedback as non-blocking context
+active-rules: 4
+- [FB-20261013030654372-6CC47B] [major] 비박스 Google Cloud 프로젝트 생성·API·OAuth 개발 설정은 사용자가 최종 지정한 개발 전용 Google 계정으로만 수행한다. 정확한 계정 정본은 private google-account-policy.json을 읽으며 업무용 계정이나 정정 전 오기를 사용하지 않는다.
+  prevent: 변경 전 콘솔 계정 메뉴에서 승인 개발 계정과 정확히 일치하는지 확인하고, 불일치하면 계정 전환을 완료하기 전 생성·저장을 실행하지 않는다. 계정 정본은 /Users/vimo/.local/share/vibox-cloud-activation-20261013/google-account-policy.json에 비공개 보관한다.
+- [FB-20261013013323446-37AFA1] [major] box.viwork.cloud 베타와 별개로 기존 vibox.cloud 메인 서비스와 로그인 접근을 계속 유지한다.
+  prevent: 베타 변경과 메인 운영을 분리하고 메인의 실행 상태와 중앙 인증 연결을 확인한다. 메인 수정과 재시작에는 가까운 운영 계약의 승인 경계를 따른다.
+- [FB-20261011192023664-8F0BCB] [major] box.viwork.cloud 서비스는 사용자가 승인하며 다듬어 온 최신 베타 화면과 기능을 기준으로 이관한다.
+  prevent: 새 도메인 연결 전에 실제 실행 중인 베타 소스와 배포물을 캡처하고 도메인의 ingress·인증·서비스 전환 연결을 그 베타와 대조한다. 이전 MAIN 연결만으로 완료하지 않는다.
+- [FB-20260905083709320-46A233] [major] 앞으로 HTML 결과물을 사용자에게 보여줄 때는 항상 Google Chrome에서 연다.
+  prevent: HTML 파일을 저장한 뒤 Google Chrome을 명시적으로 지정해 열고, 완료 보고 전에 실행 결과를 확인한다.
+candidates-nonblocking: 0

@@ -1,0 +1,12 @@
+{
+  "activatesServices": false,
+  "app": "box-r8",
+  "archiveSha256": "158a6ff6be5ac9d1d44e483e4882807064bc36f72e05e7dd15b9d79b1eff8ab6",
+  "artifactSha256": "822dd8dd02f5c5ba507a43ea21e02b9d0c1c1903abd72f4580439b9f6807d5c0",
+  "checksSha256": "a0dcbd6c7ff68dd6bc430d159f73c722d70fa8cd58e36a3877da62b0ad157718",
+  "liveProtectionUnchanged": true,
+  "manifestSha256": "dd254c78889450ef9ea0ea64b11d0ba5f328fb0cb19de9142c8c250577a5bd25",
+  "release": "20261028-box-perf-r1",
+  "status": "BACKEND_BUILD_SMOKE_AND_PACKAGE_PASS",
+  "target": "backend-r1"
+}

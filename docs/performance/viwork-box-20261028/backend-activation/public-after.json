@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-28T11:08:33.516Z",
+  "readOnly": true,
+  "pass": true,
+  "results": [
+    {
+      "url": "https://viwork.cloud/api/vi/health",
+      "status": 200,
+      "locationPath": null,
+      "deployment": "20261028-front-perf-r2",
+      "matchesBefore": true
+    },
+    {
+      "url": "https://box.viwork.cloud/",
+      "status": 307,
+      "locationPath": "/files/home",
+      "matchesBefore": true
+    },
+    {
+      "url": "https://vibox.cloud/api/health",
+      "status": 200,
+      "locationPath": null,
+      "matchesBefore": true
+    }
+  ]
+}

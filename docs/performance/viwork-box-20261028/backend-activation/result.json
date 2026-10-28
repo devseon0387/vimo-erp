@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-28T11:13:48.154133+00:00",
+  "status": "BACKEND_ACTIVE_FRONTEND_HELD_BY_USER",
+  "userInstruction": "준비한 프런트는 아직 건들지말고 백엔드만 진행해 봐",
+  "backend": {
+    "release": "20261028-box-perf-r1",
+    "buildId": "-5ciigDEj7n9M4ZIwVSHg",
+    "previousBuildId": "WPoM-LMBBr3AOiI00BlfI",
+    "path": "/opt/vibox-beta",
+    "service": "vibox-beta.service",
+    "state": "active",
+    "pid": 4178196,
+    "sourceFiles": 988,
+    "runtimeSourceChanges": 3,
+    "testSourceChanges": 2,
+    "oldStaticAssetsPreserved": 213,
+    "sourceBuildAndProtectedStateVerified": true,
+    "publicBoundariesPassed": true,
+    "rollbackBackupsVerified": true,
+    "rollbackExecuted": false
+  },
+  "frontend": {
+    "userHold": true,
+    "activeRelease": "20261028-front-perf-r2",
+    "preparedCandidate": "20261028-front-box-perf-r3",
+    "sourceModified": false,
+    "preparedFilesModified": false,
+    "activated": false,
+    "remoteCT111CommandsExecuted": false,
+    "publicBeforeAfterHealth": 200
+  },
+  "protection": {
+    "mainBoxPreserved": true,
+    "environmentDependenciesKeysUnitConfigsPreserved": true,
+    "caddyChangedOnlyTwoActionIds": true,
+    "databaseMigrationsOrDirectWrites": false,
+    "userStorageWrites": false,
+    "mainBoxRestarted": false
+  },
+  "validation": {
+    "linuxTestsReused": 378,
+    "operatorMocksReused": 26,
+    "freshInspect": "PASS",
+    "freshPrepare": "PASS",
+    "activation": "ACTIVE",
+    "freshPostSnapshot": "PASS",
+    "publicResponses": 3,
+    "independentReceiptReview": "PASS",
+    "independentReviewer": "/root/performance_review",
+    "checksNotRepeatedReason": "Frozen source/tools and successful evidence hashes still match"
+  },
+  "notRun": [
+    "Real user account end-to-end file listing/sharing/upload flows",
+    "Actual production latency before/after",
+    "Real operational rollback",
+    "Galaxy/One UI and Safari QA"
+  ],
+  "performanceClaim": "Backend redundant queries eliminated; earlier frontend12–13% candidate timings are not a measured production backend gain.",
+  "storage": {
+    "remoteFreeBytesAfter": 65173590016,
+    "existingArtifactUnpackedBytes": 74065724,
+    "noNewBuild": true,
+    "previousBuildAndArtifactsRetained": true,
+    "cleanupExecuted": false
+  },
+  "originalEvidence": "/Users/vimo/Desktop/Dev/video-moment/_docs/qa/viwork-box-performance-2026-10-28/backend-activation-20261028T110350Z",
+  "rollback": {
+    "operator": "/opt/viwork-box-performance-20261028/backend-deploy-r1/box_release_operator.py",
+    "intentSha256": "8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57",
+    "backup": "/opt/viwork-box-performance-20261028/backend-deploy-r1/backup",
+    "instruction": "Use reviewed rollback only if needed and after checking actual current state; do not rerun activation or preparation."
+  },
+  "independentReview": {
+    "status": "PASS",
+    "path": "independent-review.json",
+    "sha256": "3316e0c283c94549379be66768fb47cc534723577b033d59cb0b6b66f94434fb"
+  }
+}

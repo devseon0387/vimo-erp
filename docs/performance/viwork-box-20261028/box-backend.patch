@@ -1,0 +1,275 @@
+--- a/lib/vi-gateway/navigation.ts
++++ b/lib/vi-gateway/navigation.ts
+@@ -7,7 +7,7 @@
+   const query = parseTeamQuery(params);
+   const [access, panel] = await Promise.all([
+     getTeamBoxAccess(session),
+-    getPartnerPanelData(session.sub, session, { navigationOnly: true }),
++    getPartnerPanelData(session.sub, session, { navigationOnly: true, includeFolders: false }),
+   ]);
+   const selectedBoxId = query.box && query.box !== "all" ? query.box : undefined;
+   if (selectedBoxId && !access?.boxes.some(box => box.id === selectedBoxId)) throw new FilesGatewayError(404);
+--- a/lib/dashboard/queries.ts
++++ b/lib/dashboard/queries.ts
+@@ -387,29 +387,31 @@
+ export async function getPartnerPanelData(
+   userId: string,
+   session?: SessionPayload | null,
+-  { navigationOnly = false }: { navigationOnly?: boolean } = {},
++  { navigationOnly = false, includeFolders = true }: { navigationOnly?: boolean; includeFolders?: boolean } = {},
+ ): Promise<PartnerPanelData> {
+   const out: PartnerPanelData = { folders: [], projects: [], shares: [] };
+ 
+-  // My box 폴더 (상위 + 1단계 하위)
+-  try {
+-    // 내비게이션 조회는 폴더를 생성하지 않으며 최상위 폴더 수만 필요하다.
+-    if (!navigationOnly) await ensureDir(`/personal/${userId}`);
+-    const top = await listDirectory(`/personal/${userId}`);
+-    const topFolders = top.filter((e) => e.isFolder).slice(0, 16);
+-    out.folders = navigationOnly
+-      ? topFolders.map((folder) => ({ name: folder.name, children: [] }))
+-      : await Promise.all(
+-          topFolders.map(async (f) => {
+-            let children: string[] = [];
+-            try {
+-              const sub = await listDirectory(`/personal/${userId}/${f.name}`);
+-              children = sub.filter((e) => e.isFolder).map((e) => e.name).slice(0, 10);
+-            } catch {}
+-            return { name: f.name, children };
+-          }),
+-        );
+-  } catch {}
++  // My box 폴더 (상위 + 1단계 하위). 프로젝트만 쓰는 게이트웨이는 이 I/O를 생략한다.
++  if (includeFolders) {
++    try {
++      // 내비게이션 조회는 폴더를 생성하지 않으며 최상위 폴더 수만 필요하다.
++      if (!navigationOnly) await ensureDir(`/personal/${userId}`);
++      const top = await listDirectory(`/personal/${userId}`);
++      const topFolders = top.filter((e) => e.isFolder).slice(0, 16);
++      out.folders = navigationOnly
++        ? topFolders.map((folder) => ({ name: folder.name, children: [] }))
++        : await Promise.all(
++            topFolders.map(async (f) => {
++              let children: string[] = [];
++              try {
++                const sub = await listDirectory(`/personal/${userId}/${f.name}`);
++                children = sub.filter((e) => e.isFolder).map((e) => e.name).slice(0, 10);
++              } catch {}
++              return { name: f.name, children };
++            }),
++          );
++    } catch {}
++  }
+ 
+   // 비모 프로젝트 — 내 팀 업로드 파일의 부모 폴더 모음
+   // Team box 내비게이션은 현재 membership/grant 목록을 이미 사용한다.
+--- a/lib/team-boxes/access.ts
++++ b/lib/team-boxes/access.ts
+@@ -69,6 +69,7 @@
+ }
+ 
+ export async function teamAccessibleFilePaths(session: SessionPayload, paths: readonly string[]): Promise<Set<string> | null> {
++  if (paths.length === 0) return teamBoxesEnabled() ? new Set<string>() : null;
+   const access = await getTeamBoxAccess(session);
+   if (access === null) return null;
+   const owned = access.projects.some(project => project.accessScope === "own_uploads")
+@@ -99,6 +100,7 @@
+ }
+ 
+ export async function teamAccessibleDirectories(session: SessionPayload, paths: readonly string[]): Promise<Set<string> | null> {
++  if (paths.length === 0) return teamBoxesEnabled() ? new Set<string>() : null;
+   const access = await getTeamBoxAccess(session);
+   if (access === null) return null;
+   const owned = access.projects.some(project => project.accessScope === "own_uploads")
+--- a/__tests__/dashboard-loading-queries.test.ts
++++ b/__tests__/dashboard-loading-queries.test.ts
+@@ -1,8 +1,11 @@
+ import { beforeEach, describe, expect, it, vi } from "vitest";
+ import type { SessionPayload } from "@/lib/auth/session";
++import type { TeamBoxAccess } from "@/lib/team-boxes/contracts";
+ 
+ const state = vi.hoisted(() => ({
+   teamEnabled: true,
++  teamAccess: { boxes: [], projects: [], catalog: [] } as TeamBoxAccess,
++  readTeamAccess: vi.fn(),
+   visible: new Set<string>(),
+   queries: [] as { sql: string; params: unknown[] }[],
+   candidates: [] as unknown[][],
+@@ -43,7 +46,10 @@
+   getZoneRoot: () => "/unused-dashboard-test-storage",
+ }));
+ vi.mock("@/lib/auth/access", () => ({ getAccessibleFilePaths: state.visiblePaths }));
+-vi.mock("@/lib/team-boxes/access", () => ({ teamBoxesEnabled: () => state.teamEnabled }));
++vi.mock("@/lib/team-boxes/access", () => ({
++  teamBoxesEnabled: () => state.teamEnabled,
++  getTeamBoxAccess: state.readTeamAccess,
++}));
+ vi.mock("@/lib/team-boxes/share-access", () => ({
+   parseStoredSharePaths: (row: { filePath: string }) => [row.filePath],
+   visibleOwnedSharePaths: async (_session: unknown, row: { filePath: string }) =>
+@@ -51,6 +57,7 @@
+ }));
+ 
+ import { getMyRecentFiles, getPartnerPanelData } from "@/lib/dashboard/queries";
++import { readNavigation } from "@/lib/vi-gateway/navigation";
+ 
+ const session: SessionPayload = { sub: "reader", name: "Reader", username: "reader", role: "partner" };
+ const allowed = "/Rendering/client/project/01/allowed.mp4";
+@@ -60,6 +67,8 @@
+ beforeEach(() => {
+   vi.clearAllMocks();
+   state.teamEnabled = true;
++  state.teamAccess = { boxes: [], projects: [], catalog: [] };
++  state.readTeamAccess.mockImplementation(async () => state.teamEnabled ? state.teamAccess : null);
+   state.visible = new Set([allowed]);
+   state.queries = [];
+   state.candidates = [[allowed, uploadedAt], [denied, uploadedAt]];
+@@ -164,3 +173,54 @@
+     expect(state.listDirectory).toHaveBeenCalledTimes(2);
+   });
+ });
++
++describe("gateway navigation loading", () => {
++  it("uses current Team boxes without personal folder IO or legacy panel queries", async () => {
++    state.teamAccess.boxes = [{ id: "alpha", name: "Alpha", role: "member" }];
++    state.teamAccess.projects = [{
++      id: "project-alpha", name: "Alpha project", storagePrefix: "/Rendering/Alpha",
++      teamBoxId: "alpha", teamBoxName: "Alpha", clientId: null, role: "viewer", accessScope: "project",
++    }];
++    const navigation = await readNavigation(new URLSearchParams("box=alpha"), session);
++    expect(navigation).toEqual({
++      schemaVersion: 1, readOnly: true, role: "partner",
++      teamBoxes: { enabled: true, boxes: state.teamAccess.boxes, selectedBoxId: "alpha", projectCount: 1 },
++      projects: [],
++    });
++    expect(state.readTeamAccess).toHaveBeenCalledExactlyOnceWith(session);
++    expect(state.listDirectory).not.toHaveBeenCalled();
++    expect(state.ensureDir).not.toHaveBeenCalled();
++    expect(state.queries).toEqual([]);
++    expect(state.visiblePaths).not.toHaveBeenCalled();
++  });
++
++  it("keeps legacy project shortcuts with zero personal folder IO when Team boxes are disabled", async () => {
++    state.teamEnabled = false;
++    const navigation = await readNavigation(new URLSearchParams(), session);
++    expect(navigation.teamBoxes).toEqual({ enabled: false, boxes: [], selectedBoxId: undefined, projectCount: undefined });
++    expect(navigation.projects).toHaveLength(1);
++    expect(state.queries).toHaveLength(1);
++    expect(state.queries[0].sql).toContain('from "file_uploads"');
++    expect(state.listDirectory).not.toHaveBeenCalled();
++    expect(state.ensureDir).not.toHaveBeenCalled();
++  });
++
++  it("rejects a revoked selected box without unrelated folder or query work", async () => {
++    state.teamAccess.boxes = [{ id: "alpha", name: "Alpha", role: "member" }];
++    await expect(readNavigation(new URLSearchParams("box=alpha"), session)).resolves.toMatchObject({ teamBoxes: { selectedBoxId: "alpha" } });
++    state.teamAccess = { boxes: [], projects: [], catalog: [] };
++    await expect(readNavigation(new URLSearchParams("box=alpha"), session)).rejects.toMatchObject({ status: 404 });
++    expect(state.readTeamAccess).toHaveBeenCalledTimes(2);
++    expect(state.listDirectory).not.toHaveBeenCalled();
++    expect(state.ensureDir).not.toHaveBeenCalled();
++    expect(state.queries).toEqual([]);
++  });
++
++  it("rejects malformed query before any navigation IO", async () => {
++    await expect(readNavigation(new URLSearchParams("box=alpha&box=beta"), session)).rejects.toMatchObject({ status: 400 });
++    expect(state.readTeamAccess).not.toHaveBeenCalled();
++    expect(state.listDirectory).not.toHaveBeenCalled();
++    expect(state.ensureDir).not.toHaveBeenCalled();
++    expect(state.queries).toEqual([]);
++  });
++});
+--- a/__tests__/team-box-access.test.ts
++++ b/__tests__/team-box-access.test.ts
+@@ -2,12 +2,17 @@
+ import type { TeamBoxAccess, TeamProjectGrant } from "@/lib/team-boxes/contracts";
+ import type { SessionPayload } from "@/lib/auth/session";
+ 
+-const state = vi.hoisted(() => ({ access: null as TeamBoxAccess | null, owned: [] as { path: string }[] }));
+-vi.mock("@/lib/team-boxes/repository", () => ({ readTeamBoxAccess: async () => state.access }));
+-vi.mock("@/lib/db/client", () => ({ db: { select: () => ({ from: () => ({ where: async () => state.owned }) }) } }));
++const state = vi.hoisted(() => ({
++  access: null as TeamBoxAccess | null,
++  owned: [] as { path: string }[],
++  readAccess: vi.fn(),
++  readOwned: vi.fn(),
++}));
++vi.mock("@/lib/team-boxes/repository", () => ({ readTeamBoxAccess: state.readAccess }));
++vi.mock("@/lib/db/client", () => ({ db: { select: () => ({ from: () => ({ where: state.readOwned }) }) } }));
+ 
+ import { canAccessFile, getAccessibleFilePaths } from "@/lib/auth/access";
+-import { grantedDirectoryPaths, grantedFilePaths, projectForPath, teamBoxesEnabled } from "@/lib/team-boxes/access";
++import { grantedDirectoryPaths, grantedFilePaths, projectForPath, teamAccessibleDirectories, teamAccessibleFilePaths, teamBoxesEnabled } from "@/lib/team-boxes/access";
+ 
+ const project = (id: string, storagePrefix: string, accessScope: "project" | "own_uploads" = "project"): TeamProjectGrant => ({
+   id, storagePrefix, name: id, teamBoxId: "alpha", teamBoxName: "Alpha", clientId: null, role: "viewer", accessScope,
+@@ -19,6 +24,8 @@
+   beforeEach(() => {
+     vi.stubEnv("VIBOX_TEAM_BOXES_ENABLED", "1");vi.stubEnv("VIBOX_RELEASE_CHANNEL", "beta");vi.stubEnv("VIBOX_BETA_READ_ONLY", "1");
+     state.access = access();state.owned = [];
++    state.readAccess.mockReset().mockImplementation(async () => state.access);
++    state.readOwned.mockReset().mockImplementation(async () => state.owned);
+   });
+   afterEach(() => vi.unstubAllEnvs());
+ 
+@@ -60,5 +67,60 @@
+     expect(await canAccessFile(admin, "/personal/another/file.mp4")).toBe(true);
+     expect(await canAccessFile({ ...admin, role: "member" }, "/personal/another/file.mp4")).toBe(false);
+     expect(await canAccessFile(admin, "/legacy.mp4")).toBe(true);
++    expect(state.readAccess).not.toHaveBeenCalled();
++    expect(state.readOwned).not.toHaveBeenCalled();
++  });
++
++  describe.each([
++    ["files", teamAccessibleFilePaths],
++    ["directories", teamAccessibleDirectories],
++  ] as const)("%s authorization query budget", (_kind, authorize) => {
++    it("returns an empty Set without membership or ownership reads for enabled empty input", async () => {
++      state.access = access(project("a", "/Rendering/Alpha", "own_uploads"));
++      await expect(authorize(admin, [])).resolves.toEqual(new Set());
++      expect(state.readAccess).not.toHaveBeenCalled();
++      expect(state.readOwned).not.toHaveBeenCalled();
++    });
++
++    it("preserves the disabled null sentinel without membership or ownership reads", async () => {
++      vi.stubEnv("VIBOX_TEAM_BOXES_ENABLED", "0");
++      await expect(authorize(admin, [])).resolves.toBeNull();
++      expect(state.readAccess).not.toHaveBeenCalled();
++      expect(state.readOwned).not.toHaveBeenCalled();
++    });
++
++    it("still enforces the read-only Beta gate before returning for empty input", async () => {
++      vi.stubEnv("VIBOX_RELEASE_CHANNEL", "main");
++      await expect(authorize(admin, [])).rejects.toThrow("read-only Beta");
++      vi.stubEnv("VIBOX_RELEASE_CHANNEL", "beta");
++      vi.stubEnv("VIBOX_BETA_READ_ONLY", "0");
++      await expect(authorize(admin, [])).rejects.toThrow("read-only Beta");
++      expect(state.readAccess).not.toHaveBeenCalled();
++      expect(state.readOwned).not.toHaveBeenCalled();
++    });
++
++    it("continues to read current grants for nonempty paths and observes revocation", async () => {
++      const prefix = "/Rendering/한글";
++      state.access = access(project("nfc", prefix));
++      const paths = [`${prefix}/episode`, `${prefix.normalize("NFD")}/episode`];
++      await expect(authorize(admin, paths)).resolves.toEqual(new Set([paths[0]]));
++      expect(state.readAccess).toHaveBeenCalledExactlyOnceWith(admin.sub);
++      state.access = access();
++      await expect(authorize(admin, paths)).resolves.toEqual(new Set());
++      expect(state.readAccess).toHaveBeenCalledTimes(2);
++      expect(state.readOwned).not.toHaveBeenCalled();
++    });
++  });
++
++  it("keeps ownership reads and filtering for nonempty own-upload file and directory requests", async () => {
++    const owned = "/Rendering/Alpha/episode/owned.mp4";
++    state.access = access(project("a", "/Rendering/Alpha", "own_uploads"));
++    state.owned = [{ path: owned }];
++    await expect(teamAccessibleFilePaths(admin, [owned, "/Rendering/Alpha/episode/private.mp4", "/Rendering/Other/owned.mp4"]))
++      .resolves.toEqual(new Set([owned]));
++    await expect(teamAccessibleDirectories(admin, ["/Rendering/Alpha", "/Rendering/Alpha/episode", "/Rendering/Alpha/private", "/Rendering/Other"]))
++      .resolves.toEqual(new Set(["/Rendering/Alpha", "/Rendering/Alpha/episode"]));
++    expect(state.readAccess).toHaveBeenCalledTimes(2);
++    expect(state.readOwned).toHaveBeenCalledTimes(2);
+   });
+ });

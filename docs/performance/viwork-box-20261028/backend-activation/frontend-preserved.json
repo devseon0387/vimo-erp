@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-28T11:10:42.100856+00:00",
+  "sourceFiles": 1082,
+  "sourceUnchanged": true,
+  "preparedOperatorUnchanged": true,
+  "preparedIntentProductionApproved": false,
+  "runtimeEvidence": "public-before.json + public-after.json show unchanged front-perf-r2",
+  "remoteCT111CommandsExecutedThisRun": false,
+  "userHold": true
+}

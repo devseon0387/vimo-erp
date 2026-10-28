@@ -1,0 +1,150 @@
+{
+  "actions": [
+    {
+      "exportedName": "logoutAction",
+      "filename": "app/login/actions.ts",
+      "new": "00fbdce235961cef5f8b5ceefcaba3a7100f929a1a",
+      "old": "008d91334b3b94136973f4d459b3dec68bfded4524"
+    },
+    {
+      "exportedName": "validateSignupAction",
+      "filename": "app/signup/actions.ts",
+      "new": "604daa9c83f5b682c99e4ec10019ab803197e45470",
+      "old": "60e17ba445fa4de6c48f586d60d6c5e980655575fb"
+    }
+  ],
+  "before": {
+    "beta": {
+      "buildId": "WPoM-LMBBr3AOiI00BlfI",
+      "dependenciesDigest": "afc1f44784b75f5b40b44ffc1907a08f95d0ea5cb797e8baf43b4954ce8ebb53",
+      "envs": {
+        ".env.local": {
+          "gid": 991,
+          "mode": 384,
+          "sha256": "53250cb48096700fb0e48bfd8c096d030af2c50e93babecaff2a6d90bff4d2db",
+          "uid": 999
+        },
+        ".env.local.new.2xMeID": {
+          "gid": 991,
+          "mode": 384,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uid": 999
+        }
+      },
+      "nextDigest": "d6086fc7acad285e266d797475daca52cb76cbd23a24670806973735a139c5ea",
+      "sourceCount": 988,
+      "sourceDigest": "466cd87db7ef0777d078faa21d2347b9a2dd6934d7e9d277f89ed4dfff8e04f5"
+    },
+    "boundaries": {
+      "directFilesWrite": 401,
+      "directGateway": 401,
+      "directHealth": 200,
+      "filesWrite": 403,
+      "publicInternalGet": 403,
+      "publicInternalHead": 403,
+      "publicInternalPost": 403,
+      "root": {
+        "cookiePaths": [],
+        "csp": true,
+        "locationPath": "/box/login",
+        "status": 307
+      },
+      "sso": {
+        "cookiePaths": [
+          "/box"
+        ],
+        "csp": false,
+        "locationPath": "/api/sso/authorize",
+        "status": 303
+      },
+      "streamLookup": 401,
+      "streamWebhook": 401,
+      "unprefixedHealth": 404
+    },
+    "caddy": {
+      "/etc/caddy/Caddyfile": "dde54dac3a6b7c3c3403a1c8aa7e388c4c775091daffb1ef407fd1809f7e4440",
+      "/etc/caddy/cloudflare.env": "53630fe4478d1f2236fb765327197371c71f04e1bec3a7adf91530aa3c5dce92",
+      "/etc/caddy/vibox-beta.caddy": "1dcaba5c5d83410689b553f14dc5a7cb6c141f71a535f42030d6a4c7936db43f"
+    },
+    "caddyMetadata": {
+      "/etc/caddy/Caddyfile": {
+        "gid": 0,
+        "mode": 420,
+        "uid": 0
+      },
+      "/etc/caddy/cloudflare.env": {
+        "gid": 0,
+        "mode": 384,
+        "uid": 0
+      },
+      "/etc/caddy/vibox-beta.caddy": {
+        "gid": 0,
+        "mode": 420,
+        "uid": 0
+      }
+    },
+    "filesKeySha256": "01736a4482e2204f6132f58f7a57842d5f658c32e0e57c662173d00e5be068f5",
+    "main": {
+      "buildId": "KqH-YHqXcJHOISpIpqveI",
+      "dependenciesDigest": "f0354c3b7551206826fc6e95d57ec5d91895d7e781d9d01218240a73c4618102",
+      "envs": {
+        ".env.example": {
+          "gid": 50,
+          "mode": 420,
+          "sha256": "50e714f0b6fa80155ba46fbd827dcbc8eeb198274c5fc465513e9c5c6c9d6219",
+          "uid": 501
+        },
+        ".env.local": {
+          "gid": 991,
+          "mode": 384,
+          "sha256": "5d0bd31d5c7afde134d25891e2d033636b557c01ad5123efbb85ba6f648df1c1",
+          "uid": 999
+        },
+        ".env.local.bak-encworker": {
+          "gid": 991,
+          "mode": 420,
+          "sha256": "d8425ec34d805e9d963b64f1c2ca7600f1553d6853be871a5db43d9a6011fb82",
+          "uid": 999
+        },
+        ".env.local.bak-vc20260703": {
+          "gid": 991,
+          "mode": 420,
+          "sha256": "3a82757ea551b6da1a75f0f5f6fae6efac7062bd0f56cfc84f930da4368c066e",
+          "uid": 999
+        }
+      },
+      "nextDigest": "58b40ef4e8a28aeff5a8f4e6638f293ed83e355a1d14aff05f438c455576b78b",
+      "sourceCount": 596,
+      "sourceDigest": "3228c83fab137bdaf6f86e46e6a0cb80c8cff4a36b2c5f5b8debff9edc0d366d"
+    },
+    "units": {
+      "caddy.service": {
+        "configSha256": "1bf11e71d08ca919c5b21759b36c255b1dbf13e85c9bc8dd079660344ed58388",
+        "state": "MainPID=6656\nExecMainStartTimestampMonotonic=240283822779\nActiveState=active"
+      },
+      "cloudflared-vibox.service": {
+        "configSha256": "a8646b493812622786f8626261a09146e96862c264798425787ecc28533a9f7a",
+        "state": "MainPID=4161735\nExecMainStartTimestampMonotonic=10554292503761\nActiveState=active"
+      },
+      "vibox-beta.service": {
+        "configSha256": "b2ef3560d34fae8373f03aa308990ebb835bf6e8ba3631b62878ed9589dcb726",
+        "state": "MainPID=4170636\nExecMainStartTimestampMonotonic=10583479784642\nActiveState=active"
+      },
+      "vibox.service": {
+        "configSha256": "94dfd6563ab4dc97fd0095757cd2092b3b793c87b36a31e03735540990ff057a",
+        "state": "MainPID=3894924\nExecMainStartTimestampMonotonic=9636066667766\nActiveState=active"
+      }
+    }
+  },
+  "caddyAfter": "2b8c547d6ae7dc361d9f5b44beb16a336b9a70ef8449ecabc249d1082716623c",
+  "caddyMetadata": {
+    "gid": 0,
+    "mode": 420,
+    "uid": 0
+  },
+  "intentSha256": "8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57",
+  "nextDigest": "6f2fcca91b45e79312e6e1ef9da2928cf0189f55b2390fe663a87031dc80f342",
+  "retainedStaticCount": 213,
+  "retainedStaticDigest": "565ad0b4d0b4f4ab92b26cf569b6c2271a9a2a4e5086b359275b8ed60f585ba4",
+  "status": "PREPARED"
+}

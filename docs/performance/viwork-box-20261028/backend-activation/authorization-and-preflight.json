@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-28T11:03:51.130673+00:00",
+  "userInstruction": "준비한 프런트는 아직 건들지말고 백엔드만 진행해 봐",
+  "scope": "Vibox Beta backend candidate only",
+  "frontendHold": true,
+  "frontendModificationAuthorized": false,
+  "backendDeploymentAuthorized": true,
+  "remoteStatus": "Tailscale SSH additional check required; one read-only attempt timed out after20s",
+  "operatorUploaded": false,
+  "prepared": false,
+  "activated": false,
+  "frozenSourceFiles": 988,
+  "sourceMatchesVerifiedBuild": true,
+  "testsReused": {
+    "backendLinux": 378,
+    "operatorMocks": 26,
+    "reason": "No source/tool changes; existing successful evidence remains hash-bound"
+  },
+  "inputs": {
+    "box_release_operator.py": "24c760e9cc2d2870b6a5f4602b5754a639188d9a513af8a18ea6ce1feb075d44",
+    "intent.json": "8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57",
+    "upload-operator.py": "5d686960ea3414b6c1caa7ca1124b9110a2488a8af582fb977a216b9c0c67279",
+    "independent-review.json": "d83d840dbf402a6cbe332efa524a2765fb480b6f655baab2e2177770bc7024bc"
+  },
+  "gitCommit": "303fe2bb2212a4e43d58b8f12e1bb4a282912bf0",
+  "endpoint": "CT112 /opt/vibox-beta vibox-beta.service:4201",
+  "authUrlStored": false
+}

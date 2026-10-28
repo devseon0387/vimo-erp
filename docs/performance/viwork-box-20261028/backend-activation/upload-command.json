@@ -1,0 +1,9 @@
+{
+  "exitCode": 0,
+  "stdout": "{\"stage\": \"/opt/viwork-box-performance-20261028/backend-deploy-r1\", \"files\": {\"box_release_operator.py\": \"24c760e9cc2d2870b6a5f4602b5754a639188d9a513af8a18ea6ce1feb075d44\", \"intent.json\": \"8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57\"}, \"prepared\": false, \"activated\": false, \"servicesModified\": false}\n",
+  "stderr": "",
+  "files": {
+    "box_release_operator.py": "24c760e9cc2d2870b6a5f4602b5754a639188d9a513af8a18ea6ce1feb075d44",
+    "intent.json": "8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57"
+  }
+}

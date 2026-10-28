@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "revision": "r3",
+  "status": "REVIEWED_LOCAL_OPERATOR_NOT_DEPLOYED",
+  "localTests": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "deployment-box",
+      "-p",
+      "test_operator.py",
+      "-v"
+    ],
+    "exitCode": 0,
+    "tests": 26,
+    "passed": 26,
+    "seconds": 2.794
+  },
+  "hashes": {
+    "box_release_operator.py": "24c760e9cc2d2870b6a5f4602b5754a639188d9a513af8a18ea6ce1feb075d44",
+    "capture_intent.py": "88d6ded021722ef68143e2b2e050505d657def1b67f1a447a8d2904746824c5d",
+    "test_operator.py": "fd4f548889c5a1631dd3960eb3ea229fb760de4d93b18aa549c673326fb09d75",
+    "intent.json": "8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57",
+    "observed-final.json": "d68a9d578aaf6e6af88deb81f61c42143e146eaaa34027e0c8c6e08fa2c73916",
+    "README.md": "38c937a126a893c87370eefe2c2f48f1f5631ea47381311b92e6bcfae06c531f",
+    "tests-final.log": "860458ab1d42d72e5b4cce208c96e59c14047bc2ee01dbc579be505288d942eb",
+    "plan.json": "8322cd11759923fa73849618ff24eacb8ad33abc8afed0f8805e6d4addc0cc6a",
+    "feedback-review.txt": "c48ca4edfcf507a5ed981818b7d303257b79b9f61e24dec57764c243882398e6",
+    "feedback-review-results.json": "be121a26295a594b8960c7c013dca47cc638b62fa75c2ffa2ee2e6f93e3b44a0",
+    "review-accepted.json": "9a2d430fcddd9ea3106d8d8e00a009275e6202217b7cfb19c92f099ac079c7c5"
+  },
+  "sourceBinding": {
+    "files": 988,
+    "currentMatchesVerifiedManifest": true,
+    "changedPaths": [
+      "__tests__/dashboard-loading-queries.test.ts",
+      "__tests__/team-box-access.test.ts",
+      "lib/dashboard/queries.ts",
+      "lib/team-boxes/access.ts",
+      "lib/vi-gateway/navigation.ts"
+    ]
+  },
+  "observationReuse": {
+    "fresh": false,
+    "observedAt": "2026-10-28T09:44:03.750175+00:00",
+    "reason": "Latest read-only SSH capture requires renewed interactive authentication; no reconnection retries. Parent explicitly authorized reuse; inspect and prepare must read and match actual current baseline before any live change.",
+    "source": "revisions/r2/observed-final.json"
+  },
+  "independentReview": {
+    "status": "PASS",
+    "reportedBy": "/root/performance_review",
+    "receipt": "review-accepted.json"
+  },
+  "uploadsExecuted": false,
+  "livePrepareExecuted": false,
+  "activationExecuted": false,
+  "serviceChangesExecuted": false,
+  "operationalRollbackExecuted": false,
+  "remaining": [
+    "SSH additional authentication; no retries ongoing",
+    "Parent upload and fresh inspect/prepare baseline comparison before activation",
+    "Real systemd/Caddy activation and operational rollback untested"
+  ]
+}

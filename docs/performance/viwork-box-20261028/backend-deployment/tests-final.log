@@ -1,0 +1,31 @@
+test_action_render_changes_only_two_header_values (test_operator.OperatorTests) ... ok
+test_activate_and_manual_rollback_preserve_main_env_deps_old_static (test_operator.OperatorTests) ... ok
+test_broken_failed_next_symlink_rejects_rollback_before_stopping_beta (test_operator.OperatorTests) ... ok
+test_caddy_change_during_activation_is_not_overwritten (test_operator.OperatorTests) ... ok
+test_default_and_action_without_execute_are_dry_runs (test_operator.OperatorTests) ... ok
+test_env_and_unrelated_unit_drift_block_activation_before_stop (test_operator.OperatorTests) ... ok
+test_failed_automatic_rollback_keeps_the_latest_partial_events (test_operator.OperatorTests) ... ok
+test_failure_between_next_renames_restores_old_build (test_operator.OperatorTests) ... ok
+test_foreign_caddy_is_preserved_while_beta_is_restored (test_operator.OperatorTests) ... ok
+test_foreign_live_build_rejects_rollback_before_stopping_beta (test_operator.OperatorTests) ... ok
+test_immutable_preparation_cannot_overwrite_receipts (test_operator.OperatorTests) ... ok
+test_incorrect_expanded_bytes_are_rejected_before_extraction (test_operator.OperatorTests) ... ok
+test_main_drift_is_preserved_and_reported_after_beta_rollback (test_operator.OperatorTests) ... ok
+test_missing_artifact_fails_before_staging_or_stop (test_operator.OperatorTests) ... ok
+test_occupied_failed_next_rejects_rollback_before_stopping_beta (test_operator.OperatorTests) ... ok
+test_pending_build_and_caddy_drift_block_activation (test_operator.OperatorTests) ... ok
+test_prepare_is_reversible_and_does_not_mutate_live_or_services (test_operator.OperatorTests) ... ok
+test_readiness_failure_automatically_restores_and_keeps_receipt (test_operator.OperatorTests) ... ok
+test_real_package_expanded_bytes_schema_is_accepted (test_operator.OperatorTests) ... ok
+test_service_api_rejects_main_stop_and_caddy_restart (test_operator.OperatorTests) ... ok
+test_static_collision_rejects_different_bytes_without_modifying_live (test_operator.OperatorTests) ... ok
+test_symlink_parent_is_rejected_even_for_a_missing_target (test_operator.OperatorTests) ... ok
+test_tar_traversal_symlinks_and_duplicates_fail_before_extraction (test_operator.OperatorTests) ... ok
+test_unrelated_unit_drift_does_not_block_own_beta_recovery (test_operator.OperatorTests) ... ok
+test_wrong_live_baseline_fails_before_staging_or_stop (test_operator.OperatorTests) ... ok
+test_wrong_target_and_operator_hash_are_rejected (test_operator.OperatorTests) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 2.101s
+
+OK

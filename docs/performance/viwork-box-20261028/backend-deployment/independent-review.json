@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-28T10:33:56.960538+00:00",
+  "status": "PASS",
+  "reviewer": "/root/performance_review",
+  "operatorSha256": "24c760e9cc2d2870b6a5f4602b5754a639188d9a513af8a18ea6ce1feb075d44",
+  "intentSha256": "8f8fe259a235f8194e5db6254d6ca1b2b2fe5302ba2c89cc03a58a379de42f57",
+  "mockTestsPassed": 26,
+  "independentRerunPassed": 26,
+  "resolved": [
+    "Foreign live build rejected before Beta stop",
+    "Expanded artifact bytes schema verified",
+    "Foreign Caddy bytes preserved during activation failure and own Beta restored"
+  ],
+  "liveOperationsExecuted": false,
+  "freshObservedState": false,
+  "requiresBeforeActivation": [
+    "Tailscale SSH authentication",
+    "current inspect and prepare match exact baseline"
+  ],
+  "stagingWrapperSha256": "5d686960ea3414b6c1caa7ca1124b9110a2488a8af582fb977a216b9c0c67279",
+  "stagingWrapperReview": "PASS source-only; no application/service writes"
+}
